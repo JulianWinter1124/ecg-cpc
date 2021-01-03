@@ -70,6 +70,7 @@ def down_train(downstream_model, train_loader, timesteps_in, timesteps_out, opti
     downstream_model.train()
     total_loss = torch.tensor(0.0).cuda()
     total_acc = torch.tensor(0.0).cuda()
+    all_accs = []
     count = 0
     cpc_hidden = None
     cpc_latents = []
@@ -88,7 +89,12 @@ def down_train(downstream_model, train_loader, timesteps_in, timesteps_out, opti
         cpc_latents.append(cpc_latent)
         cpc_contexts.append(cpc_context)
         if patient_finished.any(): #If anyone is finished? TODO: Better: give finished vector to downstream
-            acc, loss, cpc_hidden, confuse = downstream_model(None, cpc_latents, cpc_contexts, cpc_hidden, y=labels, finished=True)
+            accs, loss, cpc_hidden, confuse = downstream_model(None, cpc_latents, cpc_contexts, cpc_hidden, y=labels, finished=True)
+            if type(accs) == list:
+                acc = accs[0]
+                all_accs.append(accs)
+            else:
+                acc = accs
             cpc_hidden = downstream_model.init_hidden(len(data), use_gpu=True)
 
             del cpc_latents[:]
@@ -101,15 +107,18 @@ def down_train(downstream_model, train_loader, timesteps_in, timesteps_out, opti
 
             optimizer.step()
             if batch_idx % 10 == 0:
-                print('Train Epoch: {} \tAccuracy: {:.4f}\tLoss: {:.6f}'.format(
-                    epoch, acc.item(), loss.item()))
+                print('Train Epoch: {} \tLoss: {:.6f}\tAccuracies: '.format(
+                    epoch, loss.item()), *map("{:.4f}".format, map(torch.Tensor.item, accs)))
             count += 1
     total_loss /= count
     total_acc /= count
     #cm = confusion_matrix(confusion_y, confusion_pred)
     #plot_confusion_matrix(cm, 'train', ['CD', 'HYP', 'MI', 'NORM', 'STTC'])
-    print('===> Trainings set: Average loss: {:.4f}\tAccuracy: {:.4f}\n'.format(
-        total_loss, total_acc))
+    total_accs = []
+    for ac in zip(*all_accs):
+        total_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
+    print('===> Trainings set: Average loss: {:.4f}\tAccuracies: '.format(
+        total_loss), *map("{:.4f}".format, total_accs))
     return total_acc, total_loss
 
 def down_validation(downstream_model, data_loader, timesteps_in, timesteps_out, batch_size):
@@ -154,8 +163,11 @@ def down_validation(downstream_model, data_loader, timesteps_in, timesteps_out, 
         total_acc /= count
         #cm = confusion_matrix(confusion_y, confusion_pred)
         #plot_confusion_matrix(cm, 'validation', ['CD', 'HYP', 'MI', 'NORM', 'STTC'])
-        print('===> Trainings set: Average loss: {:.4f}\tAccuracy: {:.4f}\n'.format(
-            total_loss, total_acc))
+        total_accs = []
+        for ac in zip(*all_accs):
+            total_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
+        print('===> Validation set: Average loss: {:.4f}\tAccuracies: '.format(
+            total_loss), *map("{:.4f}".format, total_accs))
         return total_acc, total_loss
 
 def baseline_train(model, train_loader, optimizer, epoch):

@@ -47,14 +47,14 @@ class BaselineNet(nn.Module):
         #print('x shape after fc', x.shape)
         logits = self.activation(x)
         if not y is None:
-            loss = self.criterion(logits, y)
-            #loss = torch.sum(torch.square(y-logits)) Simple own implementation
+            #loss = self.criterion(logits, y)
+            loss = torch.sum(torch.square(y-logits)) # Simple own implementation
             #loss = self.criterion(logits, torch.argmax(y, dim=1))
             accuracies = []
             mask = y != 0.0
             inverse_mask = ~mask
-            class_fit = 1.0 - torch.sum(torch.square(y[inverse_mask] - logits[inverse_mask])) / torch.sum(inverse_mask) #zero fit goal
-            zero_fit = 1.0 - torch.sum(torch.square(y[mask] - logits[mask])) / torch.sum(mask) #class fit goal
+            zero_fit = 1.0 - torch.sum(torch.square(y[inverse_mask] - logits[inverse_mask])) / torch.sum(inverse_mask) #zero fit goal
+            class_fit = 1.0 - torch.sum(torch.square(y[mask] - logits[mask])) / torch.sum(mask) #class fit goal
             accuracies.append(0.5*class_fit+0.5*zero_fit)
             accuracies.append(class_fit)
             accuracies.append(zero_fit)

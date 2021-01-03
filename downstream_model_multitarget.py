@@ -76,23 +76,25 @@ class DownstreamLinearNet(nn.Module):
         #print('pred shape', pred.shape)
         if not y is None:  # Training mode return loss instead of prediction
             batch, n_classes = y.shape
-            loss = self.criterion(pred, y)
-            # loss = torch.sum(torch.square(y-pred)) Simple own implementation
-            # loss = self.criterion(pred, torch.argmax(y, dim=1))
+            #loss = self.criterion(pred, y)
+            loss = torch.sum(torch.square(y - pred))
             accuracies = []
-            accuracies.append(1.0 - torch.sum(torch.square(y - pred)) / (n_classes * batch))
-            # accuracy = 1.0 - torch.sum(torch.square(y - pred)) / torch.sum((y != 0.0) | (pred != 0.0)) #only count non zeros in accuracy?
-            accuracies.append(torch.sum(torch.absolute(y - pred) <= 0.01) / (
-                        n_classes * batch))  # correct if probabilty within 0.01
             mask = y != 0.0
             inverse_mask = ~mask
-            accuracies.append(0.5 * (1.0 - torch.sum(torch.square(y[mask] - pred[mask])) / torch.sum(mask)) + 0.5 * (
-                        1.0 - torch.sum(torch.square(y[inverse_mask] - pred[inverse_mask])) / torch.sum(
-                    inverse_mask)))
-            accuracies.append(1.0 - torch.sum(torch.square(y[mask] - pred[mask])) / torch.sum(mask))  # class fit goal
-            accuracies.append(1.0 - torch.sum(torch.square(y[inverse_mask] - pred[inverse_mask])) / torch.sum(
-                inverse_mask))  # zero fit goal
-            return accuracies[2], loss, cpc_hidden, (torch.argmax(pred, dim=1), y)
+            zero_fit = 1.0 - torch.sum(torch.square(y[inverse_mask] - pred[inverse_mask])) / torch.sum(
+                inverse_mask)  # zero fit goal
+            class_fit = 1.0 - torch.sum(torch.square(y[mask] - pred[mask])) / torch.sum(mask)  # class fit goal
+            accuracies.append(0.5 * class_fit + 0.5 * zero_fit)
+            accuracies.append(class_fit)
+            accuracies.append(zero_fit)
+
+            accuracies.append(
+                1.0 - torch.sum(torch.square(y - pred)) / (n_classes * batch))  # Distance between all values
+            # accuracy = 1.0 - torch.sum(torch.square(y - logits)) / torch.sum((y != 0.0) | (logits != 0.0)) #only count non zeros in accuracy?
+            accuracies.append(torch.sum(torch.absolute(y - pred) <= 0.01) / (
+                        n_classes * batch))  # correct if probabilty within 0.01
+            # accuracy = torch.sum(torch.eq(torch.argmax(logits, dim=1), torch.argmax(y, dim=1))) / batch
+            return accuracies, loss, cpc_hidden, (torch.argmax(pred, dim=1), y)
         else:
             return pred, cpc_hidden
 
