@@ -10,11 +10,13 @@ from torch import optim
 from torch.utils.data import DataLoader, ChainDataset, ConcatDataset
 
 import baseline_cnn
+import baseline_convencoder
 import ecg_datasets2
 #from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
 from cardio_model_resnet import CPC, Predictor, AutoRegressor, Encoder
 from optimizer import ScheduledOptim
-from training import cpc_train, cpc_validation, down_train, down_validation, baseline_train, baseline_validation
+from training import cpc_train, cpc_validation, down_train, down_validation, baseline_train, baseline_validation, \
+    decoder_validation, decoder_train
 
 import torch
 
@@ -60,17 +62,12 @@ def main(args):
 
 
     if args.train_mode == 'cpc':
-        if args.saved_model:
-            model.load_state_dict(torch.load(args.saved_model))  # Load the trained cpc model
-            model.eval()
-        else:
-            torch.save(model, os.path.join(out_path, "cpc_model_full.pt"))
-        model.cuda()
+
 
         #train_dataset_mit = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/mit-bih-arrhythmia-database-1.0.0/generated/resampled/train', window_size=window_length, n_windows=n_windows)
         #train_dataset_peters = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
         train_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/train', window_size=window_length, n_windows=n_windows, preload_windows=40, batch_size=train_batch_size)
-        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
+        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
         train_dataset_sinus = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/sinus/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
 
         #trainset_total = ecg_datasets2.ECGDatasetMultiple([train_dataset_peters, train_dataset_ptb, train_dataset_ptbxl]) #train_dataset_mit,
@@ -82,7 +79,7 @@ def main(args):
         #val_dataset_mit = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/mit-bih-arrhythmia-database-1.0.0/generated/resampled/val', window_size=window_length, n_windows=n_windows)
         #val_dataset_peters = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
         val_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/val', window_size=window_length, n_windows=n_windows, preload_windows=40, batch_size=validation_batch_size)
-        val_dataset_ptbxl = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
+        val_dataset_ptbxl = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
         val_dataset_sinus = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/sinus/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
         #valset_total = ecg_datasets2.ECGDatasetMultiple([val_dataset_ptb, val_dataset_ptbxl]) #val_dataset_mit,
         valset_total = ChainDataset([val_dataset_ptb, val_dataset_ptbxl])
@@ -97,6 +94,12 @@ def main(args):
                 filter(lambda p: p.requires_grad, model.parameters()),
                 betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
             args.warmup_steps)
+
+        if args.saved_model:
+            model, optimizer, epoch = load_model_state(out_path, model, optimizer)
+        else:
+            torch.save(model, os.path.join(out_path, "cpc_model_full.pt"))
+        model.cuda()
 
         #model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -126,14 +129,12 @@ def main(args):
             if epoch - best_epoch >= 5:
                 #update learning rate
                 pass
-            if epoch%25 == 0:
-                print("saving model at epoch:", epoch)
-                torch.save(model.state_dict(), os.path.join(out_path, "cpc_model_epoch"+str(epoch)+".pt"))
-                with open(os.path.join(out_path, 'losses.pkl'), 'wb') as pickle_file:
-                    pickle.dump([train_losses, val_losses], pickle_file)
-                with open(os.path.join(out_path, 'accuracies.pkl'), 'wb') as pickle_file:
-                    pickle.dump([train_accuracies, val_accuracies], pickle_file)
-        torch.save(model.state_dict(), os.path.join(out_path, "cpc_model_final.pt"))
+                if epoch % 10 == 0:
+                    save_model_state(out_path, epoch, args.train_mode, model, optimizer,
+                                     [train_accuracies, val_accuracies],
+                                     [train_losses, val_losses])
+        save_model_state(out_path, epochs, args.train_mode, model, optimizer,
+                             [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     #https://pytorch.org/tutorials/beginner/saving_loading_models.html
     if args.train_mode == 'downstream':
@@ -192,14 +193,12 @@ def main(args):
                 # update learning rate
                 optimizer.increase_delta()
                 best_epoch = epoch
-            if epoch % 10 == 0:
-                print("saving model at epoch:", epoch)
-                torch.save(downstream_model.state_dict(), os.path.join(out_path, "cpc_model_downstream_epoch" + str(epoch) + ".pt"))
-                with open(os.path.join(out_path, 'losses.pkl'), 'wb') as pickle_file:
-                    pickle.dump([train_losses, val_losses], pickle_file)
-                with open(os.path.join(out_path, 'accuracies.pkl'), 'wb') as pickle_file:
-                    pickle.dump([train_accuracies, val_accuracies], pickle_file)
-        torch.save(downstream_model.state_dict(), os.path.join(out_path, "cpc_model_downstream_final.pt"))
+                if epoch % 10 == 0:
+                    save_model_state(out_path, epoch, args.train_mode, model, optimizer,
+                                     [train_accuracies, val_accuracies],
+                                     [train_losses, val_losses])
+        save_model_state(out_path, epochs, args.train_mode, model, optimizer,
+                             [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     if args.train_mode == 'test':
 
@@ -225,10 +224,6 @@ def main(args):
         downstream_model.cuda()
         test_acc, test_loss = down_validation(downstream_model, testloader, timesteps_in, timesteps_out, None)
 
-
-    if args.train_mode == 'decoder':
-        pass
-        #Here after taining cpc you will train a decoder for latent visualization  with frozen encoder
 
     if args.train_mode == 'baseline':
         train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',#'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
@@ -280,21 +275,115 @@ def main(args):
                 best_loss = val_loss
                 best_acc = max(val_acc, best_acc)
                 best_epoch = epoch
-                print("saving model")
-                torch.save(model.state_dict(), os.path.join(out_path, "cpc_model_downstream_validation.pt"))
             if epoch - best_epoch >= 5:
                 # update learning rate
                 optimizer.increase_delta()
                 best_epoch = epoch
             if epoch % 10 == 0:
-                print("saving model at epoch:", epoch)
-                torch.save(model.state_dict(),
-                           os.path.join(out_path, "cpc_model_downstream_epoch" + str(epoch) + ".pt"))
-                with open(os.path.join(out_path, 'losses.pkl'), 'wb') as pickle_file:
-                    pickle.dump([train_losses, val_losses], pickle_file)
-                with open(os.path.join(out_path, 'accuracies.pkl'), 'wb') as pickle_file:
-                    pickle.dump([train_accuracies, val_accuracies], pickle_file)
-        torch.save(model.state_dict(), os.path.join(out_path, "cpc_model_downstream_final.pt"))
+                save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies],
+                                 [train_losses, val_losses])
+        save_model_state(out_path, epochs, args.train_mode, model, optimizer,
+                                 [train_accuracies, val_accuracies], [train_losses, val_losses])
+
+    if args.train_mode == 'decoder':
+        start_epoch = 1
+        # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',#'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+        #     window_size=9500)
+        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching(
+            '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            window_size=args.window_length, n_windows=1, preload_windows=40)
+
+        trainloader = DataLoader(train_dataset_ptbxl, batch_size=train_batch_size, drop_last=False,
+                                 collate_fn=ecg_datasets2.collate_fn)
+
+        #val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+        #    window_size=9500)
+        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', window_size=args.window_length, n_windows=1, preload_windows=40)
+        
+        valloader = DataLoader(val_dataset_ptbxl, batch_size=validation_batch_size, drop_last=False,
+                               collate_fn=ecg_datasets2.collate_fn)
+
+        optimizer = ScheduledOptim(
+            optim.Adam(
+                filter(lambda p: p.requires_grad, model.parameters()),
+                betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
+            args.warmup_steps)
+
+        model = baseline_convencoder.BaselineNet(args.channels, args.latent_size, args.forward_classes)
+        if args.saved_model:
+            model, optimizer, start_epoch = load_model_state(args.saved_model, model, optimizer)
+
+        model.cuda()
+
+        print(model)
+
+        best_acc = 0
+        best_loss = np.inf
+        best_epoch = -1
+        train_losses = []
+        val_losses = []
+        train_accuracies = []
+
+        val_accuracies = []
+
+        for epoch in range(start_epoch, epochs + 1):
+
+            train_acc, train_loss = decoder_train(model, trainloader, optimizer, epoch)
+            val_acc, val_loss = decoder_validation(model, valloader, optimizer, epoch)
+            val_losses.append(val_loss.item())
+            train_losses.append(train_loss.item())
+            train_accuracies.append(train_acc.item())
+            val_accuracies.append(val_acc.item())
+            # Save
+            if val_loss < best_loss:
+                best_loss = val_loss
+                best_acc = max(val_acc, best_acc)
+                best_epoch = epoch
+            if epoch - best_epoch >= 5:
+                # update learning rate
+                optimizer.increase_delta()
+                best_epoch = epoch
+            if epoch % 10 == 0:
+                save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
+        save_model_state(out_path, epochs, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
+
+def save_model_state(output_path, epoch, train_mode='', model=None, optimizer=None, accuracies=None, losses=None, full=False):
+    if full:
+        print("Saving full model...")
+        name = train_mode + '_model_full.pt'
+        torch.save(model, os.path.join(output_path, name))
+    else:
+        print("saving model at epoch:", epoch)
+        if not (model is None and optimizer is None):
+            name = train_mode + '_modelstate_epoch' + str(epoch) + '.pt'
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict()
+                }, os.path.join(output_path, name))
+        if not (accuracies is None and losses is None):
+            with open(os.path.join(output_path, 'losses.pkl'), 'wb') as pickle_file:
+                pickle.dump(losses, pickle_file)
+            with open(os.path.join(output_path, 'accuracies.pkl'), 'wb') as pickle_file:
+                pickle.dump(accuracies, pickle_file)
+
+def load_model_state(model_path, model=None, optimizer=None):
+    if model is None:
+        model = torch.load(model_path)
+        epoch = 1
+    else:
+        checkpoint = torch.load(model_path)
+        if 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            epoch = checkpoint['epoch']+1
+        else:
+            model.load_state_dict(checkpoint)
+            epoch = 1
+
+    model.eval()
+    return model, optimizer, epoch
+
 
 
 

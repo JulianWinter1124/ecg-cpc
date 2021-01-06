@@ -12,7 +12,10 @@ class ScheduledOptim(object): #https://github.com/jefflai108/Contrastive-Predict
         self.delta = 1
 
     def state_dict(self):
-        self.optimizer.state_dict()
+        return self.optimizer.state_dict()
+
+    def load_state_dict(self, state_dict):
+        self.optimizer.load_state_dict(state_dict)
 
     def step(self):
         """Step by the inner optimizer"""

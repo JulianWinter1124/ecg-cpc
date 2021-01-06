@@ -233,6 +233,66 @@ def baseline_validation(model, train_loader, optimizer, epoch):
             total_loss), *map("{:.4f}".format, all_accs))
         return total_acc, total_loss
 
+def decoder_train(model, train_loader, optimizer, epoch):
+    model.train()
+    total_loss = torch.tensor(0.0).cuda()
+    total_acc = torch.tensor(0.0).cuda()
+    all_accs = []
+    count = 0
+    for batch_idx, data in enumerate(train_loader):
+        data = data.float().cuda()
+        labels = None #labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
+        optimizer.zero_grad()
+        accs, loss = model(data, y=labels)
+        if type(accs) == list:
+            acc = accs[0]
+            all_accs.append(accs)
+        else:
+            acc = accs
+        total_loss += loss
+        total_acc += acc
+        loss.backward()
+        optimizer.step()
+        if batch_idx % 10 == 0:
+            print('Train Epoch: {} \tLoss: {:.6f}\tAccuracies: '.format(
+                epoch, loss.item()), *map("{:.4f}".format, map(torch.Tensor.item, accs)))
+        count += 1
+    total_loss /= count
+    total_acc /= count
+    total_accs = []
+    for ac in zip(*all_accs):
+        total_accs += [(torch.sum(torch.stack(ac))/len(ac)).item()]
+    print('===> Trainings set: Average loss: {:.4f}\tAccuracies: '.format(
+        total_loss), *map("{:.4f}".format, total_accs))
+    return total_acc, total_loss
+
+def decoder_validation(model, train_loader, optimizer, epoch):
+    model.train()
+    total_loss = torch.tensor(0.0).cuda()
+    total_acc = torch.tensor(0.0).cuda()
+    total_accs = []
+    count = 0
+    with torch.no_grad():
+        for batch_idx, data in enumerate(train_loader):
+            data = data.float().cuda()
+            accs, loss = model(data)
+            if type(accs) == list:
+                acc = accs[0]
+                total_accs.append(accs)
+            else:
+                acc = accs
+            total_loss += loss
+            total_acc += acc
+            count += 1
+        total_loss /= count
+        total_acc /= count
+        all_accs = []
+        for ac in zip(*total_accs):
+            all_accs += [(torch.sum(torch.stack(ac))/len(ac)).item()]
+        print('===> Valditation set: Average loss: {:.4f}\tAccuracies: '.format(
+            total_loss), *map("{:.4f}".format, all_accs))
+        return total_acc, total_loss
+
 def plot_confusion_matrix(cm, mode,
                           target_names=['angina', 'bundle branch block', 'cardiomyopathy', 'dysrhythmia',
        'healthy control', 'hypertrophy', 'miscellaneous',
