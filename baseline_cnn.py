@@ -64,4 +64,6 @@ class BaselineNet(nn.Module):
             accuracies.append(torch.sum(torch.absolute(y-logits) <= 0.01)/(self.n_out_classes*batch)) #correct if probabilty within 0.01
             #accuracy = torch.sum(torch.eq(torch.argmax(logits, dim=1), torch.argmax(y, dim=1))) / batch
             return accuracies, loss
+        else:
+            return logits
 

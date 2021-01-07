@@ -8,8 +8,10 @@ import numpy as np
 import torch
 from torch import optim
 from torch.utils.data import DataLoader, ChainDataset, ConcatDataset
+from torchvision.io import write_video
 
 import baseline_cnn
+import baseline_cnn_explain
 import baseline_convencoder
 import ecg_datasets2
 #from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
@@ -21,7 +23,8 @@ from training import cpc_train, cpc_validation, down_train, down_validation, bas
 import torch
 
 from downstream_model_multitarget import DownstreamLinearNet
-
+from util.ptbxl_data import PTBXLData
+from util.temporal_to_image_converter import timeseries_to_image, VideoWriter
 
 
 def main(args):
@@ -241,6 +244,8 @@ def main(args):
         if args.saved_model:
             model.load_state_dict(torch.load(args.saved_model))  # Load the trained cpc model
             model.eval()
+        else:
+            torch.save(model, os.path.join(out_path, 'full_model.pt'))
 
         print('here')
         # model.freeze_layers()
@@ -284,6 +289,53 @@ def main(args):
                                  [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
                                  [train_accuracies, val_accuracies], [train_losses, val_losses])
+
+    if args.train_mode == 'explain':
+        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',#'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            window_size=9500)
+
+        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            window_size=9500)
+        totalset = ChainDataset([train_dataset_ptbxl, val_dataset_ptbxl])
+        dataloader = DataLoader(totalset, batch_size=validation_batch_size, drop_last=True, num_workers=1,
+                               collate_fn=ecg_datasets2.collate_fn)
+
+        bmodel = baseline_cnn.BaselineNet(args.channels, args.forward_classes)
+        optimizer = ScheduledOptim(
+            optim.Adam(
+                filter(lambda p: p.requires_grad, bmodel.parameters()),
+                betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
+            args.warmup_steps)
+
+        bmodel, optimizer, epoch = load_model_state(args.saved_model, bmodel, optimizer)
+
+        model = baseline_cnn_explain.ExplainLabel(bmodel)
+        model.eval()
+        model.cuda()
+
+        ecg = PTBXLData(base_directory='/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/')
+        ecg.init_multilabel_encoder()
+        print(ecg.code_list)
+
+        print(model)
+        #vw = VideoWriter('images/ptbxl.mpeg', fps=2.0)
+        model.train()
+        for batch_idx, data_and_labels in enumerate(dataloader):
+            data, _ = data_and_labels
+            data = data.float().cuda()
+            optimizer.zero_grad()
+            output, grad = model(data, y=None)
+            output = output.detach().cpu()
+            top3 = np.argsort(output)[:, -3:]
+            pred_prob = []
+            for i, t3 in enumerate(top3):
+                pred_prob.append(list(zip([ecg.code_list[t] for t in t3], output[i, t3])))
+            img = timeseries_to_image(grad.cpu(), grad.cpu(), downsample_factor=5, convert_to_rgb=False, pred_classes=pred_prob, filename='images/ptbxl/gradient/ptbxl_timeseries_' + str(batch_idx), show=False)
+            #write_video('test.mkv', img, 1.0) broken
+            #vw.tensor_to_video_continuous(img)
+        #vw.close()
+
+
 
     if args.train_mode == 'decoder':
         start_epoch = 1
@@ -393,7 +445,7 @@ if __name__ == "__main__":
     print(sys.argv)
 
     parser = argparse.ArgumentParser(description='Contrastive Predictive Coding')
-    parser.add_argument('--train_mode', type=str, choices=['cpc', 'downstream', 'baseline', 'decoder'], help='Select mode. Possible: cpc, downstream, baseline, decoder')
+    parser.add_argument('--train_mode', type=str, choices=['cpc', 'downstream', 'baseline', 'decoder', 'explain'], help='Select mode. Possible: cpc, downstream, baseline, decoder')
     #datapath
     #Other params
     parser.add_argument('--saved_model', type=str,
