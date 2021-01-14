@@ -4,47 +4,40 @@ from torch import nn
 
 class BaselineNet(nn.Module):
 
-    def __init__(self, in_channels, out_classes):
+    def __init__(self, in_channels, out_channels, out_classes, verbose):
         super().__init__()
         self.n_out_classes = out_classes
+        self.verbose = verbose
         self.convs = nn.Sequential(
-            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=10, stride=5),
-            nn.BatchNorm1d(in_channels),
+            nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, dilation=1),
             nn.ReLU(),
-            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=8, stride=4),
-            nn.BatchNorm1d(in_channels),
+            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, dilation=2),
             nn.ReLU(),
-            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=6, stride=3),
-            nn.BatchNorm1d(in_channels),
+            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, dilation=4),
             nn.ReLU(),
-            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=5, stride=2),
-            nn.BatchNorm1d(in_channels),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=4, stride=2),
-            nn.BatchNorm1d(in_channels),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=1),
-            nn.BatchNorm1d(in_channels),
+            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, dilation=8),
             nn.ReLU(),
         )
-        self.pooling = nn.AdaptiveAvgPool1d(1)
-        self.fc = nn.Linear(in_channels, out_classes)
+        self.downsample = nn.Conv1d(in_channels=9470, out_channels=1, kernel_size=1) #1x1 Conv
+        self.fc = nn.Linear(out_channels, out_classes)
         #self.activation = nn.LogSoftmax(dim=1)
         #self.criterion = nn.NLLLoss()
         self.activation = nn.Sigmoid()
         self.criterion = nn.BCELoss() #nn.MultiLabelSoftMarginLoss()
 
     def forward(self, X, y=None):
-        #print('input shape', X.shape)
+        if self.verbose: print('input shape', X.shape)
         batch, window_size, channels = X.shape
         x = X.transpose(1, 2)
-        #print(x.shape)
+        if self.verbose: print(x.shape)
         x = self.convs(x)
-        #print('x shape after convs', x.shape)
-        x = self.pooling(x).squeeze(2)
-        #print('x shape after pooling', x.shape)
-        x = self.fc(x)
-        #print('x shape after fc', x.shape)
+        if self.verbose: print('x shape after conv', x.shape)
+        x = x.transpose(1,2)
+        if self.verbose: print('x shape after transpose', x.shape)
+        x = self.downsample(x)
+        if self.verbose: print('x shape after downsample', x.shape)
+        x = self.fc(x).squeeze(1)
+        if self.verbose: print('x shape after fc', x.shape)
         logits = self.activation(x)
         if not y is None:
             #loss = self.criterion(logits, y)

@@ -10,8 +10,17 @@ from torch import optim
 from torch.utils.data import DataLoader, ChainDataset, ConcatDataset
 from torchvision.io import write_video
 
-import baseline_cnn
+import baseline_cnn_v0
+import baseline_cnn_v1
 import baseline_cnn_explain
+import baseline_cnn_v2
+import baseline_cnn_v8
+import baseline_cnn_v3
+import baseline_cnn_v4
+import baseline_cnn_v5
+import baseline_cnn_v6
+import baseline_cnn_v7
+import baseline_cnn_v9
 import baseline_convencoder
 import ecg_datasets2
 #from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
@@ -23,6 +32,7 @@ from training import cpc_train, cpc_validation, down_train, down_validation, bas
 import torch
 
 from downstream_model_multitarget import DownstreamLinearNet
+from util.full_class_name import fullname
 from util.ptbxl_data import PTBXLData
 from util.temporal_to_image_converter import timeseries_to_image, VideoWriter
 
@@ -240,7 +250,8 @@ def main(args):
         valloader = DataLoader(val_dataset_ptbxl, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
-        model = baseline_cnn.BaselineNet(args.channels, args.forward_classes)
+        model = baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
+
         if args.saved_model:
             model.load_state_dict(torch.load(args.saved_model))  # Load the trained cpc model
             model.eval()
@@ -250,7 +261,10 @@ def main(args):
         print('here')
         # model.freeze_layers()
         model.cuda()
-        print(model)
+        with open(os.path.join(args.out_path, 'model_arch.txt'), 'w') as f:
+            print(fullname(model), file=f)
+            print(model, file=f)
+
 
         optimizer = ScheduledOptim(
             optim.Adam(
@@ -294,13 +308,13 @@ def main(args):
         train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',#'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
             window_size=9500)
 
-        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+        test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
             window_size=9500)
-        totalset = ChainDataset([train_dataset_ptbxl, val_dataset_ptbxl])
+        totalset = ChainDataset([test_dataset_ptbxl])#[train_dataset_ptbxl, val_dataset_ptbxl])
         dataloader = DataLoader(totalset, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
-        bmodel = baseline_cnn.BaselineNet(args.channels, args.forward_classes)
+        bmodel = baseline_cnn_v1.BaselineNet(args.channels, args.forward_classes)
         optimizer = ScheduledOptim(
             optim.Adam(
                 filter(lambda p: p.requires_grad, bmodel.parameters()),
