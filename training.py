@@ -170,7 +170,7 @@ def down_validation(downstream_model, data_loader, timesteps_in, timesteps_out, 
             total_loss), *map("{:.4f}".format, total_accs))
         return total_acc, total_loss
 
-def baseline_train(model, train_loader, optimizer, epoch):
+def baseline_train(model, train_loader, optimizer, epoch, args):
     model.train()
     total_loss = torch.tensor(0.0).cuda()
     total_acc = torch.tensor(0.0).cuda()
@@ -190,6 +190,8 @@ def baseline_train(model, train_loader, optimizer, epoch):
         total_loss += loss
         total_acc += acc
         loss.backward()
+        if args.grad_clip > 0.0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         optimizer.step()
         if batch_idx % 10 == 0:
             print('Train Epoch: {} \tLoss: {:.6f}\tAccuracies: '.format(
@@ -204,7 +206,7 @@ def baseline_train(model, train_loader, optimizer, epoch):
         total_loss), *map("{:.4f}".format, total_accs))
     return total_acc, total_loss
 
-def baseline_validation(model, train_loader, optimizer, epoch):
+def baseline_validation(model, train_loader, optimizer, epoch, args):
     model.train()
     total_loss = torch.tensor(0.0).cuda()
     total_acc = torch.tensor(0.0).cuda()

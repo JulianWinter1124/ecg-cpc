@@ -13,6 +13,10 @@ from torchvision.io import write_video
 import baseline_cnn_v0
 import baseline_cnn_v1
 import baseline_cnn_explain
+import baseline_cnn_v10
+import baseline_cnn_v11
+import baseline_cnn_v12
+import baseline_cnn_v13
 import baseline_cnn_v2
 import baseline_cnn_v8
 import baseline_cnn_v3
@@ -53,19 +57,7 @@ def main(args):
     window_length = args.window_length  # Total size = window_length*n_windows
     hidden_size = args.hidden_size
     n_windows = timesteps_in + timesteps_out
-    enc = Encoder(channels=channels, latent_size=number_of_latents) #TODO: automatically fit this to data
-    enc.cuda()
-    print(enc)
 
-    auto = AutoRegressor(n_latents=number_of_latents, hidden_size=hidden_size)
-    auto.cuda()
-    print(auto)
-
-    predictor = Predictor(hidden_size, number_of_latents, timesteps_out)
-    predictor.cuda()
-    print(predictor)
-
-    model = CPC(enc, auto, predictor, timesteps_in=timesteps_in, timesteps_out=timesteps_out)
     epochs = args.epochs
 
     out_path = args.out_path
@@ -76,7 +68,19 @@ def main(args):
 
     if args.train_mode == 'cpc':
 
+        enc = Encoder(channels=channels, latent_size=number_of_latents)  # TODO: automatically fit this to data
+        enc.cuda()
+        print(enc)
 
+        auto = AutoRegressor(n_latents=number_of_latents, hidden_size=hidden_size)
+        auto.cuda()
+        print(auto)
+
+        predictor = Predictor(hidden_size, number_of_latents, timesteps_out)
+        predictor.cuda()
+        print(predictor)
+
+        model = CPC(enc, auto, predictor, timesteps_in=timesteps_in, timesteps_out=timesteps_out)
         #train_dataset_mit = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/mit-bih-arrhythmia-database-1.0.0/generated/resampled/train', window_size=window_length, n_windows=n_windows)
         #train_dataset_peters = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
         train_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/train', window_size=window_length, n_windows=n_windows, preload_windows=40, batch_size=train_batch_size)
@@ -250,7 +254,7 @@ def main(args):
         valloader = DataLoader(val_dataset_ptbxl, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
-        model = baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
+        model = baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
 
         if args.saved_model:
             model.load_state_dict(torch.load(args.saved_model))  # Load the trained cpc model
@@ -258,8 +262,7 @@ def main(args):
         else:
             torch.save(model, os.path.join(out_path, 'full_model.pt'))
 
-        print('here')
-        # model.freeze_layers()
+        print(model)
         model.cuda()
         with open(os.path.join(args.out_path, 'model_arch.txt'), 'w') as f:
             print(fullname(model), file=f)
@@ -283,8 +286,8 @@ def main(args):
 
         for epoch in range(1, epochs + 1):
 
-            train_acc, train_loss = baseline_train(model, trainloader, optimizer, epoch)
-            val_acc, val_loss = baseline_validation(model, valloader, optimizer, epoch)
+            train_acc, train_loss = baseline_train(model, trainloader, optimizer, epoch, args)
+            val_acc, val_loss = baseline_validation(model, valloader, optimizer, epoch, args)
             val_losses.append(val_loss.item())
             train_losses.append(train_loss.item())
             train_accuracies.append(train_acc.item())
@@ -495,6 +498,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
+
+    parser.add_argument('--grad_clip', type=int, default=0.0,
+                        help="The number where to clip gradients at (useful if they become nan")
 
     args = parser.parse_args()
     main(args)
