@@ -30,12 +30,13 @@ class ScheduledOptim(object): #https://github.com/jefflai108/Contrastive-Predict
 
     def update_learning_rate(self):
         """Learning rate scheduling per step"""
-
-        self.n_current_steps += self.delta
-        new_lr = np.power(self.d_model, -0.5) * np.min([
-            np.power(self.n_current_steps, -0.5),
-            np.power(self.n_warmup_steps, -1.5) * self.n_current_steps])
+        lr = 0.0
+        for param_group in self.optimizer.param_groups:
+            lr = param_group['lr']*0.5
+            print('updating lr from', param_group['lr'], end=' ')
+            break
 
         for param_group in self.optimizer.param_groups:
-            param_group['lr'] = new_lr
-        return new_lr
+             param_group['lr'] = lr
+        print('to', lr)
+        return lr

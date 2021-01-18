@@ -9,14 +9,23 @@ class BaselineNet(nn.Module):
         self.n_out_classes = out_classes
         self.verbose = verbose
         self.convs = nn.Sequential(
-            nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=7, dilation=1, stride=2),
+            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=7, dilation=1, stride=4),
             nn.ReLU(),
-            nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, dilation=3, stride=1),
+            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=5, dilation=1, stride=3),
             nn.ReLU(),
-        )
-        self.downsample = nn.Conv1d(in_channels=4741, out_channels=1, kernel_size=1)
+            nn.Conv1d(in_channels=in_channels, out_channels=in_channels, kernel_size=5, dilation=1, stride=3),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=in_channels, out_channels=32, kernel_size=3, dilation=1, stride=1),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, dilation=2, stride=1),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, dilation=4, stride=1),
+            nn.ReLU()
 
-        self.fc = nn.Linear(out_channels, out_classes)
+        )
+        self.downsample = nn.Conv1d(in_channels=248, out_channels=1, kernel_size=1)
+
+        self.fc = nn.Linear(128, out_classes)
         #self.activation = nn.LogSoftmax(dim=1)
         #self.criterion = nn.NLLLoss()
         self.activation = nn.Sigmoid()

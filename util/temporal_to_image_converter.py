@@ -57,7 +57,7 @@ def tensor_to_video(filename: str,
                 options: Optional[Dict[str, Any]] = None):
     return write_video(filename, video_array, fps, video_codec, options)
 
-def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_classes: list = None, downsample_factor=2, color=(0.1, 0.2, 0.5), convert_to_rgb=False, filename :str=None, verbose = True, show=False):
+def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_classes: list = None, ground_truth:list=None, downsample_factor=2, color=(0.1, 0.2, 0.5), convert_to_rgb=False, filename :str=None, verbose = True, show=False):
     batch, n, channels = data.shape
     rgba_colors = np.zeros((n, 4))
     for i in range(len(color)):
@@ -77,7 +77,9 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
             ax.scatter(x, y, label='channel_'+str(i), color=rgba_colors, s=1.0)
             #ax.label_outer()
         if not pred_classes is None:
-            fig.suptitle(",".join([str(st) for st in pred_classes[p]]), fontsize=16)
+            plt.figtext(0.5, 0.01, ",".join([str(st) for st in pred_classes[p]]), wrap=True, horizontalalignment='center', fontsize=12)
+        if not ground_truth is None:
+            fig.suptitle(",".join([str(st) for st in ground_truth[p]]), fontsize=16)
         plt.legend()
         io_buf = io.BytesIO()
         fig.savefig(io_buf, format='raw', dpi=100)

@@ -11,6 +11,9 @@ from torch.utils.data import DataLoader, ChainDataset, ConcatDataset
 from torchvision.io import write_video
 
 import baseline_cnn_v0
+import baseline_cnn_v0_1
+import baseline_cnn_v0_2
+import baseline_cnn_v0_3
 import baseline_cnn_v1
 import baseline_cnn_explain
 import baseline_cnn_v10
@@ -254,13 +257,7 @@ def main(args):
         valloader = DataLoader(val_dataset_ptbxl, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
-        model = baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
-
-        if args.saved_model:
-            model.load_state_dict(torch.load(args.saved_model))  # Load the trained cpc model
-            model.eval()
-        else:
-            torch.save(model, os.path.join(out_path, 'full_model.pt'))
+        model = baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
 
         print(model)
         model.cuda()
@@ -275,6 +272,12 @@ def main(args):
                 betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
             args.warmup_steps)
 
+        start_epoch = 0
+        if args.saved_model:
+            model, optimizer, start_epoch = load_model_state(args.saved_model, model, optimizer)
+        else:
+            torch.save(model, os.path.join(out_path, 'full_model.pt'))
+
         best_acc = 0
         best_loss = np.inf
         best_epoch = -1
@@ -284,7 +287,7 @@ def main(args):
 
         val_accuracies = []
 
-        for epoch in range(1, epochs + 1):
+        for epoch in range(start_epoch+1, epochs + start_epoch + 1):
 
             train_acc, train_loss = baseline_train(model, trainloader, optimizer, epoch, args)
             val_acc, val_loss = baseline_validation(model, valloader, optimizer, epoch, args)
@@ -293,13 +296,12 @@ def main(args):
             train_accuracies.append(train_acc.item())
             val_accuracies.append(val_acc.item())
             # Save
-            if val_loss < best_loss:  # TODO: maybe use accuracy (not sure if accuracy is a good measurement)
-                best_loss = val_loss
+            if val_acc < best_acc:  # TODO: maybe use accuracy (not sure if accuracy is a good measurement)
                 best_acc = max(val_acc, best_acc)
                 best_epoch = epoch
+                save_model_state()
             if epoch - best_epoch >= 5:
-                # update learning rate
-                optimizer.increase_delta()
+                optimizer.update_learning_rate()
                 best_epoch = epoch
             if epoch % 10 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies],
@@ -308,8 +310,6 @@ def main(args):
                                  [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     if args.train_mode == 'explain':
-        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',#'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-            window_size=9500)
 
         test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
             window_size=9500)
@@ -317,7 +317,7 @@ def main(args):
         dataloader = DataLoader(totalset, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
-        bmodel = baseline_cnn_v1.BaselineNet(args.channels, args.forward_classes)
+        bmodel, optimizer, epoch = load_model_state(os.path.join(os.path.split(args.saved_model)[0], 'full_model.pt'))
         optimizer = ScheduledOptim(
             optim.Adam(
                 filter(lambda p: p.requires_grad, bmodel.parameters()),
@@ -338,16 +338,22 @@ def main(args):
         #vw = VideoWriter('images/ptbxl.mpeg', fps=2.0)
         model.train()
         for batch_idx, data_and_labels in enumerate(dataloader):
-            data, _ = data_and_labels
+            data, labels = data_and_labels
             data = data.float().cuda()
             optimizer.zero_grad()
             output, grad = model(data, y=None)
             output = output.detach().cpu()
             top3 = np.argsort(output)[:, -3:]
+            #TODO: Iterate over output != 0 and calc grad respectively
             pred_prob = []
             for i, t3 in enumerate(top3):
                 pred_prob.append(list(zip([ecg.code_list[t] for t in t3], output[i, t3])))
-            img = timeseries_to_image(grad.cpu(), grad.cpu(), downsample_factor=5, convert_to_rgb=False, pred_classes=pred_prob, filename='images/ptbxl/gradient/ptbxl_timeseries_' + str(batch_idx), show=False)
+            not0 = [[i for i, e in enumerate(a) if e != 0] for a in labels]
+
+            ground_truth = []
+            for i, t3 in enumerate(not0):
+                ground_truth.append(list(zip([ecg.code_list[t] for t in t3], labels[i, t3])))
+            img = timeseries_to_image(grad.cpu(), grad.cpu(), downsample_factor=5, convert_to_rgb=False, pred_classes=pred_prob, ground_truth=ground_truth, filename='images/ptbxl/gradient/ptbxl_timeseries_' + str(batch_idx), show=False)
             #write_video('test.mkv', img, 1.0) broken
             #vw.tensor_to_video_continuous(img)
         #vw.close()
@@ -419,7 +425,7 @@ def main(args):
 def save_model_state(output_path, epoch, train_mode='', model=None, optimizer=None, accuracies=None, losses=None, full=False):
     if full:
         print("Saving full model...")
-        name = train_mode + '_model_full.pt'
+        name = 'model_full.pt'
         torch.save(model, os.path.join(output_path, name))
     else:
         print("saving model at epoch:", epoch)
@@ -445,7 +451,7 @@ def load_model_state(model_path, model=None, optimizer=None):
         if 'model_state_dict' in checkpoint:
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            epoch = checkpoint['epoch']+1
+            epoch = checkpoint['epoch']
         else:
             model.load_state_dict(checkpoint)
             epoch = 1
