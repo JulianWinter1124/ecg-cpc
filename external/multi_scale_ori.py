@@ -158,8 +158,11 @@ class MSResNet(nn.Module):
         # self.layer7x7_4 = self._make_layer7(BasicBlock7x7, 512, layers[3], stride=2)
         self.maxpool7 = nn.AvgPool1d(kernel_size=6, stride=1, padding=0)
 
+        self.downsample = nn.Conv1d(282, 1, 1) #added myself
         # self.drop = nn.Dropout(p=0.2)
         self.fc = nn.Linear(256*3, num_classes)
+
+
 
         # todo: modify the initialization
         # for m in self.modules():
@@ -248,10 +251,11 @@ class MSResNet(nn.Module):
 
         out = torch.cat([x, y, z], dim=1)
 
-        out = out.squeeze(2) #Don't squeeze on batch dim
+        out = self.downsample(out.transpose(1,2)) #Don't squeeze on batch dim
         # out = self.drop(out)
-        out1 = self.fc(out)
-
+        #print(out.shape)
+        out1 = self.fc(out).squeeze(1)
+        #print(out1.shape)
         return out1, out
 
 

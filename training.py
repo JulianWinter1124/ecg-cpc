@@ -176,12 +176,21 @@ def baseline_train(model, train_loader, optimizer, epoch, args):
     total_acc = torch.tensor(0.0).cuda()
     all_accs = []
     count = 0
+    add_data = None
     for batch_idx, data_and_labels in enumerate(train_loader):
         data, labels = data_and_labels # add channel dimension
         data = data.float().cuda()
         labels = labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
         optimizer.zero_grad()
-        accs, loss = model(data, y=labels)
+        out = model(data, y=labels)
+        if len(out) == 1:
+            logits = out
+        elif len(out) == 3:
+            accs, loss, additional_data = out
+            if add_data is None:
+                #TODO: workaround here (BARF)
+        else:
+            accs, loss = out
         if type(accs) == list:
             acc = accs[0]
             all_accs.append(accs)

@@ -104,3 +104,17 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
             plt.show()
 
     return np.stack(images)
+
+def kernel_to_image(layer_name, layer_weights:torch.Tensor):
+    out_channels, in_channels, kernel_size = layer_weights.shape
+
+    fig, axs = plt.subplots(1, in_channels, figsize=(out_channels//2, in_channels//2))
+    fig.suptitle(layer_name)
+    mins = layer_weights.min(dim=2)[0].unsqueeze(2)
+    maxs = layer_weights.max(dim=2)[0].unsqueeze(2)
+    layer_weights=(layer_weights-mins)/(maxs-mins)
+    for index, ax in enumerate(axs):
+        ax.imshow(layer_weights[:, index, :], cmap='gray')
+        ax.set_xticks([])
+        ax.set_yticks([])
+    plt.show()

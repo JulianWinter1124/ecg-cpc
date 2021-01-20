@@ -20,6 +20,7 @@ import baseline_cnn_v10
 import baseline_cnn_v11
 import baseline_cnn_v12
 import baseline_cnn_v13
+import baseline_cnn_v14
 import baseline_cnn_v2
 import baseline_cnn_v8
 import baseline_cnn_v3
@@ -299,10 +300,10 @@ def main(args):
             if val_acc < best_acc:  # TODO: maybe use accuracy (not sure if accuracy is a good measurement)
                 best_acc = max(val_acc, best_acc)
                 best_epoch = epoch
-                save_model_state()
             if epoch - best_epoch >= 5:
-                optimizer.update_learning_rate()
-                best_epoch = epoch
+                pass
+                #optimizer.update_learning_rate()
+                #best_epoch = epoch
             if epoch % 10 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies],
                                  [train_losses, val_losses])
