@@ -1,10 +1,7 @@
 import torch
 from torch import nn
-from torch.nn.utils import weight_norm
 
-from external.multi_scale_ori import MSResNet
-from tcn.TCN.tcn import TemporalConvNet
-from util.layer_calculations import calc_conv1ds_output_length
+from external.tcn.TCN.tcn import TemporalConvNet
 
 
 class BaselineNet(nn.Module):
@@ -13,19 +10,25 @@ class BaselineNet(nn.Module):
         super().__init__()
         self.n_out_classes = out_classes
         self.verbose = verbose
-        self.msresnet = MSResNet(in_channels, num_classes=out_classes)
-        self.activation = nn.Sigmoid()
+        self.tcn = TemporalConvNet(in_channels, [in_channels*2**1, in_channels*2, out_classes], kernel_size=3, dropout=0.2)
+        #self.downsample = nn.Conv1d(in_channels=9500, out_channels=1, kernel_size=1)
 
-    def forward(self, x, y=None):
-        if self.verbose: print('input shape', x.shape)
-        batch, window_size, channels = x.shape
-        x = x.transpose(1, 2) #torch.unsqueeze(torch.flatten(x, start_dim=1), 1)#.
-        if self.verbose: print('after transpose', x.shape)
-        fc_x, x  = self.msresnet(x)
-        # if self.verbose: print('x shape after resnet', x.shape)
-        # x = self.fc(x)
-        # if self.verbose: print('x shape after fc', x.shape)
-        logits = self.activation(fc_x)
+        self.fc = nn.Linear(out_classes, out_classes)
+        #self.activation = nn.LogSoftmax(dim=1)
+        #self.criterion = nn.NLLLoss()
+        self.activation = nn.Sigmoid()
+        self.criterion = nn.BCELoss() #nn.MultiLabelSoftMarginLoss()
+
+    def forward(self, X, y=None):
+        if self.verbose: print('input shape', X.shape)
+        batch, window_size, channels = X.shape
+        x = X.transpose(1, 2)
+        if self.verbose: print(x.shape)
+        x = self.tcn(x)
+        if self.verbose: print('x shape after tcn', x.shape)
+        x = self.fc(x[:, :, -1]) #Like in https://github.com/locuslab/TCN/blob/master/TCN/mnist_pixel/model.py TODO: why is that okay?
+        if self.verbose: print('x shape after fc', x.shape)
+        logits = self.activation(x)
         if not y is None:
             #loss = self.criterion(logits, y)
             loss = torch.sum(torch.square(y-logits)) # Simple own implementation

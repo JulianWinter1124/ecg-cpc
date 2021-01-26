@@ -9,9 +9,8 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader
 
-import baseline_cnn_v2
+from baseline_architectures import baseline_cnn_v2
 import ecg_datasets2
-from cardio_model_resnet import CPC, Predictor, AutoRegressor, Encoder
 from optimizer import ScheduledOptim
 from training import baseline_train, baseline_validation
 

@@ -8,6 +8,8 @@ from torch.utils.data import IterableDataset
 from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format
 from torch._six import container_abcs, string_classes, int_classes
 
+from external.helper_code import find_challenge_files, load_recording
+
 
 class ECGDataset(torch.utils.data.IterableDataset):
     def __init__(self, BASE_DIR, window_size, n_windows, files=None, channels=None, use_labels=False, preload_windows=0): #TODO: option to load into ram
@@ -119,11 +121,12 @@ class ECGMultipleDatasets(torch.utils.data.IterableDataset):
 
 
 class ECGDatasetBatching(ECGDataset): #TODO: make preload available?
-    def __init__(self, BASE_DIR, window_size, n_windows, window_gap=0, files=None, channels=None, use_labels=False, use_random_offset=False, preload_windows=0, batch_size=1): #TODO: option to load into ram
+    def __init__(self, BASE_DIR, window_size, n_windows, window_gap=0, files=None, channels=None, use_labels=False, use_random_offset=False, preload_windows=0, batch_size=1, data_max_len=10000): #TODO: option to load into ram
         super(ECGDatasetBatching, self).__init__(BASE_DIR, window_size, n_windows, files, channels, use_labels, preload_windows)
         self.batch_size = batch_size
         self.window_gap = window_gap
         self.use_random_offsets = use_random_offset
+        self.data_max_len = data_max_len
 
     def __iter__(self):
         #multiple workers?
@@ -136,7 +139,7 @@ class ECGDatasetBatching(ECGDataset): #TODO: make preload available?
             opened_files = [h5py.File(self.files[f_ind], 'r') for f_ind in selected_files] #open all selected files
             data_indices = np.zeros(self.batch_size, dtype=int)
             half_hearthrate = 800//2
-            data_offsets = np.random.randint(0, half_hearthrate, self.batch_size, dtype=int)
+            data_offsets = np.random.randint(0, self.data_max_len-self.window_size*self.n_windows, self.batch_size, dtype=int)
             for sel in selected_files:
                 available_files.remove(sel) #remove selected for future draw
             while opened_files:
@@ -320,6 +323,99 @@ class ECGDatasetBaselineMulti(torch.utils.data.IterableDataset):
             for k in f.keys():
                 data = f.get(k)
                 print('Data with key [%s] has shape:' % k, data.shape)
+
+class ECGChallengeDataset(torch.utils.data.IterableDataset):
+    def __init__(self, BASE_DIR, window_size, n_windows, window_gap=0, files=None, channels=None, use_labels=False,
+                 use_random_offset=False, preload_windows=0, batch_size=1):
+        super(ECGDataset).__init__()
+        self.BASE_DIR = BASE_DIR
+        self.n_windows = n_windows
+        self.window_size = window_size
+        if files:
+            self.files = files
+        else:
+            self.files = self.search_files()
+        self.print_file_attributes()
+        self.channels = channels
+        self.total_length = 1 #Trying a weird approach (calculated in __iter__)
+        self.use_labels = use_labels
+        self.use_random_offsets = use_random_offset
+        self.batch_size = batch_size
+        self.window_gap = window_gap
+
+
+    def __iter__(self):
+        self.total_length = 0
+        available_files = list(range(len(self.files)))
+        if available_files:
+            strike = 0
+            selected_files = np.random.choice(available_files, self.batch_size, replace=False)
+            opened_file_data = [self._read_recording_file(self.files[f_ind]) for f_ind in selected_files]  # open all selected files
+            if self.use_labels:
+                opened_header_data = []
+            data_indices = np.zeros(self.batch_size, dtype=int)
+            data_offsets = np.random.randint(0, self.window_size, self.batch_size, dtype=int)
+            for sel in selected_files:
+                available_files.remove(sel)  # remove selected for future draw
+            while opened_file_data:
+                for i, f in enumerate(opened_file_data):
+                    data_index = data_indices[i]
+                    offset = data_offsets[i]
+                    data = None #TODO: implement
+                    if self.use_labels:
+                        pass
+                    if (data_index + 1) * self.window_size * self.n_windows + offset <= len(data):  # + self.window_gap
+                        # print('using:', i, opened_files[i])
+                        if not self.use_labels:
+                            if self.channels:
+                                yield np.swapaxes(data[data_index * self.window_size * self.n_windows + offset: (
+                                                                                                                            data_index + 1) * self.window_size * self.n_windows + offset,
+                                                  self.channels].reshape((self.n_windows, self.window_size, -1)), 1,
+                                                  2)  # TODO: pad data in between with 0?
+                            else:
+                                yield np.swapaxes(data[data_index * self.window_size * self.n_windows + offset: (
+                                                                                                                            data_index + 1) * self.window_size * self.n_windows + offset,
+                                                  :].reshape((self.n_windows, self.window_size, -1)), 1, 2)
+                        else:
+                            if self.channels:
+                                yield np.swapaxes(data[data_index * self.window_size * self.n_windows + offset: (
+                                                                                                                            data_index + 1) * self.window_size * self.n_windows + offset,
+                                                  self.channels].reshape((self.n_windows, self.window_size, -1)), 1,
+                                                  2), np.array(
+                                    (data_index + 2) * self.window_size * self.n_windows + offset > len(data)), labels[
+                                                                                                                :]
+                            else:
+                                yield np.swapaxes(data[data_index * self.window_size * self.n_windows + offset: (
+                                                                                                                            data_index + 1) * self.window_size * self.n_windows + offset,
+                                                  :].reshape((self.n_windows, self.window_size, -1)), 1, 2), np.array(
+                                    (data_index + 2) * self.window_size * self.n_windows + offset > len(data)), labels[
+                                                                                                                :]
+                        data_indices[i] += 1
+                        self.total_length += self.window_size * self.n_windows
+                    # Replace used up files:
+                    if (data_index + 2) * self.window_size * self.n_windows + offset > len(
+                            data):  # Remove this from opened. TODO: what about unused data?
+                        if available_files:
+                            # print('opening new for', i)
+                            opened_file_data[i] = h5py.File(self.files[available_files.pop()], 'r')
+                            f.close()  # closing here
+                        else:
+                            strike += 1
+                        data_indices[i] = 0
+                        data_offsets[i] = np.random.randint(0, self.window_size - 1)
+                        if strike >= self.batch_size:  # Recycle until all files have been fully used
+                            return
+
+    def _read_recording_file(self, path_without_ext):
+        fp = path_without_ext + '.mat'
+        return load_recording(fp, key='val')
+
+    def __len__(self):
+        return self.total_length
+
+    def search_files(self):
+        headers, records = find_challenge_files(self.BASE_DIR)
+
 
 
 def collate_fn(batch): #https://github.com/pytorch/pytorch/blob/master/torch/utils/data/_utils/collate.py

@@ -5,6 +5,8 @@ import numpy as np
 
 #This class is not used right now
 
+
+
 def info_NCE_loss(latents: torch.Tensor, context:torch.Tensor, future_latents:torch.Tensor, predictions:torch.Tensor, target_dim=64 , emb_scale= 0):
 
     loss = 0.0
@@ -58,3 +60,54 @@ def info_NCE_loss_brian(latents: torch.Tensor, context, target_dim=64 , emb_scal
         loss += mean_loss
     return loss
 
+def pixelCNN(latents) :
+    from keras.layers import Conv2D, ReLU
+    from tensorflow_core.python import Pad
+    import tensorflow as tf
+    # latents: [B, H, W, D]
+    cres = latents
+    cres_dim = cres . shape[ - 1 ]
+    for _ in range ( 5 ) :
+        c = tf.nn.conv2d(filters=256 , kernel_size= ( 1 , 1 ) ) (cres)
+        c = tf.nn.relu(c)
+        c = tf.nn.conv2d(filters=256 , kernel_size= ( 1 , 3 ) ) (c)
+        c = Pad(c , [ [ 0 , 0 ] , [ 1 , 0 ] , [ 0 , 0 ] , [ 0 , 0 ] ] )
+        c = Conv2D(filters=256 , kernel_size= ( 2 , 1 ) ,
+        type='VALID') (c)
+        c = ReLU(c)
+        c = Conv2D(filters=cres_dim , kernel_size= ( 1 , 1 ) ) (c)
+        cres = cres + c
+        cres = ReLU(cres)
+    return cres
+
+def CPC(latents, target_dim=64 , emb_scale=0.1, steps_to_ignore=2 , steps_to_predict=3 ) :
+
+    from tensorflow_core import reshape, matmul
+
+    from keras.layers import Conv2D, ReLU
+    # latents: [B, H, W, D]
+    loss = 0.0
+    context = pixelCNN(latents)
+    targets = Conv2D(output_channels=target_dim ,
+    kernel_shape= ( 1 , 1 ) ) (latents)
+    batch_dim , col_dim , rows = targets . shape [ : - 1 ]
+    targets = reshape(targets , [ - 1 , target_dim ] )
+    for i in range(steps_to_ignore , steps_to_predict) :
+        col_dim_i = col_dim - i - 1
+        total_elements = batch_dim * col_dim_i * rows
+        preds_i = Conv2D(output_channels=target_dim ,
+        kernel_shape= ( 1 , 1 ) ) (context)
+        preds_i = preds_i [ : , : - (i+ 1 ) , : , : ] * emb_scale
+        preds_i = reshape(preds_i , [ - 1 , target_dim ] )
+        logits = matmul(preds_i , targets , transp_b=True)
+        b = range(total_elements) / (col_dim_i * rows)
+        col = range(total_elements) % (col_dim_i * rows)
+        labels = b * col_dim * rows + (i+ 1 ) * rows + col
+        print(labels.shape)
+    return loss
+
+# if __name__ == '__main__':
+#     B, H, W, D = (12, 4, 5, 100)
+#     tf.compat.v1.enable_eager_execution()
+#     latents = tensorflow.random.normal((B, H, W, D))
+#     CPC(latents)

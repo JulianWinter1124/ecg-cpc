@@ -21,8 +21,8 @@ def cpc_train(model, train_loader, timesteps_in, timesteps_out, optimizer, epoch
         optimizer.zero_grad()
         if hidden is None or batch_size != data.shape[0]: #TODO: every time if hidden hasnt been initialized or
             print(data.shape)
-            hidden = model.init_hidden(data.shape[0], use_gpu=True)
-        hidden.detach_()
+            hidden = model.autoregressive.init_hidden(data.shape[0], use_gpu=True)
+        #hidden.detach_()
         hidden = hidden.detach()
         count += 1
         acc, loss, hidden = model(data, timesteps_in, timesteps_out, hidden)
@@ -33,7 +33,7 @@ def cpc_train(model, train_loader, timesteps_in, timesteps_out, optimizer, epoch
         elapsed_times.append(time.time()-batch_time)
         if batch_idx % 10 == 0:
             print('Train Epoch: {} \tAccuracy: {:.4f}\tLoss: {:.6f}\tElapsed time: {}'.format(
-                epoch, acc, loss.item(), str(timedelta(seconds=elapsed_times[-1]))))
+                epoch, acc.item(), loss.item(), str(timedelta(seconds=elapsed_times[-1]))))
     total_loss /= count
     total_acc /= count
 
@@ -51,7 +51,7 @@ def cpc_validation(model, data_loader, timesteps_in, timesteps_out, batch_size):
         for _, data in enumerate(data_loader):
             data = data.float().cuda() # add channel dimension
             if True: #hidden is None or batch_size != data.shape[0]:
-                hidden = model.init_hidden(len(data), use_gpu=True)
+                hidden = model.autoregressive.init_hidden(len(data), use_gpu=True)
             acc, loss, hidden = model(data, timesteps_in, timesteps_out, hidden)
             count += 1
             total_loss += loss
@@ -61,7 +61,7 @@ def cpc_validation(model, data_loader, timesteps_in, timesteps_out, batch_size):
     total_acc  /= count # average acc
 
     print('===> Validation set: Average loss: {:.4f}\tAccuracy: {:.4f}\n'.format(
-                total_loss.item(), total_acc))
+                total_loss.item(), total_acc.item()))
 
     return total_acc, total_loss
 
@@ -171,6 +171,7 @@ def down_validation(downstream_model, data_loader, timesteps_in, timesteps_out, 
         return total_acc, total_loss
 
 def baseline_train(model, train_loader, optimizer, epoch, args):
+    start_time = time.time()
     model.train()
     total_loss = torch.tensor(0.0).cuda()
     total_acc = torch.tensor(0.0).cuda()
@@ -188,6 +189,10 @@ def baseline_train(model, train_loader, optimizer, epoch, args):
         elif len(out) == 3:
             accs, loss, additional_data = out
             if add_data is None:
+                add_data = additional_data
+            else:
+                for i in range(len(add_data)):
+                    add_data[i] += additional_data[i]
                 #TODO: workaround here (BARF)
         else:
             accs, loss = out
@@ -211,8 +216,8 @@ def baseline_train(model, train_loader, optimizer, epoch, args):
     total_accs = []
     for ac in zip(*all_accs):
         total_accs += [(torch.sum(torch.stack(ac))/len(ac)).item()]
-    print('===> Trainings set: Average loss: {:.4f}\tAccuracies: '.format(
-        total_loss), *map("{:.4f}".format, total_accs))
+    print('===> Trainings set: Average loss: {:.4f}\tAccuracies:'.format(
+        total_loss), *map("{:.4f}".format, total_accs), 'Elapsed time:', str(timedelta(seconds=time.time()-start_time)))
     return total_acc, total_loss
 
 def baseline_validation(model, train_loader, optimizer, epoch, args):
@@ -226,7 +231,19 @@ def baseline_validation(model, train_loader, optimizer, epoch, args):
             data, labels = data_and_labels # add channel dimension
             data = data.float().cuda()
             labels = labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
-            accs, loss = model(data, y=labels)
+            out = model(data, y=labels)
+            if len(out) == 1:
+                logits = out
+            elif len(out) == 3:
+                accs, loss, additional_data = out
+                if add_data is None:
+                    add_data = additional_data
+                else:
+                    for i in range(len(add_data)):
+                        add_data[i] += additional_data[i]
+                    # TODO: workaround here (BARF)
+            else:
+                accs, loss = out
             if type(accs) == list:
                 acc = accs[0]
                 total_accs.append(accs)

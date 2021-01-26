@@ -2,9 +2,6 @@ import torch
 from torch import nn
 from torch.nn.utils import weight_norm
 
-from tcn.TCN.tcn import TemporalConvNet
-from util.layer_calculations import calc_conv1ds_output_length
-
 
 class BaselineNet(nn.Module):
 
