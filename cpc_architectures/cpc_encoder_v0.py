@@ -16,7 +16,6 @@ class Encoder(nn.Module):
                  ) for i in range(len(filters))] for e in t]
         )
 
-        self.avg_pool = nn.AdaptiveAvgPool1d(1)
         def _weights_init(m):
             if isinstance(m, nn.Conv1d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -28,10 +27,8 @@ class Encoder(nn.Module):
         #print('Encoder input shape:', x.shape)
         #x = self.batch_norm(x)
         x = self.convolutionals(x)
-        x = self.avg_pool(x)
-        # Output has shape (batches, latents, 1)
-        #Maybe squeeze??
-        x = x.squeeze(2) #Only squeeze first (NOT BATCH!) dimension
         #print('Encoder output shape:', x.shape)
 
         return x
+
+

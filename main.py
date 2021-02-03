@@ -13,7 +13,8 @@ from baseline_architectures import baseline_convencoder, baseline_cnn_v0_3
 import ecg_datasets2
 #from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
 #from cpc_architectures.cpc_encoder_vresnet import CPC, Predictor, AutoRegressor, Encoder
-from cpc_architectures import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_base
+from cpc_architectures import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_base, cpc_encoder_v2, \
+    cpc_intersect, cpc_encoder_v3, cpc_downstream_model_multitarget_v1, cpc_downstream_model_multitarget_v2
 from optimizer import ScheduledOptim
 from training import cpc_train, cpc_validation, down_train, down_validation, baseline_train, baseline_validation, \
     decoder_validation, decoder_train
@@ -42,6 +43,7 @@ def main(args):
     window_length = args.window_length  # Total size = window_length*n_windows
     hidden_size = args.hidden_size
     n_windows = timesteps_in + timesteps_out
+    starting_epoch = 0
 
     epochs = args.epochs
 
@@ -50,48 +52,69 @@ def main(args):
     with open(os.path.join(out_path, 'params.txt'), 'w') as cfg:
         cfg.write('\n'.join([str(pa) for pa in [timesteps_in, timesteps_out, number_of_latents, channels, train_batch_size, validation_batch_size, window_length, n_windows, args]]))
 
+    # train_dataset_peters = ecg_datasets2.ECGDataset(
+    #     '/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/train', window_size=window_length,
+    #     n_windows=n_windows, preload_windows=40)
+    # train_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/train', window_size=window_length, n_windows=n_windows, preload_windows=40, batch_size=train_batch_size)
+    # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
+    # train_challenge_ptbxl = ecg_datasets2.ECGChallengeDatasetBatching('/media/julian/data/data/ECG/ptbxl_challenge',
+    #                                                                   window_size=236,
+    #                                                                   n_windows=timesteps_in + timesteps_out)
+    # val_dataset_mit = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/mit-bih-arrhythmia-database-1.0.0/generated/resampled/val', window_size=window_length, n_windows=n_windows)
+    # val_dataset_peters = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
+    # val_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/val', window_size=window_length, n_windows=n_windows, preload_windows=40, batch_size=validation_batch_size)
+    # val_dataset_ptbxl = ecg_datasets2.ECGDataset('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', window_size=236, n_windows=n_windows, preload_windows=40)
+    # val_challenge_ptbxl = ecg_datasets2.ECGChallengeDatasetBatching('/media/julian/data/data/ECG/china_challenge',
+    #                                                                 window_size=236,
+    #                                                                 n_windows=timesteps_in + timesteps_out)
+    # train_baseline_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+    #     window_size=9500)
+    #
+    # val_baseline_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+    #     window_size=9500)
 
     if args.train_mode == 'cpc':
 
-        enc = cpc_encoder_v0.Encoder(channels=channels, latent_size=args.latent_size)  # TODO: automatically fit this to data
-        enc.cuda()
-        print(enc)
+        train_baseline_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+            '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            window_size=9500)
 
-        auto = cpc_autoregressive_v0.AutoRegressor(n_latents=args.latent_size, hidden_size=hidden_size)
-        auto.cuda()
-        print(auto)
+        val_baseline_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+            '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            window_size=9500)
 
-        predictor = cpc_predictor_v0.Predictor(hidden_size, args.latent_size, timesteps_out)
-        predictor.cuda()
-        print(predictor)
+        # enc = cpc_encoder_v2.Encoder(channels=channels, latent_size=args.latent_size)  # TODO: automatically fit this to data
+        #
+        # enc.cuda()
+        # print(enc)
+        #
+        # auto = cpc_autoregressive_v0.AutoRegressor(n_latents=args.latent_size, hidden_size=hidden_size)
+        # auto.cuda()
+        # print(auto)
+        #
+        # predictor = cpc_predictor_v0.Predictor(hidden_size, args.latent_size, timesteps_out)
+        # predictor.cuda()
+        # print(predictor)
+        #
+        # model = cpc_base.CPC(enc, auto, predictor, args.latent_size, timesteps_in=timesteps_in, timesteps_out=timesteps_out)
+        model = cpc_intersect.CPC(
+            encoder=cpc_encoder_v0.Encoder(channels=channels, latent_size=args.latent_size),
+            autoregressive=cpc_autoregressive_v0.AutoRegressor(n_latents=args.latent_size, hidden_size=args.hidden_size),
+            predictor=cpc_predictor_v0.Predictor(hidden_size, args.latent_size, timesteps_out),
+            latent_size=args.latent_size, timesteps_in=timesteps_in, timesteps_out=timesteps_out, verbose=False)
 
-        model = cpc_base.CPC(enc, auto, predictor, args.latent_size, timesteps_in=timesteps_in, timesteps_out=timesteps_out)
-        #model.
-        #train_dataset_mit = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/mit-bih-arrhythmia-database-1.0.0/generated/resampled/train', window_size=window_length, n_windows=n_windows)
-        #train_dataset_peters = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
-        train_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/train', window_size=window_length, n_windows=n_windows, preload_windows=40, batch_size=train_batch_size)
-        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
-        train_dataset_sinus = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/sinus/train', window_size=window_length, n_windows=n_windows, preload_windows=40)
+        trainset_total = ChainDataset([train_baseline_ptbxl])
+        dataloader = DataLoader(trainset_total, batch_size=args.batch_size, drop_last=True, num_workers=1)
 
-        #trainset_total = ecg_datasets2.ECGDatasetMultiple([train_dataset_peters, train_dataset_ptb, train_dataset_ptbxl]) #train_dataset_mit,
-        #trainset_total = ecg_datasets2.ECGDatasetMultiple([train_dataset_ptb, train_dataset_ptbxl])
-        trainset_total = ChainDataset([train_dataset_ptbxl])#
-        #trainset_total = ChainDataset([train_dataset_sinus])
-        dataloader = DataLoader(trainset_total, batch_size=train_batch_size, drop_last=True, num_workers=1)
-
-        #val_dataset_mit = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/mit-bih-arrhythmia-database-1.0.0/generated/resampled/val', window_size=window_length, n_windows=n_windows)
-        #val_dataset_peters = ecg_datasets2.ECGDataset('/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
-        #val_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/val', window_size=window_length, n_windows=n_windows, preload_windows=40, batch_size=validation_batch_size)
-        val_dataset_ptbxl = ecg_datasets2.ECGDataset('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
-        val_dataset_sinus = ecg_datasets2.ECGDatasetBatching('/media/julian/data/data/sinus/val', window_size=window_length, n_windows=n_windows, preload_windows=40)
-        #valset_total = ecg_datasets2.ECGDatasetMultiple([val_dataset_ptb, val_dataset_ptbxl]) #val_dataset_mit,
-        valset_total = ChainDataset([val_dataset_ptbxl])
-        #valset_total = ChainDataset([val_dataset_sinus])#, val_dataset_ptbxl
-        valloader = DataLoader(valset_total, batch_size=validation_batch_size, drop_last=True, num_workers=1)
-
-        #libridataset = torchaudio.datasets.LIBRISPEECH("/home/julian/Datasets/", url='/home/julian/Datasets/LibriSpeech/train-clean-100/', folder_in_archive='LibriSpeech/train-clean-100/', download=False)
-        #dataloader = DataLoader(libridataset, batch_size=8, collate_fn=lambda x: torch.stack([a[0] for a in x]))
-
+        valset_total = ChainDataset([val_baseline_ptbxl])
+        valloader = DataLoader(valset_total, batch_size=args.batch_size, drop_last=True, num_workers=1)
+        model.cuda()
         optimizer = ScheduledOptim(
             optim.Adam(
                 filter(lambda p: p.requires_grad, model.parameters()),
@@ -99,7 +122,7 @@ def main(args):
             args.warmup_steps)
 
         if args.saved_model:
-            model, optimizer, epoch = load_model_state(out_path, model, optimizer)
+            model, optimizer, starting_epoch = load_model_state(args.saved_model, model, optimizer)
         else:
             torch.save(model, os.path.join(out_path, "cpc_model_full.pt"))
         model.cuda()
@@ -114,7 +137,7 @@ def main(args):
         val_losses = []
         train_accuracies = []
         val_accuracies = []
-        for epoch in range(1, epochs + 1):
+        for epoch in range(starting_epoch, epochs + starting_epoch):
 
             train_acc, train_loss = cpc_train(model, dataloader, timesteps_in, timesteps_out, optimizer, epoch, train_batch_size)
             val_acc, val_loss = cpc_validation(model, valloader, timesteps_in, timesteps_out, validation_batch_size)
@@ -132,10 +155,10 @@ def main(args):
             if epoch - best_epoch >= 5:
                 #update learning rate
                 pass
-                if epoch % 10 == 0:
-                    save_model_state(out_path, epoch, args.train_mode, model, optimizer,
-                                     [train_accuracies, val_accuracies],
-                                     [train_losses, val_losses])
+            if epoch % 10 == 0:
+                save_model_state(out_path, epoch, args.train_mode, model, optimizer,
+                                 [train_accuracies, val_accuracies],
+                                 [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
                              [train_accuracies, val_accuracies], [train_losses, val_losses])
 
@@ -143,23 +166,47 @@ def main(args):
     if args.train_mode == 'downstream':
 
         #train_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/train', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
-        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
-        trainset_total = ecg_datasets2.ECGMultipleDatasets([train_dataset_ptbxl])
-        trainloader = DataLoader(trainset_total, batch_size=train_batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
+        # trainset_total = ecg_datasets2.ECGMultipleDatasets([train_dataset_ptbxl])
+        # trainloader = DataLoader(trainset_total, batch_size=train_batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        #
+        # #val_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/val',window_size=window_length, n_windows=n_windows, channels=slice(0, 12), preload_windows=40, batch_size=validation_batch_size, use_labels=True)
+        # val_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
+        # # valset_total = ecg_datasets2.ECGDatasetMultiple([val_dataset_ptb, val_dataset_ptbxl]) #val_dataset_mit,
+        # valset_total = ecg_datasets2.ECGMultipleDatasets([val_dataset_ptbxl])
+        # valloader = DataLoader(valset_total, batch_size=validation_batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        train_baseline_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+            '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            window_size=9500)
 
-        #val_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/val',window_size=window_length, n_windows=n_windows, channels=slice(0, 12), preload_windows=40, batch_size=validation_batch_size, use_labels=True)
-        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
-        # valset_total = ecg_datasets2.ECGDatasetMultiple([val_dataset_ptb, val_dataset_ptbxl]) #val_dataset_mit,
-        valset_total = ecg_datasets2.ECGMultipleDatasets([val_dataset_ptbxl])
-        valloader = DataLoader(valset_total, batch_size=validation_batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        val_baseline_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+            '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            window_size=9500)
 
-        model.load_state_dict(torch.load(args.saved_model)) #Load the trained cpc model
-        model.eval()
-        #model.freeze_layers()
+        model = cpc_intersect.CPC(
+            encoder=cpc_encoder_v0.Encoder(channels=channels, latent_size=args.latent_size),
+            autoregressive=cpc_autoregressive_v0.AutoRegressor(n_latents=args.latent_size,
+                                                               hidden_size=args.hidden_size),
+            predictor=cpc_predictor_v0.Predictor(hidden_size, args.latent_size, timesteps_out),
+            latent_size=args.latent_size, timesteps_in=timesteps_in, timesteps_out=timesteps_out, verbose=False)
+
+        trainset_total = ChainDataset([train_baseline_ptbxl])
+        trainloader = DataLoader(trainset_total, batch_size=args.batch_size, drop_last=True, num_workers=1)
+
+        valset_total = ChainDataset([val_baseline_ptbxl])
+        valloader = DataLoader(valset_total, batch_size=args.batch_size, drop_last=True, num_workers=1)
+
+        if args.saved_model:
+            model, _, starting_epoch = load_model_state(args.saved_model, model, optimizer=None)
+        else:
+            torch.save(model, os.path.join(out_path, "cpc_model_full.pt"))
         model.cuda()
-        print(model)
         f_m = args.forward_mode
-        downstream_model = DownstreamLinearNet(cpc_model_trained=model, timesteps_in=timesteps_in, context_size=hidden_size, latent_size=number_of_latents, out_classes=args.forward_classes, use_context=f_m == "context" or f_m == "all", use_latents=f_m == "latents" or f_m == "all")
+        downstream_model = cpc_downstream_model_multitarget_v2.DownstreamLinearNet(cpc_model=model, latent_size=number_of_latents, context_size=hidden_size,
+                                                                                   out_classes=args.forward_classes, use_context=f_m == "context" or f_m == "all", use_latents=f_m == "latents" or f_m == "all",
+                                                                                   freeze=False, verbose=False)
         torch.save(downstream_model, os.path.join(out_path, "downstream_model_full.pt"))
         downstream_model.cuda()
         print()
@@ -179,8 +226,8 @@ def main(args):
 
         for epoch in range(1, epochs + 1):
 
-            train_acc, train_loss = down_train(downstream_model, trainloader, timesteps_in, timesteps_out, optimizer, epoch, None)
-            val_acc, val_loss = down_validation(downstream_model, valloader, timesteps_in, timesteps_out, None)
+            train_acc, train_loss = baseline_train(downstream_model, trainloader, optimizer, epoch, None)
+            val_acc, val_loss = baseline_validation(downstream_model, valloader, None, epoch, None)
             val_losses.append(val_loss.item())
             train_losses.append(train_loss.item())
             train_accuracies.append(train_acc.item())
@@ -194,12 +241,11 @@ def main(args):
                 torch.save(downstream_model.state_dict(), os.path.join(out_path, "cpc_model_downstream_validation.pt"))
             if epoch - best_epoch >= 5:
                 # update learning rate
-                optimizer.increase_delta()
                 best_epoch = epoch
-                if epoch % 10 == 0:
-                    save_model_state(out_path, epoch, args.train_mode, model, optimizer,
-                                     [train_accuracies, val_accuracies],
-                                     [train_losses, val_losses])
+            if epoch % 5 == 0:
+                save_model_state(out_path, epoch, args.train_mode, model, optimizer,
+                                 [train_accuracies, val_accuracies],
+                                 [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
                              [train_accuracies, val_accuracies], [train_losses, val_losses])
 
@@ -294,16 +340,15 @@ def main(args):
 
     if args.train_mode == 'explain':
 
-        test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+        test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
             window_size=9500)
         totalset = ChainDataset([test_dataset_ptbxl])#[train_dataset_ptbxl, val_dataset_ptbxl])
         dataloader = DataLoader(totalset, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
-        bmodel, optimizer, epoch = load_model_state(os.path.join(os.path.split(args.saved_model)[0], 'full_model.pt'))
+        bmodel, optimizer, epoch = load_model_state(os.path.join(os.path.split(args.saved_model)[0], 'downstream_model_full.pt'))
         optimizer = ScheduledOptim(
-            optim.Adam(
-                filter(lambda p: p.requires_grad, bmodel.parameters()),
+            optim.Adam(bmodel.parameters(),
                 betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
             args.warmup_steps)
 
@@ -313,7 +358,7 @@ def main(args):
         model.eval()
         model.cuda()
 
-        ecg = PTBXLData(base_directory='/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/')
+        ecg = PTBXLData(base_directory='/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/')
         ecg.init_multilabel_encoder()
         print(ecg.code_list)
 
@@ -410,6 +455,9 @@ def save_model_state(output_path, epoch, train_mode='', model=None, optimizer=No
         print("Saving full model...")
         name = 'model_full.pt'
         torch.save(model, os.path.join(output_path, name))
+        with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
+            print(fullname(model), file=f)
+            print(model, file=f)
     else:
         print("saving model at epoch:", epoch)
         if not (model is None and optimizer is None):
@@ -433,7 +481,8 @@ def load_model_state(model_path, model=None, optimizer=None):
         checkpoint = torch.load(model_path)
         if 'model_state_dict' in checkpoint:
             model.load_state_dict(checkpoint['model_state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if not optimizer is None:
+                optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             epoch = checkpoint['epoch']
         else:
             model.load_state_dict(checkpoint)
@@ -471,12 +520,12 @@ if __name__ == "__main__":
 
     parser.add_argument('--batch_size', type=int, default=24, help="The batch size")
 
-    parser.add_argument('--latent_size', type=int, default=768,
+    parser.add_argument('--latent_size', type=int, default=512,
                         help="The size of the latent encoding for one window")
 
     parser.add_argument('--timesteps_in', type=int, default=6, help="The number of windows being used to form a context for prediction")
 
-    parser.add_argument('--timesteps_out', type=int, default=6,
+    parser.add_argument('--timesteps_out', type=int, default=4,
                         help="The number of windows being predicted from the context (cpc task exclusive)")
 
     parser.add_argument('--channels', type=int, default=12,
@@ -485,7 +534,7 @@ if __name__ == "__main__":
     parser.add_argument('--window_length', type=int, default=512,
                         help="The number of datapoints per channel per window")
 
-    parser.add_argument('--hidden_size', type=int, default=512,
+    parser.add_argument('--hidden_size', type=int, default=128,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
 
     parser.add_argument('--grad_clip', type=int, default=0.0,

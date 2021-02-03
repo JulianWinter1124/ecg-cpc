@@ -24,3 +24,4 @@ class Predictor(nn.Module):
 
         else: #output shape = (batch, latent_size)
             return self.linears[timestep](x)
+

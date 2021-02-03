@@ -7,8 +7,7 @@ import numpy as np
 from torch.utils.data import IterableDataset
 from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format
 from torch._six import container_abcs, string_classes, int_classes
-
-from external.helper_code import find_challenge_files, load_recording
+from external import helper_code
 
 
 class ECGDataset(torch.utils.data.IterableDataset):
@@ -324,9 +323,8 @@ class ECGDatasetBaselineMulti(torch.utils.data.IterableDataset):
                 data = f.get(k)
                 print('Data with key [%s] has shape:' % k, data.shape)
 
-class ECGChallengeDataset(torch.utils.data.IterableDataset):
-    def __init__(self, BASE_DIR, window_size, n_windows, window_gap=0, files=None, channels=None, use_labels=False,
-                 use_random_offset=False, preload_windows=0, batch_size=1):
+class ECGChallengeDatasetBatching(torch.utils.data.IterableDataset):
+    def __init__(self, BASE_DIR, window_size, n_windows, files=None, channels=None, use_labels=False, use_random_offset=False, batch_size=1, classes=None):
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
         self.n_windows = n_windows
@@ -335,43 +333,44 @@ class ECGChallengeDataset(torch.utils.data.IterableDataset):
             self.files = files
         else:
             self.files = self.search_files()
+        if classes is None:
+            self.classes = helper_code.get_classes(self.files)
+        else:
+            self.classes = classes
         self.print_file_attributes()
         self.channels = channels
         self.total_length = 1 #Trying a weird approach (calculated in __iter__)
         self.use_labels = use_labels
         self.use_random_offsets = use_random_offset
         self.batch_size = batch_size
-        self.window_gap = window_gap
 
 
     def __iter__(self):
-        self.total_length = 0
         available_files = list(range(len(self.files)))
         if available_files:
             strike = 0
             selected_files = np.random.choice(available_files, self.batch_size, replace=False)
             opened_file_data = [self._read_recording_file(self.files[f_ind]) for f_ind in selected_files]  # open all selected files
             if self.use_labels:
-                opened_header_data = []
+                opened_file_labels = [self._read_header_labels(self.files[f_ind]) for f_ind in selected_files]
             data_indices = np.zeros(self.batch_size, dtype=int)
-            data_offsets = np.random.randint(0, self.window_size, self.batch_size, dtype=int)
+            data_offsets = [np.random.randint(0, len(opened_file_data[i])-self.window_size*self.n_windows, dtype=int) for i in range(self.batch_size)]
             for sel in selected_files:
                 available_files.remove(sel)  # remove selected for future draw
             while opened_file_data:
                 for i, f in enumerate(opened_file_data):
                     data_index = data_indices[i]
                     offset = data_offsets[i]
-                    data = None #TODO: implement
+                    data = opened_file_data[i]
                     if self.use_labels:
-                        pass
-                    if (data_index + 1) * self.window_size * self.n_windows + offset <= len(data):  # + self.window_gap
-                        # print('using:', i, opened_files[i])
+                        labels = opened_file_labels[i]
+                    if (data_index + 1) * self.window_size * self.n_windows + offset <= len(data):
                         if not self.use_labels:
                             if self.channels:
                                 yield np.swapaxes(data[data_index * self.window_size * self.n_windows + offset: (
                                                                                                                             data_index + 1) * self.window_size * self.n_windows + offset,
                                                   self.channels].reshape((self.n_windows, self.window_size, -1)), 1,
-                                                  2)  # TODO: pad data in between with 0?
+                                                  2)
                             else:
                                 yield np.swapaxes(data[data_index * self.window_size * self.n_windows + offset: (
                                                                                                                             data_index + 1) * self.window_size * self.n_windows + offset,
@@ -391,30 +390,52 @@ class ECGChallengeDataset(torch.utils.data.IterableDataset):
                                     (data_index + 2) * self.window_size * self.n_windows + offset > len(data)), labels[
                                                                                                                 :]
                         data_indices[i] += 1
-                        self.total_length += self.window_size * self.n_windows
                     # Replace used up files:
                     if (data_index + 2) * self.window_size * self.n_windows + offset > len(
-                            data):  # Remove this from opened. TODO: what about unused data?
+                            data):  # Remove this from opened.
                         if available_files:
-                            # print('opening new for', i)
-                            opened_file_data[i] = h5py.File(self.files[available_files.pop()], 'r')
-                            f.close()  # closing here
-                        else:
+                            new_f = self.files[available_files.pop()]
+                            opened_file_data[i] = self._read_recording_file(new_f) #Open new available file
+                            if self.use_labels:
+                                opened_file_labels[i] = self._read_header_labels(new_f)
+                        else: #if no available file use old and count a strike
                             strike += 1
-                        data_indices[i] = 0
-                        data_offsets[i] = np.random.randint(0, self.window_size - 1)
+                        data_indices[i] = 0 #reset data indice
+                        data_offsets[i] = np.random.randint(0, len(opened_file_data[i])-self.window_size*self.n_windows) #reset offset randomly
                         if strike >= self.batch_size:  # Recycle until all files have been fully used
                             return
 
     def _read_recording_file(self, path_without_ext):
         fp = path_without_ext + '.mat'
-        return load_recording(fp, key='val')
+        return helper_code.load_recording(fp, key='val').transpose()
+
+    def _read_header_file(self, path_without_ext):
+        fp = path_without_ext + '.hea'
+        return helper_code.load_header(fp)
+
+    def _read_header_labels(self, path_without_ext):
+        header = self._read_header_file(path_without_ext)
+        return helper_code.encode_header_labels(header, self.classes)
 
     def __len__(self):
         return self.total_length
 
     def search_files(self):
-        headers, records = find_challenge_files(self.BASE_DIR)
+        headers, records = helper_code.find_challenge_files(self.BASE_DIR)
+        print(len(records), 'record files found in ', self.BASE_DIR)
+        return list(map(lambda x: os.path.splitext(x)[0], records)) #remove extension
+
+    def print_file_attributes(self):
+        f = self.files[0]
+        print('Information for file', f)
+        data = self._read_recording_file(f)
+        print('Data has shape:', data.shape)
+        header = self._read_header_file(f)
+        print('Header is:', header, end='###############\n')
+        print('Classes found in data folder:', self.classes)
+        labels = self._read_header_labels(f)
+        print('Labels have shape', labels.shape)
+
 
 
 

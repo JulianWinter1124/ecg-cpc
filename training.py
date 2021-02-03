@@ -15,17 +15,16 @@ def cpc_train(model, train_loader, timesteps_in, timesteps_out, optimizer, epoch
     count = 0
     hidden = None
     elapsed_times = []
-    for batch_idx, data in enumerate(train_loader):
+    for batch_idx, data_and_labels in enumerate(train_loader):
         batch_time = time.time()
+        data, _ = data_and_labels
         data = data.float().cuda()
         optimizer.zero_grad()
-        if hidden is None or batch_size != data.shape[0]: #TODO: every time if hidden hasnt been initialized or
-            print(data.shape)
-            hidden = model.autoregressive.init_hidden(data.shape[0], use_gpu=True)
+        hidden = model.autoregressive.init_hidden(data.shape[0], use_gpu=True)
         #hidden.detach_()
         hidden = hidden.detach()
         count += 1
-        acc, loss, hidden = model(data, timesteps_in, timesteps_out, hidden)
+        acc, loss, hidden = model(data, hidden=hidden)
         total_loss += loss
         total_acc += acc
         loss.backward()
@@ -48,11 +47,12 @@ def cpc_validation(model, data_loader, timesteps_in, timesteps_out, batch_size):
     count = 0
     hidden = None
     with torch.no_grad():
-        for _, data in enumerate(data_loader):
+        for _, data_and_labels in enumerate(data_loader):
+            data, _ = data_and_labels
             data = data.float().cuda() # add channel dimension
             if True: #hidden is None or batch_size != data.shape[0]:
                 hidden = model.autoregressive.init_hidden(len(data), use_gpu=True)
-            acc, loss, hidden = model(data, timesteps_in, timesteps_out, hidden)
+            acc, loss, hidden = model(data, hidden=hidden)
             count += 1
             total_loss += loss
             total_acc  += acc
@@ -204,8 +204,6 @@ def baseline_train(model, train_loader, optimizer, epoch, args):
         total_loss += loss
         total_acc += acc
         loss.backward()
-        if args.grad_clip > 0.0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         optimizer.step()
         if batch_idx % 10 == 0:
             print('Train Epoch: {} \tLoss: {:.6f}\tAccuracies: '.format(

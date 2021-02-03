@@ -17,34 +17,36 @@ class CPC(nn.Module):
         #self.softmax = nn.Softmax(dim=1)
         self.lsoftmax = nn.LogSoftmax(dim=1)
         self.cpc_train_mode = True
+        self.timesteps_in = timesteps_in
+        self.timesteps_out = timesteps_out
 
         self.verbose = verbose
 
-    def forward(self, x_windows, n_timesteps_in:int, n_timesteps_out:int, hidden):
+    def forward(self, x_windows, hidden):
         if self.verbose: print('x_windows has shape:', x_windows.shape) # shape = batch, windows, channels, window_size
         x_windows = x_windows.transpose(1, 0) #reshaping into windows, batch, channels, windowsize
         n_windows, n_batches, _, _ = x_windows.shape
         if self.verbose: print('x_windows has shape:', x_windows.shape)
-        if self.cpc_train_mode and n_windows != n_timesteps_in + n_timesteps_out:
+        if self.cpc_train_mode and n_windows != self.timesteps_in + self.timesteps_out:
             print("timesteps in and out not matching total windows")
         latents = self.encoder(x_windows.reshape(-1, *x_windows.shape[2:])) #reshape windows into batch dimension for only one forward
         latents = latents.reshape(n_windows, n_batches, *latents.shape[1:]) #reshape shape back
         if self.verbose: print('latents have shape:', latents.shape) # shape = windows, batch, latent_size
-        context, hidden = self.autoregressive(latents[0:n_timesteps_in, :], hidden)
+        context, hidden = self.autoregressive(latents[0:self.timesteps_in, :], hidden)
         context = context[-1, :, :] #We only need the last state. Shape: batch, context_outputsize
         if not self.cpc_train_mode:
             return latents, context, hidden
 
         loss = torch.Tensor([0.0]).cuda()
         correct = 0 #will become Tensor
-        for k in range(0, n_timesteps_out): #Do this for each timestep
-            latent_k = latents[-n_timesteps_out + k] #batches, latents
+        for k in range(0, self.timesteps_out): #Do this for each timestep
+            latent_k = latents[-self.timesteps_out + k] #batches, latents
             pred_k = self.predictor(context, k) # Shape (Batches, latents)
             softmax = self.lsoftmax(torch.mm(latent_k, pred_k.T)) #output: (Batches, Batches)
             correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(n_batches).cuda())
             loss += torch.sum(torch.diag(softmax))
-        loss /= (n_batches * n_timesteps_out) * -1.0
-        accuracy = correct.true_divide(n_batches*n_timesteps_out)
+        loss /= (n_batches * self.timesteps_out) * -1.0
+        accuracy = correct.true_divide(n_batches*self.timesteps_out)
         return accuracy, loss, hidden
 
 
@@ -53,8 +55,8 @@ class CPC(nn.Module):
     # Calculate the loss
     # future_latents = []
     # predicted_latents = []
-    # for k in range(0, n_timesteps_out):  # Do this for each timestep
-    #     future_latents.append(self.encoder(x_windows[-n_timesteps_out + k]))  # batches, latents
+    # for k in range(0, self.timesteps_out):  # Do this for each timestep
+    #     future_latents.append(self.encoder(x_windows[-self.timesteps_out + k]))  # batches, latents
     #     predicted_latents.append(self.predictor(context, k))  # Shape (Batches, latents)
     # loss = self.info_NCE_loss_brian(torch.stack(future_latents), torch.stack(predicted_latents))
     #  #Will become Tensor

@@ -6,15 +6,14 @@ from cpc_utils import info_NCE_loss
 class Encoder(nn.Module):
     def __init__(self, channels, latent_size):
         super(Encoder, self).__init__()
-        kernel_sizes = [8, 6, 3, 3, 3]
-        strides = [4, 2, 1, 1, 1]
-        dilations = [1, 1, 1, 3, 9]
+        kernel_sizes = [7, 3, 3, 3, 3]
+        strides = [2, 1, 1, 1, 1]
+        dilations = [1, 1, 3, 9, 27]
         n_channels = [channels] + [latent_size] * len(kernel_sizes)
         #self.batch_norm = nn.BatchNorm1d(n_channels[0]) #not used in paper?
         self.convolutionals = nn.Sequential(
             *[e for t in [
                 (nn.Conv1d(in_channels=n_channels[i], out_channels=n_channels[i + 1], kernel_size=kernel_sizes[i], dilation=dilations[i], stride=strides[i], padding=0),
-                 (nn.BatchNorm1d(n_channels[i + 1])),
                  (nn.ReLU())
                  ) for i in range(len(kernel_sizes))] for e in t]
         )
