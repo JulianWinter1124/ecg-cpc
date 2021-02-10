@@ -22,11 +22,13 @@ def plot_receptivefield_bardiagram(kernel_weights):
     plt.bar(np.arange(len(kernel_weights)), kernel_weights) #height=h, align='center'
     plt.show()
 
-def plot_receptivefield_plot(kernel_weights):
+def plot_receptivefield_plot(kernel_weights, name=''):
+    plt.title(name)
     plt.plot(np.arange(len(kernel_weights)), kernel_weights) #height=h, align='center'
     plt.show()
 
-def plot_multiple_receptivefield_plot(*kernel_weights):
-    for kw in kernel_weights:
+def plot_multiple_receptivefield_plot(kernel_weights_list: list, name=''):
+    plt.title(name)
+    for kw in kernel_weights_list:
         plt.plot(np.arange(len(kw)), kw) #height=h, align='center'
     plt.show()

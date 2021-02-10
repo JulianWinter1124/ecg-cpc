@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch import optim
+from torch import optim, nn
 from torch.utils.data import DataLoader
 
 from baseline_architectures import baseline_cnn_v2
@@ -41,70 +41,38 @@ def main(args):
     models = [
         baseline_cnn_v2.BaselineNet(args.channels, args.forward_classes, verbose=False)
     ]
-    for i, model in enumerate(models):
-        torch.save(model, os.path.join(args.out_path, str(i)+'_model_full.pt'))
-        with open(os.path.join(args.out_path, str(i)+'_model_arch.txt'), 'w') as f:
-            print(model, file=f)
+    loaders = [
+        trainloader,
+        valloader
+    ]
+    metric_functions = [ #Functions that take two tensors as argument and give score or list of score
 
-   
-    
-    for model_i, model in enumerate(models):
+    ]
+    for model_i, model_path in enumerate(models):
+        #torch.load(model, os.path.join(args.out_path, str(i)+'_model_full.pt'))
+        #load model here into model
+        model = nn.Linear(1,1)
         model.cuda()
-        optimizer = ScheduledOptim(
-            optim.Adam(
-                filter(lambda p: p.requires_grad, model.parameters()),
-                betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
-            args.warmup_steps)
-    
-        best_acc = 0
-        best_loss = np.inf
-        best_epoch = -1
-        train_losses = []
-        val_losses = []
-        train_accuracies = []
-    
-        val_accuracies = []
-    
-        for epoch in range(1, args.epochs + 1):
-    
-            train_acc, train_loss = baseline_train(model, trainloader, optimizer, epoch)
-            val_acc, val_loss = baseline_validation(model, valloader, optimizer, epoch)
-            val_losses.append(val_loss.item())
-            train_losses.append(train_loss.item())
-            train_accuracies.append(train_acc.item())
-            val_accuracies.append(val_acc.item())
-            # Save
-            if val_loss < best_loss:  # TODO: maybe use accuracy (not sure if accuracy is a good measurement)
-                best_loss = val_loss
-                best_acc = max(val_acc, best_acc)
-                best_epoch = epoch
-            if epoch - best_epoch >= 5:
-                # update learning rate
-                optimizer.increase_delta()
-                best_epoch = epoch
-        save_model_state(args.out_path, args.epochs,'model'+str(model_i), model, optimizer,
-                         [train_accuracies, val_accuracies], [train_losses, val_losses])
+        for dataloader_i, dataloader in enumerate(loaders):
+            metrics = [[]*len(metric_functions)]
+            for dataset_tuple in dataloader:
+                if len(dataset_tuple) == 2:
+                    data, labels = dataset_tuple
+                elif len(dataset_tuple) == 3:
+                    data, labels, _ = dataset_tuple
+                else:
+                    print("Unknown dataset return tuple length")
+                    return
+                pred = model(data, y=None).cpu()
+                for i, fn in enumerate(metric_functions):
+                    metrics[i].append(fn(labels, pred))
+            pickle_name = "model-{}-dataset-{}.pickle".format('-'.join(model_path.split(os.sep)), dataloader_i)
+            with open(os.path.join(args.out_path, pickle_name), 'wb') as pick_file:
+                pickle.dump(metrics, pick_file)
+            print("\tFinished dataset {}. Progress: {}/{}".format(dataloader_i, dataloader_i+1, len(loaders)))
+        print("Finished model {}. Progress: {}/{}".format(model_path, model_i+1, len(models)))
 
-def save_model_state(output_path, epoch, model_name='', model=None, optimizer=None, accuracies=None, losses=None, full=False):
-    if full:
-        print("Saving full model...")
-        name = model_name + '_model_full.pt'
-        torch.save(model, os.path.join(output_path, name))
-    else:
-        print("saving model at epoch:", epoch)
-        if not (model is None and optimizer is None):
-            name = model_name + '_modelstate_epoch' + str(epoch) + '.pt'
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict()
-                }, os.path.join(output_path, name))
-        if not (accuracies is None and losses is None):
-            with open(os.path.join(output_path, 'losses.pkl'), 'wb') as pickle_file:
-                pickle.dump(losses, pickle_file)
-            with open(os.path.join(output_path, 'accuracies.pkl'), 'wb') as pickle_file:
-                pickle.dump(accuracies, pickle_file)
-                
+
 if __name__ == "__main__":
     import sys
 

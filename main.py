@@ -450,7 +450,12 @@ def main(args):
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
 
-def save_model_state(output_path, epoch, train_mode='', model=None, optimizer=None, accuracies=None, losses=None, full=False):
+def save_model_state(output_path, epoch, name=None, model=None, optimizer=None, accuracies=None, losses=None, full=False):
+    if name is None:
+        name = fullname(model)
+    with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
+        print(fullname(model), file=f)
+        print(model, file=f)
     if full:
         print("Saving full model...")
         name = 'model_full.pt'
@@ -461,7 +466,7 @@ def save_model_state(output_path, epoch, train_mode='', model=None, optimizer=No
     else:
         print("saving model at epoch:", epoch)
         if not (model is None and optimizer is None):
-            name = train_mode + '_modelstate_epoch' + str(epoch) + '.pt'
+            name = name + '_modelstate_epoch' + str(epoch) + '.pt'
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),

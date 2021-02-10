@@ -437,6 +437,77 @@ class ECGChallengeDatasetBatching(torch.utils.data.IterableDataset):
         print('Labels have shape', labels.shape)
 
 
+class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
+    def __init__(self, BASE_DIR, window_size, files=None, channels=None, use_labels=False, classes=None):
+        super(ECGDataset).__init__()
+        self.BASE_DIR = BASE_DIR
+        self.window_size = window_size
+        if files:
+            self.files = files
+        else:
+            self.files = self.search_files()
+        if classes is None:
+            self.classes = helper_code.get_classes(self.files)
+        else:
+            self.classes = classes
+        self.print_file_attributes()
+        self.channels = channels
+        self.total_length = 1 #Trying a weird approach (calculated in __iter__)
+        self.use_labels = use_labels
+
+
+    def __iter__(self):
+        file_index = 0
+        shuffle(self.files)
+        while file_index < len(self.files):
+            current_file = self.files[file_index]
+            data = self._read_recording_file(current_file)
+            offset = np.random.randint(len(data) - self.window_size)  # Random offset
+            if self.use_labels:
+                labels = self._read_header_labels(current_file)
+                if self.channels is None:
+                    yield data[offset:self.window_size + offset, :], labels[:]
+                else:
+                    yield data[offset:self.window_size + offset, self.channels], labels[:]
+            else:
+                if self.channels is None:
+                    yield data[offset:self.window_size + offset, :]
+                else:
+                    yield data[offset:self.window_size + offset, self.channels]
+            file_index += 1
+
+    def _read_recording_file(self, path_without_ext):
+        fp = path_without_ext + '.mat'
+        return helper_code.load_recording(fp, key='val').transpose()
+
+    def _read_header_file(self, path_without_ext):
+        fp = path_without_ext + '.hea'
+        return helper_code.load_header(fp)
+
+    def _read_header_labels(self, path_without_ext):
+        header = self._read_header_file(path_without_ext)
+        return helper_code.encode_header_labels(header, self.classes)
+
+    def __len__(self):
+        return self.total_length
+
+    def search_files(self):
+        headers, records = helper_code.find_challenge_files(self.BASE_DIR)
+        print(len(records), 'record files found in ', self.BASE_DIR)
+        return list(map(lambda x: os.path.splitext(x)[0], records)) #remove extension
+
+    def print_file_attributes(self):
+        f = self.files[0]
+        print('Information for file', f)
+        data = self._read_recording_file(f)
+        print('Data has shape:', data.shape)
+        header = self._read_header_file(f)
+        print('Header is:', header, end='###############\n')
+        print('Classes found in data folder:', self.classes)
+        labels = self._read_header_labels(f)
+        print('Labels have shape', labels.shape)
+
+
 
 
 def collate_fn(batch): #https://github.com/pytorch/pytorch/blob/master/torch/utils/data/_utils/collate.py
