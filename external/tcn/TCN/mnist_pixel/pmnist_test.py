@@ -1,8 +1,10 @@
-import torch
-from torch.autograd import Variable
-import torch.optim as optim
-import torch.nn.functional as F
 import sys
+
+import torch
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.autograd import Variable
+
 sys.path.append("../../")
 from TCN.mnist_pixel.utils import data_generator
 from TCN.mnist_pixel.model import TCN

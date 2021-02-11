@@ -1,8 +1,6 @@
-
-import torch
 from torch import nn
-from torch import functional as F
-from cpc_utils import info_NCE_loss
+
+
 class Encoder(nn.Module):
     def __init__(self, channels, latent_size):
         super(Encoder, self).__init__()

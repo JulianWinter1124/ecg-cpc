@@ -1,7 +1,6 @@
 #from util.ecg_data import ECGData
-from random import shuffle
 import os
-import pandas as pd
+from random import shuffle
 
 from util.ptbxl_data import PTBXLData
 

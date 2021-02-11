@@ -1,7 +1,8 @@
 import os
+import pickle
+
 import torch
 from torch.autograd import Variable
-import pickle
 
 """
 Note: The meaning of batch_size in PTB is different from that in MNIST example. In MNIST, 

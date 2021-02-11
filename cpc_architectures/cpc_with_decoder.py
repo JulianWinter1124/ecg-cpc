@@ -1,13 +1,10 @@
-import math
-
-from torch import nn
 import torch
-from torch.optim import SGD, Adam
+from torch import nn
+from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-import ecg_datasets2
-from cpc_architectures import cpc_encoder_v1, cpc_encoder_v2, cpc_autoregressive_v0, cpc_encoder_decoder_v2
-from external import tcn
+from util import ecg_datasets2
+from cpc_architectures import cpc_encoder_v2, cpc_encoder_decoder_v2
 from external.tcn.TCN.tcn import TemporalConvNet
 
 
@@ -57,9 +54,9 @@ if __name__ == '__main__':
     decoder = cpc_encoder_decoder_v2.Decoder(12, latents)
     scpc = SimpleCPC(enc, decoder, auto, timesteps_in, timesteps_out, latents)
     train = ecg_datasets2.ECGChallengeDatasetBatching('/media/julian/data/data/ECG/ptbxl_challenge',
-                                                           window_size=140, n_windows=timesteps_in+timesteps_out)
+                                                      window_size=140, n_windows=timesteps_in+timesteps_out)
     val = ecg_datasets2.ECGChallengeDatasetBatching('/media/julian/data/data/ECG/ptbxl_challenge',
-                                                           window_size=140, n_windows=timesteps_in+timesteps_out)
+                                                    window_size=140, n_windows=timesteps_in+timesteps_out)
     dataloader = DataLoader(train, batch_size=128, drop_last=True, num_workers=1)
     valloader = DataLoader(val, batch_size=128, drop_last=True, num_workers=1)
     optimizer = Adam(scpc.parameters())

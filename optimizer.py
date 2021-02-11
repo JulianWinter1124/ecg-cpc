@@ -1,6 +1,3 @@
-import numpy as np
-
-
 class ScheduledOptim(object): #https://github.com/jefflai108/Contrastive-Predictive-Coding-PyTorch/blob/a9dab4e759aaa68dce1b1ada46a8035076ba3296/src/optimizer_v1.py#L24
     """A simple wrapper class for learning rate scheduling"""
 

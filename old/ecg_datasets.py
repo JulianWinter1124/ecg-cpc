@@ -1,9 +1,9 @@
+import os
 from random import shuffle
 
-import torch
-import os
 import h5py
 import numpy as np
+import torch
 
 
 class ECGDataset(torch.utils.data.IterableDataset):

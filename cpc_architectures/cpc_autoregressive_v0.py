@@ -1,5 +1,7 @@
+import torch
 from torch import nn
-import torch 
+
+
 class AutoRegressor(nn.Module):
     def __init__(self, n_latents, hidden_size, layers=1):
         super(AutoRegressor, self).__init__()

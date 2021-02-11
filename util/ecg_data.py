@@ -2,22 +2,18 @@
 # coding: utf-8
 
 # In[11]:
-from functools import reduce
+
+import os
+from collections import defaultdict
 
 import h5py
-import wfdb
 import numpy as np
-import os
-import torch
-import torch.utils.data.dataset
-from collections import defaultdict
+import wfdb
+# In[18]:
+from sklearn.preprocessing import normalize, OneHotEncoder
 
 
 # ### Read MIT format .dat ecg data files and .hea headers
-
-# In[18]:
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import normalize, OneHotEncoder
 
 
 class ECGData():

@@ -1,12 +1,7 @@
-
-import torch
 from torch import nn
-from torch import functional as F
-from torchvision.models import ResNet
-from torchvision.models.resnet import BasicBlock
 
-from cpc_utils import info_NCE_loss
 from external.multi_scale_ori import MSResNet
+
 
 class Encoder(nn.Module):
     def __init__(self, channels, latent_size):

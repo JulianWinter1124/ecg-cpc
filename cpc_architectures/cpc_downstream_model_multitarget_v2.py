@@ -1,9 +1,6 @@
-import scipy
-from PIL import Image
-from torch import nn
 import torch
-import numpy as np
-import matplotlib.pyplot as plt
+from torch import nn
+
 
 class DownstreamLinearNet(nn.Module):
 

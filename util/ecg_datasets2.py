@@ -1,12 +1,13 @@
+import os
 from random import shuffle
 
-import torch
-import os
 import h5py
 import numpy as np
+import torch
+from torch._six import container_abcs, string_classes, int_classes
 from torch.utils.data import IterableDataset
 from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format
-from torch._six import container_abcs, string_classes, int_classes
+
 from external import helper_code
 
 

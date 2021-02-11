@@ -1,6 +1,6 @@
-from scipy.io import loadmat
-import torch
 import numpy as np
+import torch
+from scipy.io import loadmat
 
 
 def data_generator(dataset):

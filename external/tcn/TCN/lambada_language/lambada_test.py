@@ -1,16 +1,16 @@
 import argparse
-import time
 import math
+import sys
+import time
+
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 import torch.optim as optim
-import sys
+from torch.autograd import Variable
+
 sys.path.append("../../")
 from TCN.lambada_language.utils import *
 from TCN.lambada_language.model import TCN
-import pickle
-
 
 parser = argparse.ArgumentParser(description='Sequence Modeling - LAMBADA Textual Understanding')
 parser.add_argument('--batch_size', type=int, default=20, metavar='N',

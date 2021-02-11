@@ -1,11 +1,9 @@
-import unidecode
-import torch
-from torch.autograd import Variable
 from collections import Counter
-import observations
-import os
-import pickle
 
+import observations
+import torch
+import unidecode
+from torch.autograd import Variable
 
 cuda = torch.cuda.is_available()
 

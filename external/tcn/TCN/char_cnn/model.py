@@ -1,5 +1,7 @@
-from torch import nn
 import sys
+
+from torch import nn
+
 sys.path.append("../../")
 from TCN.tcn import TemporalConvNet
 

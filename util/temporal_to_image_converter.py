@@ -1,14 +1,12 @@
 import io
-import os
 from typing import Optional, Dict, Any
 
-import numpy as np
 import av
-from PIL import Image
-import torch
-from matplotlib import gridspec
-from torchvision.io import write_video
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from PIL import Image
+from torchvision.io import write_video
 
 
 class VideoWriter():

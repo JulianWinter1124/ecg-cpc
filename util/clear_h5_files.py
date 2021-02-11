@@ -1,6 +1,5 @@
-import glob, os
-
-from util import ecg_data
+import glob
+import os
 
 if __name__ == '__main__':
     path = '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels'

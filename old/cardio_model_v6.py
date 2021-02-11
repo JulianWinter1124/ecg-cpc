@@ -1,8 +1,7 @@
 
 import torch
 from torch import nn
-from torch import functional as F
-from cpc_utils import info_NCE_loss
+
 
 class CPC(nn.Module):
     def __init__(self, encoder_model, autoregressive_model, predictor_model, timesteps_in, timesteps_out, timesteps_ignore=0):

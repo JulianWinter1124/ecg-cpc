@@ -1,9 +1,9 @@
 import os
+import pickle
+import re
+
 import torch
 from torch.autograd import Variable
-import re
-from collections import Counter
-import pickle
 
 """
 Note: The meaning of batch_size in PTB is different from that in MNIST example. In MNIST, 

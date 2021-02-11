@@ -1,9 +1,9 @@
-import scipy
+from PIL import Image
+import matplotlib.pyplot as plt
+import torch
 from PIL import Image
 from torch import nn
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
+
 
 class CPCDecoder(nn.Module):
 

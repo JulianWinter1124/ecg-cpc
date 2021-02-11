@@ -5,14 +5,10 @@ import pickle
 from pathlib import Path
 
 import numpy as np
-import torch
-from torch import optim, nn
+from torch import nn
 from torch.utils.data import DataLoader
 
-from baseline_architectures import baseline_cnn_v2
-import ecg_datasets2
-from optimizer import ScheduledOptim
-from training import baseline_train, baseline_validation
+from util import ecg_datasets2
 
 
 def main(args):
@@ -35,12 +31,31 @@ def main(args):
         window_size=9500)
     valloader = DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1,
                            collate_fn=ecg_datasets2.collate_fn)
-    
-    
 
-    models = [
-        baseline_cnn_v2.BaselineNet(args.channels, args.forward_classes, verbose=False)
+    model_folders = [
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-14',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-15',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-11',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-19',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-18',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-16',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-15',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-19',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-18',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-17',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-15',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/03_01_21-19',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-16',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_21-14',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_21-18',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_21-14'
     ]
+    #infer class from model-arch file
+    for m_f in model_folders:
+        with open(os.path.join(m_f, 'model-arch.txt'), 'r') as arch_file:
+            l1 = arch_file.readline(1)
+            model_class = eval(l1.strip())
+            model_class() #put params here?? or retrain
     loaders = [
         trainloader,
         valloader

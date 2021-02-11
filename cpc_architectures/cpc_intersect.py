@@ -1,15 +1,6 @@
-import math
-
-from torch import nn
 import torch
-from torch.optim import SGD, Adam
-from torch.utils.data import DataLoader
+from torch import nn
 
-import ecg_datasets2
-from cpc_architectures import cpc_encoder_v1, cpc_encoder_v2, cpc_autoregressive_v0, cpc_encoder_decoder_v2
-from external import tcn
-from external.tcn.TCN.tcn import TemporalConvNet
-import numpy as np
 
 class CPC(nn.Module):
 

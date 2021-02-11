@@ -4,7 +4,7 @@ from torch import nn
 
 class BaselineNet(nn.Module):
 
-    def __init__(self, in_channels, out_classes):
+    def __init__(self, in_channels, out_channels, out_classes, verbose=False):
         super().__init__()
         self.n_out_classes = out_classes
         self.convs = nn.Sequential(

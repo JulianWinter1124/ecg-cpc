@@ -1,7 +1,8 @@
+import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
-import numpy as np
+
 
 #This class is not used right now
 
@@ -84,7 +85,7 @@ def CPC(latents, target_dim=64 , emb_scale=0.1, steps_to_ignore=2 , steps_to_pre
 
     from tensorflow_core import reshape, matmul
 
-    from keras.layers import Conv2D, ReLU
+    from keras.layers import Conv2D
     # latents: [B, H, W, D]
     loss = 0.0
     context = pixelCNN(latents)

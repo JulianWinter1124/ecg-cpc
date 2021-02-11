@@ -2,24 +2,17 @@ import ast
 import glob
 import math
 import os
-import re
-from turtledemo.chaos import f
+from collections import defaultdict
 
 import h5py
-import wfdb
 import numpy as np
-import os
-import torch
-import torch.utils.data.dataset
-from collections import defaultdict
 import pandas as pd
+import wfdb
+# In[18]:
+from sklearn.preprocessing import normalize, OneHotEncoder
+
 
 # ### Read MIT format .dat ecg data files and .hea headers
-
-# In[18]:
-from numba.testing.ddt import file_data
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import normalize, OneHotEncoder
 
 
 class PTBXLData():

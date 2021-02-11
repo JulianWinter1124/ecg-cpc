@@ -1,17 +1,15 @@
 import argparse
-import time
 import math
+import sys
+import time
+
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
 import torch.optim as optim
-import sys
+
 sys.path.append("../../")
 from TCN.word_cnn.utils import *
 from TCN.word_cnn.model import *
-import pickle
-from random import randint
-
 
 parser = argparse.ArgumentParser(description='Sequence Modeling - Word-level Language Modeling')
 

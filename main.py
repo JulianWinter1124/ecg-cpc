@@ -2,26 +2,24 @@ import argparse
 import datetime
 import os
 import pickle
-
 from pathlib import Path
+
 import numpy as np
+import torch
 from torch import optim
 from torch.utils.data import DataLoader, ChainDataset
 
 import baseline_cnn_explain
+from util import ecg_datasets2
 from baseline_architectures import baseline_convencoder, baseline_cnn_v0_3
-import ecg_datasets2
-#from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
-#from cpc_architectures.cpc_encoder_vresnet import CPC, Predictor, AutoRegressor, Encoder
-from cpc_architectures import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_base, cpc_encoder_v2, \
-    cpc_intersect, cpc_encoder_v3, cpc_downstream_model_multitarget_v1, cpc_downstream_model_multitarget_v2
-from optimizer import ScheduledOptim
-from training import cpc_train, cpc_validation, down_train, down_validation, baseline_train, baseline_validation, \
-    decoder_validation, decoder_train
-
-import torch
-
+# from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
+# from cpc_architectures.cpc_encoder_vresnet import CPC, Predictor, AutoRegressor, Encoder
+from cpc_architectures import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_intersect, \
+    cpc_downstream_model_multitarget_v2
 from cpc_architectures.downstream_model_multitarget import DownstreamLinearNet
+from optimizer import ScheduledOptim
+from training import cpc_train, cpc_validation, down_validation, baseline_train, baseline_validation, \
+    decoder_validation, decoder_train
 from util.full_class_name import fullname
 from util.ptbxl_data import PTBXLData
 from util.temporal_to_image_converter import timeseries_to_image
@@ -258,7 +256,7 @@ def main(args):
 
         testset_total = ecg_datasets2.ECGMultipleDatasets([test_dataset_ptb])
         testloader = DataLoader(testset_total, batch_size=validation_batch_size, drop_last=True, num_workers=1,
-                               collate_fn=ecg_datasets2.collate_fn)
+                                collate_fn=ecg_datasets2.collate_fn)
 
         model.load_state_dict(torch.load(args.saved_model))  # Load the trained cpc model
         model.eval()
@@ -275,14 +273,14 @@ def main(args):
 
 
     if args.train_mode == 'baseline':
-        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',#'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-            window_size=9500)
+        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',  #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+                                                                    window_size=9500)
 
         trainloader = DataLoader(train_dataset_ptbxl, batch_size=train_batch_size, drop_last=True, num_workers=1,
                                  collate_fn=ecg_datasets2.collate_fn)
 
-        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-            window_size=9500)
+        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',  #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+                                                                  window_size=9500)
         valloader = DataLoader(val_dataset_ptbxl, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
@@ -340,11 +338,11 @@ def main(args):
 
     if args.train_mode == 'explain':
 
-        test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-            window_size=9500)
+        test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test',  #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+                                                                   window_size=9500)
         totalset = ChainDataset([test_dataset_ptbxl])#[train_dataset_ptbxl, val_dataset_ptbxl])
         dataloader = DataLoader(totalset, batch_size=validation_batch_size, drop_last=True, num_workers=1,
-                               collate_fn=ecg_datasets2.collate_fn)
+                                collate_fn=ecg_datasets2.collate_fn)
 
         bmodel, optimizer, epoch = load_model_state(os.path.join(os.path.split(args.saved_model)[0], 'downstream_model_full.pt'))
         optimizer = ScheduledOptim(

@@ -1,5 +1,5 @@
 import torch
-from torch import nn, tensor
+from torch import nn
 
 
 class ExplainLabel(nn.Module):

@@ -1,10 +1,8 @@
 import time
 from datetime import timedelta
-import torch
+
 import numpy as np
-from PIL import Image
-from numba.tests.test_typedlist import to_tl
-from sklearn.metrics import confusion_matrix
+import torch
 
 
 def cpc_train(model, train_loader, timesteps_in, timesteps_out, optimizer, epoch, batch_size):

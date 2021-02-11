@@ -1,8 +1,10 @@
-import torch.nn as nn
-import math
-import torch.utils.model_zoo as model_zoo
+mport torch.nn as nn
 #author: https://github.com/geekfeiw/Multi-Scale-1D-ResNet
 import torch
+# author: https://github.com/geekfeiw/Multi-Scale-1D-ResNet
+import torch
+import torch.nn as nn
+
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
