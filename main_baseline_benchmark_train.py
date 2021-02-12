@@ -16,6 +16,7 @@ from architectures_baseline import baseline_losses, baseline_cnn_v0, baseline_cn
 import accuracy_metrics
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
+from util.store_models import save_model_architecture, save_model_checkpoint
 
 
 
@@ -27,10 +28,8 @@ def main(args):
         '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         window_size=9500)
-    print(args.test_mode) #TODO: is always True for some reason
-    args.test_mode = False
     model_classes = [
-        baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
@@ -39,12 +38,14 @@ def main(args):
     loaders = [
         DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
     ]
-    metric_functions = [ #Functions that take two tensors as argument and give score or list of score
-        accuracy_metrics.accuracy,
+    metric_functions = [ #Functions that take two tensors as argument and give score or list of score #TODO: maybe use dict with name
         accuracy_metrics.fn_score_label,
         accuracy_metrics.tn_score_label,
         accuracy_metrics.tp_score_label,
-        accuracy_metrics.f1_score
+        accuracy_metrics.f1_score,
+        accuracy_metrics.micro_avg_recall_score,
+        accuracy_metrics.micro_avg_precision_score,
+        accuracy_metrics.accuracy
     ]
     for model_i, model in enumerate(model_classes):
         model_name = fullname(model)
@@ -53,9 +54,7 @@ def main(args):
         Path(output_path).mkdir(parents=True, exist_ok=True)
         with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
             cfg.write(str(args))
-        with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
-            print(fullname(model), file=f)
-            print(model, file=f)
+        save_model_architecture(output_path, model, model_name)
         model.cuda()
         model.train()
         #init optimizer
@@ -93,8 +92,8 @@ def main(args):
             if args.test_mode:
                 break
         print("Finished model {}. Progress: {}/{}".format(model_name, model_i+1, len(model_classes)))
-        #TODO: Save model + model weights + optimizer state
-
+        #Save model + model weights + optimizer state
+        save_model_checkpoint(output_path, epoch=args.epochs, model=model, optimizer=optimizer, name=model_name)
         #delete and free
         del model
         torch.cuda.empty_cache()
@@ -153,8 +152,9 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
 
-    parser.add_argument('--test_mode', type=bool, default=False, action='store_false',
+    parser.add_argument('--test_mode', dest='test_mode', action='store_true',
                         help="Only run minimal samples to test all models functionality")
+    parser.set_defaults(test_mode=False)
 
     args = parser.parse_args()
     main(args)

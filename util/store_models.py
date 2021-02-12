@@ -18,7 +18,7 @@ def save_model_checkpoint(output_path, epoch, model, optimizer=None, name=None):
         checkpoint['optimizer_state_dict'] = optimizer.state_dict()
     torch.save(checkpoint, os.path.join(output_path, name))
 
-def save_model_full(output_path, model, name=""):
+def save_model_architecture(output_path, model, name=""):
     print("Saving full model...")
     name += '_full_model.pt'
     torch.save(model, os.path.join(output_path, name))
