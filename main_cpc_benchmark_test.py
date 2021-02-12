@@ -8,7 +8,7 @@ import numpy as np
 from torch import nn
 from torch.utils.data import DataLoader
 
-from util import ecg_datasets2
+from util.data import ecg_datasets2
 
 
 def main(args):

@@ -1,7 +1,7 @@
 import torch
 from torch.nn import functional as F
 
-import util.layer_visualization as lv
+import util.visualize.layer_visualization as lv
 
 
 def calc_conv1ds_output_length(input_length, kernel_sizes:list, paddings:list=None, dilations:list=None, strides:list=None):

@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 
-from util import accuracy_metrics as acm
-from util.data_storage import DataStorage
+import accuracy_metrics as acm
+from old.data_storage import DataStorage
 
 
 class BaselineNet(nn.Module):

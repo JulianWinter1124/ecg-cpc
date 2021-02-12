@@ -2,7 +2,7 @@
 import os
 from random import shuffle
 
-from util.ptbxl_data import PTBXLData
+from util.data.ptbxl_data import PTBXLData
 
 
 def ptb_clean():

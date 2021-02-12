@@ -8,14 +8,13 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from baseline_architectures import baseline_losses, baseline_cnn_v0, baseline_cnn_v1, baseline_cnn_v2, baseline_cnn_v3, \
+from architectures_baseline import baseline_losses, baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
     baseline_cnn_v4
-from util import ecg_datasets2, accuracy_metrics
-import baseline_architectures as bla
+import accuracy_metrics
+from util.data import ecg_datasets2
 from util.full_class_name import fullname
 
 
@@ -75,9 +74,9 @@ def main(args):
                     loss.backward()
                     optimizer.step()
                     #saving metrics
-                    metrics[epoch]['loss'].append(loss.item())
+                    metrics[epoch]['loss'].append(parse_tensor_to_numpy_or_scalar(loss))
                     for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['acc_'+str(i)].append(fn(y=labels, pred=pred))
+                        metrics[epoch]['acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                     if args.test_mode:
                         break
                 elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
@@ -100,8 +99,11 @@ def main(args):
         del model
         torch.cuda.empty_cache()
 
-def make_files(output):
-    pass
+def parse_tensor_to_numpy_or_scalar(input_tensor):
+    arr = input_tensor.detach().cpu().numpy()
+    if arr.size == 1:
+        return arr.item()
+    return arr
 
 if __name__ == "__main__":
     import sys
@@ -151,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
 
-    parser.add_argument('--test_mode', type=bool, default=False, action='store_false'
+    parser.add_argument('--test_mode', type=bool, default=False, action='store_false',
                         help="Only run minimal samples to test all models functionality")
 
     args = parser.parse_args()

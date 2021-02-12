@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import os
-import pickle
 from pathlib import Path
 
 import numpy as np
@@ -9,9 +8,9 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader, ChainDataset
 
-import baseline_cnn_explain
-from util import ecg_datasets2
-from baseline_architectures import baseline_convencoder, baseline_cnn_v0_3
+from architectures_various import baseline_cnn_explain
+from util.data import ecg_datasets2
+from architectures_baseline import baseline_convencoder, baseline_cnn_v0_3
 # from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
 # from cpc_architectures.cpc_encoder_vresnet import CPC, Predictor, AutoRegressor, Encoder
 from cpc_architectures import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_intersect, \
@@ -21,8 +20,9 @@ from optimizer import ScheduledOptim
 from training import cpc_train, cpc_validation, down_validation, baseline_train, baseline_validation, \
     decoder_validation, decoder_train
 from util.full_class_name import fullname
-from util.ptbxl_data import PTBXLData
-from util.temporal_to_image_converter import timeseries_to_image
+from util.data.ptbxl_data import PTBXLData
+from util.store_models import save_model_state, load_model_state
+from util.visualize.temporal_to_image_converter import timeseries_to_image
 
 
 def main(args):
@@ -155,10 +155,10 @@ def main(args):
                 pass
             if epoch % 10 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer,
-                                 [train_accuracies, val_accuracies],
-                                 [train_losses, val_losses])
+                                      [train_accuracies, val_accuracies],
+                                      [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
-                             [train_accuracies, val_accuracies], [train_losses, val_losses])
+                              [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     #https://pytorch.org/tutorials/beginner/saving_loading_models.html
     if args.train_mode == 'downstream':
@@ -242,10 +242,10 @@ def main(args):
                 best_epoch = epoch
             if epoch % 5 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer,
-                                 [train_accuracies, val_accuracies],
-                                 [train_losses, val_losses])
+                                      [train_accuracies, val_accuracies],
+                                      [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
-                             [train_accuracies, val_accuracies], [train_losses, val_losses])
+                              [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     if args.train_mode == 'test':
 
@@ -332,9 +332,9 @@ def main(args):
                 #best_epoch = epoch
             if epoch % 10 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies],
-                                 [train_losses, val_losses])
+                                      [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
-                                 [train_accuracies, val_accuracies], [train_losses, val_losses])
+                              [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     if args.train_mode == 'explain':
 
@@ -447,54 +447,6 @@ def main(args):
             if epoch % 10 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
-
-def save_model_state(output_path, epoch, name=None, model=None, optimizer=None, accuracies=None, losses=None, full=False):
-    if name is None:
-        name = fullname(model)
-    with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
-        print(fullname(model), file=f)
-        print(model, file=f)
-    if full:
-        print("Saving full model...")
-        name = 'model_full.pt'
-        torch.save(model, os.path.join(output_path, name))
-        with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
-            print(fullname(model), file=f)
-            print(model, file=f)
-    else:
-        print("saving model at epoch:", epoch)
-        if not (model is None and optimizer is None):
-            name = name + '_modelstate_epoch' + str(epoch) + '.pt'
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict()
-                }, os.path.join(output_path, name))
-        if not (accuracies is None and losses is None):
-            with open(os.path.join(output_path, 'losses.pkl'), 'wb') as pickle_file:
-                pickle.dump(losses, pickle_file)
-            with open(os.path.join(output_path, 'accuracies.pkl'), 'wb') as pickle_file:
-                pickle.dump(accuracies, pickle_file)
-
-def load_model_state(model_path, model=None, optimizer=None):
-    if model is None:
-        model = torch.load(model_path)
-        epoch = 1
-    else:
-        checkpoint = torch.load(model_path)
-        if 'model_state_dict' in checkpoint:
-            model.load_state_dict(checkpoint['model_state_dict'])
-            if not optimizer is None:
-                optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            epoch = checkpoint['epoch']
-        else:
-            model.load_state_dict(checkpoint)
-            epoch = 1
-
-    model.eval()
-    return model, optimizer, epoch
-
-
 
 
 if __name__ == "__main__":
