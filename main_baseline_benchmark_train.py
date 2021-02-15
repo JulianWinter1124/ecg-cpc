@@ -12,7 +12,8 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from architectures_baseline import baseline_losses, baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
-    baseline_cnn_v4
+    baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, baseline_cnn_v8, baseline_cnn_v9, \
+    baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14
 import accuracy_metrics
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
@@ -36,7 +37,28 @@ def main(args):
         #baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
+        baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v10.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v11.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                     out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v12.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                     out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                     out_classes=args.forward_classes, verbose=False),
+
+        baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
     ]
 
     train_loaders = [
@@ -87,6 +109,8 @@ def main(args):
                     if args.dry_run:
                         break
                 print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1, len(train_loaders)))
+                del data
+                del labels
                 torch.cuda.empty_cache()
             for val_loader_i, val_loader in enumerate(val_loaders): #validate
                 for dataset_tuple in val_loader:
@@ -102,18 +126,20 @@ def main(args):
                     if args.dry_run:
                         break
                 print("\tFinished training dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
+                del data
+                del labels
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)
             print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
                 epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']), elapsed_time))
-
+            if args.dry_run:
+                break
         pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.epochs)
         #Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
             pickle.dump(dict(metrics), pick_file)
-        if args.dry_run:
-            break
+
         print("Finished model {}. Progress: {}/{}".format(model_name, model_i+1, len(model_classes)))
         #Save model + model weights + optimizer state
         save_model_checkpoint(output_path, epoch=args.epochs, model=model, optimizer=optimizer, name=model_name)

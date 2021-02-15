@@ -1,4 +1,4 @@
-mport torch.nn as nn
+
 #author: https://github.com/geekfeiw/Multi-Scale-1D-ResNet
 import torch
 # author: https://github.com/geekfeiw/Multi-Scale-1D-ResNet
