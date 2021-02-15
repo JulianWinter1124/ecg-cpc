@@ -6,10 +6,9 @@ import torch
 from util.full_class_name import fullname
 
 
-def save_model_checkpoint(output_path, epoch, model, optimizer=None, name=None):
+def save_model_checkpoint(output_path, epoch, model, optimizer=None, name=""):
     print("saving model at epoch:", epoch)
-    if name is None:
-        name = '_modelstate_epoch' + str(epoch) + '.pt'
+    name += '_checkpoint_epoch_{}.pt'.format(epoch)
     checkpoint = {
         'epoch':epoch,
         'model_state_dict': model.state_dict()

@@ -1,94 +1,114 @@
 import argparse
 import datetime
+import glob
 import os
 import pickle
+import time
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-from torch import nn
+import torch
+from torch.optim import Adam
 from torch.utils.data import DataLoader
 
+from architectures_baseline import baseline_losses, baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
+    baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, baseline_cnn_v8, baseline_cnn_v9, \
+    baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14, baseline_cnn_v0_1, \
+    baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1
+import accuracy_metrics
 from util.data import ecg_datasets2
+from util.full_class_name import fullname
+from util.store_models import save_model_architecture, save_model_checkpoint
+from util import store_models
+
 
 
 def main(args):
     np.random.seed(args.seed)
-
+    print(args.out_path)
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
-    with open(os.path.join(args.out_path, 'params.txt'), 'w') as cfg:
-        cfg.write(args)
     train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-        '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+        '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         window_size=9500)
-
-    trainloader = DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1,
-                             collate_fn=ecg_datasets2.collate_fn)
-
     val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-        '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-        # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+        '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+        # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         window_size=9500)
-    valloader = DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1,
-                           collate_fn=ecg_datasets2.collate_fn)
-    
-    
-
     model_folders = [
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-14',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-15',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-11',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-19',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-18',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-16',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-15',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-19',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-18',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-17',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-15',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/03_01_21-19',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-16',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_21-14',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_21-18',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_21-14'
+        'models/15_02_21-14/architectures_baseline.baseline_cnn_v0.BaselineNet'
     ]
-    #infer class from model-arch file
-    for m_f in model_folders:
-        with open(os.path.join(m_f, 'model-arch.txt'), 'r') as arch_file:
-            l1 = arch_file.readline(1)
-            model_class = eval(l1.strip())
-            model_class() #put params here?? or retrain
-    loaders = [
-        trainloader,
-        valloader
-    ]
-    metric_functions = [ #Functions that take two tensors as argument and give score or list of score
 
+    train_loaders = [
+        DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
     ]
-    for model_i, model_path in enumerate(models):
-        #torch.load(model, os.path.join(args.out_path, str(i)+'_model_full.pt'))
-        #load model here into model
-        model = nn.Linear(1,1)
+    val_loaders = [
+        DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+    ]
+    metric_functions = [ #Functions that take two tensors as argument and give score or list of score #TODO: maybe use dict with name
+        #accuracy_metrics.fn_score_label,
+        #accuracy_metrics.tn_score_label,
+        #accuracy_metrics.tp_score_label,
+        accuracy_metrics.f1_score,
+        accuracy_metrics.micro_avg_recall_score,
+        accuracy_metrics.micro_avg_precision_score,
+        accuracy_metrics.accuracy
+    ]
+    for model_i, model_path in enumerate(model_folders):
+        model_arch_path = glob.glob(os.path.join(model_path, '*full_model.pt'))[0]
+        model_checkpoint_path = glob.glob(os.path.join(model_path, '*checkpoint*.pt'))[-1]
+        print('Found path to model architecture {} and checkpoint {}'.format(model_arch_path, model_checkpoint_path))
+        model = store_models.load_model_architecture(model_arch_path) #load correct class
+        optimizer = Adam(model.parameters())
+        model, optimizer, epoch = store_models.load_model_checkpoint(model_checkpoint_path, model, optimizer) #load model weights
+        model_name = fullname(model)
+        output_path = os.path.join(args.out_path, model_name)
+        #Create dirs
+        Path(output_path).mkdir(parents=True, exist_ok=True)
         model.cuda()
-        for dataloader_i, dataloader in enumerate(loaders):
-            metrics = [[]*len(metric_functions)]
-            for dataset_tuple in dataloader:
-                if len(dataset_tuple) == 2:
-                    data, labels = dataset_tuple
-                elif len(dataset_tuple) == 3:
-                    data, labels, _ = dataset_tuple
-                else:
-                    print("Unknown dataset return tuple length")
-                    return
-                pred = model(data, y=None).cpu()
-                for i, fn in enumerate(metric_functions):
-                    metrics[i].append(fn(labels, pred))
-            pickle_name = "model-{}-dataset-{}.pickle".format('-'.join(model_path.split(os.sep)), dataloader_i)
-            with open(os.path.join(args.out_path, pickle_name), 'wb') as pick_file:
-                pickle.dump(metrics, pick_file)
-            print("\tFinished dataset {}. Progress: {}/{}".format(dataloader_i, dataloader_i+1, len(loaders)))
-        print("Finished model {}. Progress: {}/{}".format(model_path, model_i+1, len(models)))
+        model.train()
+        metrics = defaultdict(lambda: defaultdict(list))
+        starttime = time.time() #train
+        for loader_i, loader in enumerate(val_loaders): #validate
+            for dataset_tuple in loader:
+                data, labels = dataset_tuple
+                data = data.float().cuda()
+                labels = labels.float().cuda()
+                pred = model(data, y=None) #makes model return prediction instead of loss
+                loss = baseline_losses.MSE_loss(pred=pred, y=labels)
+                #saving metrics
+                if args.save_metrics:
+                    metrics[epoch]['loss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    for i, fn in enumerate(metric_functions):
+                        metrics[epoch]['val_acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                if args.save_predictions:
+                    pass
+                if args.dry_run:
+                    break
+            print("\tFinished dataset {}. Progress: {}/{}".format(loader_i, loader_i + 1, len(val_loaders)))
+            del data
+            del labels
 
+        elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
+        metrics[epoch]['elapsed_time'].append(elapsed_time)
+        print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
+            epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']), elapsed_time))
+        pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.epochs)
+        #Saving metrics in pickle
+        with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
+            pickle.dump(dict(metrics), pick_file)
+        #Save model + model weights + optimizer state
+        save_model_checkpoint(output_path, epoch=args.epochs, model=model, optimizer=optimizer, name=model_name)
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i+1, len(model_folders)))
+        del model #delete and free
+        torch.cuda.empty_cache()
+
+def parse_tensor_to_numpy_or_scalar(input_tensor):
+    arr = input_tensor.detach().cpu().numpy()
+    if arr.size == 1:
+        return arr.item()
+    return arr
 
 if __name__ == "__main__":
     import sys
@@ -113,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument('--out_path', help="The output directory for losses and models",
                         default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
 
-    parser.add_argument('--forward_classes', type=int, default=41,
+    parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")
 
     parser.add_argument('--warmup_steps', type=int, default=0, help="The number of warmup steps")
@@ -137,6 +157,18 @@ if __name__ == "__main__":
 
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
+
+    parser.add_argument('--dry_run', dest='dry_run', action='store_true',
+                        help="Only run minimal samples to test all models functionality")
+    parser.set_defaults(dry_run=False)
+
+    parser.add_argument('--save_metrics', dest='save_metrics', action='store_true',
+                        help="Pass this argument to save metrics in a pickle")
+    parser.set_defaults(save_metrics=False)
+
+    parser.add_argument('--save_predictions', dest='save_predictions', action='store_true',
+                        help="Pass this argument to save model output in file")
+    parser.set_defaults(save_predictions=False)
 
     args = parser.parse_args()
     main(args)

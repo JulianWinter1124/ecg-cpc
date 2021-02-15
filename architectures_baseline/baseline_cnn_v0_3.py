@@ -76,5 +76,5 @@ class BaselineNet(nn.Module):
             #accuracy = torch.sum(torch.eq(torch.argmax(logits, dim=1), torch.argmax(y, dim=1))) / batch
             return accuracies, loss, [acm.tp_score_label(y, logits), acm.fp_score_label(y, logits), acm.tn_score_label(y, logits), acm.fn_score_label(y, logits)]
         else:
-            return logits, []
+            return logits
 

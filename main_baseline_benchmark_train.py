@@ -13,7 +13,8 @@ from torch.utils.data import DataLoader
 
 from architectures_baseline import baseline_losses, baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
     baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, baseline_cnn_v8, baseline_cnn_v9, \
-    baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14
+    baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14, baseline_cnn_v0_1, \
+    baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1
 import accuracy_metrics
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
@@ -34,30 +35,23 @@ def main(args):
         # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         window_size=9500)
     model_classes = [
-        #baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=True),
+        baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v10.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v11.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                     out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v12.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                     out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                     out_classes=args.forward_classes, verbose=False),
-
+        baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v10.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v11.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v12.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
     ]
 
@@ -66,7 +60,6 @@ def main(args):
     ]
     val_loaders = [
         DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
-
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score #TODO: maybe use dict with name
         #accuracy_metrics.fn_score_label,
@@ -80,6 +73,7 @@ def main(args):
     for model_i, model in enumerate(model_classes):
         model_name = fullname(model)
         output_path = os.path.join(args.out_path, model_name)
+        print("Begin training of {}. Output will  be saved to dir: {}".format(model_name, output_path))
         #Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
         with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
@@ -125,7 +119,7 @@ def main(args):
                         metrics[epoch]['val_acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                     if args.dry_run:
                         break
-                print("\tFinished training dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
+                print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
                 del data
                 del labels
 
@@ -139,12 +133,11 @@ def main(args):
         #Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
             pickle.dump(dict(metrics), pick_file)
-
-        print("Finished model {}. Progress: {}/{}".format(model_name, model_i+1, len(model_classes)))
         #Save model + model weights + optimizer state
         save_model_checkpoint(output_path, epoch=args.epochs, model=model, optimizer=optimizer, name=model_name)
-        #delete and free
-        del model
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i+1, len(model_classes)))
+
+        del model #delete and free
         torch.cuda.empty_cache()
 
 def parse_tensor_to_numpy_or_scalar(input_tensor):

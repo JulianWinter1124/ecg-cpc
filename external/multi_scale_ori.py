@@ -253,11 +253,11 @@ class MSResNet(nn.Module):
 
         out = torch.cat([x, y, z], dim=1)
 
-        #out = self.downsample(out.transpose(1,2)) #Don't squeeze on batch dim
+        out = self.downsample(out.transpose(1,2)) #added myself
         # out = self.drop(out)
         #print(out.shape)
         #print(out.shape)
-        out1 = self.fc(out.squeeze(2))
+        out1 = self.fc(out.squeeze(1))
         #print(out1.shape)
         return out1, out
 

@@ -25,7 +25,7 @@ class BaselineNet(nn.Module):
         )
         self.downsample = nn.Conv1d(in_channels=248, out_channels=1, kernel_size=1)
 
-        self.fc = nn.Linear(out_channels, out_classes)
+        self.fc = nn.Linear(64, out_classes)
         #self.activation = nn.LogSoftmax(dim=1)
         #self.criterion = nn.NLLLoss()
         self.activation = nn.Sigmoid()
