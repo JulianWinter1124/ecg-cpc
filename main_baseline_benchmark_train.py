@@ -25,7 +25,11 @@ def main(args):
     print(args.out_path)
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
     train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-        '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+        '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+        # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+        window_size=9500)
+    val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+        '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
         # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         window_size=9500)
     model_classes = [
@@ -35,13 +39,17 @@ def main(args):
         baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
     ]
 
-    loaders = [
+    train_loaders = [
         DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
     ]
+    val_loaders = [
+        DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+
+    ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score #TODO: maybe use dict with name
-        accuracy_metrics.fn_score_label,
-        accuracy_metrics.tn_score_label,
-        accuracy_metrics.tp_score_label,
+        #accuracy_metrics.fn_score_label,
+        #accuracy_metrics.tn_score_label,
+        #accuracy_metrics.tp_score_label,
         accuracy_metrics.f1_score,
         accuracy_metrics.micro_avg_recall_score,
         accuracy_metrics.micro_avg_precision_score,
@@ -59,11 +67,11 @@ def main(args):
         model.train()
         #init optimizer
         optimizer = Adam(model.parameters(), lr=1e-3)
-        for dataloader_i, dataloader in enumerate(loaders):
-            metrics = defaultdict(lambda: defaultdict(list))
-            for epoch in range(1, args.epochs+1):
-                starttime = time.time()
-                for dataset_tuple in dataloader:
+        metrics = defaultdict(lambda: defaultdict(list))
+        for epoch in range(1, args.epochs+1):
+            starttime = time.time() #train
+            for train_loader_i, train_loader in enumerate(train_loaders):
+                for dataset_tuple in train_loader:
                     data, labels = dataset_tuple
                     data = data.float().cuda()
                     labels = labels.float().cuda()
@@ -73,24 +81,39 @@ def main(args):
                     loss.backward()
                     optimizer.step()
                     #saving metrics
-                    metrics[epoch]['loss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
                     for i, fn in enumerate(metric_functions):
                         metrics[epoch]['acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
-                    if args.test_mode:
+                    if args.dry_run:
                         break
-                elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
-                metrics[epoch]['elapsed_time'].append(elapsed_time)
-                print("Epoch {}/{} done. Avg loss: {:.4f} Elapsed time: {}".format(
-                    epoch, args.epochs, np.mean(metrics[epoch]['loss']), elapsed_time))
-                if args.test_mode:
-                    break
-            print("\tFinished dataset {}. Progress: {}/{}".format(dataloader_i, dataloader_i + 1, len(loaders)))
-            pickle_name = "model-{}-dataset-{}-epochs-{}.pickle".format(model_name, dataloader_i, args.epochs)
-            #Saving metrics in pickle
-            with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
-                pickle.dump(dict(metrics), pick_file)
-            if args.test_mode:
-                break
+                print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1, len(train_loaders)))
+                torch.cuda.empty_cache()
+            for val_loader_i, val_loader in enumerate(val_loaders): #validate
+                for dataset_tuple in val_loader:
+                    data, labels = dataset_tuple
+                    data = data.float().cuda()
+                    labels = labels.float().cuda()
+                    pred = model(data, y=None) #makes model return prediction instead of loss
+                    loss = baseline_losses.MSE_loss(pred=pred, y=labels)
+                    #saving metrics
+                    metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    for i, fn in enumerate(metric_functions):
+                        metrics[epoch]['val_acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                    if args.dry_run:
+                        break
+                print("\tFinished training dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
+
+            elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
+            metrics[epoch]['elapsed_time'].append(elapsed_time)
+            print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
+                epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']), elapsed_time))
+
+        pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.epochs)
+        #Saving metrics in pickle
+        with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
+            pickle.dump(dict(metrics), pick_file)
+        if args.dry_run:
+            break
         print("Finished model {}. Progress: {}/{}".format(model_name, model_i+1, len(model_classes)))
         #Save model + model weights + optimizer state
         save_model_checkpoint(output_path, epoch=args.epochs, model=model, optimizer=optimizer, name=model_name)
@@ -152,9 +175,9 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
 
-    parser.add_argument('--test_mode', dest='test_mode', action='store_true',
+    parser.add_argument('--dry_run', dest='dry_run', action='store_true',
                         help="Only run minimal samples to test all models functionality")
-    parser.set_defaults(test_mode=False)
+    parser.set_defaults(dry_run=False)
 
     args = parser.parse_args()
     main(args)
