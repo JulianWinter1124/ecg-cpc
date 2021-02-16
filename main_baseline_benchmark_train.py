@@ -37,8 +37,8 @@ def main(args):
     #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
     #     window_size=9500)
     
-    train_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_infront=9500-4500, use_labels=True)
-    val_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_infront=9500-4500, use_labels=True)
+    train_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_to_size=9500, use_labels=True)
+    val_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=9500, use_labels=True)
     train_dataset_challenge.merge_and_update_classes([val_dataset_challenge, train_dataset_challenge])
     print(train_dataset_challenge.classes)
     model_classes = [
