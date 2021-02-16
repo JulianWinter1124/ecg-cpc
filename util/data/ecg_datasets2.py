@@ -439,10 +439,11 @@ class ECGChallengeDatasetBatching(torch.utils.data.IterableDataset):
 
 
 class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
-    def __init__(self, BASE_DIR, window_size, files=None, channels=None, use_labels=False, classes=None):
+    def __init__(self, BASE_DIR, window_size, pad_infront=0, files=None, channels=None, use_labels=False, classes=None):
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
         self.window_size = window_size
+        self.pad_infront = pad_infront
         if files:
             self.files = files
         else:
@@ -467,14 +468,14 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
             if self.use_labels:
                 labels = self._read_header_labels(current_file)
                 if self.channels is None:
-                    yield data[offset:self.window_size + offset, :], labels[:]
+                    yield np.pad(data[offset:self.window_size + offset, :], ((self.pad_infront, 0), (0,0))), labels[:]
                 else:
-                    yield data[offset:self.window_size + offset, self.channels], labels[:]
+                    yield np.pad(data[offset:self.window_size + offset, self.channels], ((self.pad_infront, 0), (0,0))), labels[:]
             else:
                 if self.channels is None:
-                    yield data[offset:self.window_size + offset, :]
+                    yield np.pad(data[offset:self.window_size + offset, :], ((self.pad_infront, 0), (0,0)))
                 else:
-                    yield data[offset:self.window_size + offset, self.channels]
+                    yield np.pad(data[offset:self.window_size + offset, self.channels], ((self.pad_infront, 0), (0,0)))
             file_index += 1
 
     def _read_recording_file(self, path_without_ext):

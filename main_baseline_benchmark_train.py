@@ -26,14 +26,17 @@ def main(args):
     np.random.seed(args.seed)
     print(args.out_path)
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
-    train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-        '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-        # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-        window_size=9500)
-    val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-        '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-        # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-        window_size=9500)
+    # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+    #     window_size=9500)
+    # val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+    #     window_size=9500)
+    val_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4750, pad_infront=9500-4750, use_labels=True)
+    train_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4750, pad_infront=9500-4750, use_labels=True, classes=val_dataset_challenge.classes)
+
     model_classes = [
         baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
@@ -56,10 +59,12 @@ def main(args):
     ]
 
     train_loaders = [
-        DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        #DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
     ]
     val_loaders = [
-        DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        #DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
+        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score #TODO: maybe use dict with name
         #accuracy_metrics.fn_score_label,
