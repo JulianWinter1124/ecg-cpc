@@ -464,6 +464,7 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         while file_index < len(self.files):
             current_file = self.files[file_index]
             data = self._read_recording_file(current_file)
+            #print(current_file, len(data))
             offset = np.random.randint(len(data) - self.window_size)  # Random offset
             if self.use_labels:
                 labels = self._read_header_labels(current_file)
@@ -508,7 +509,17 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         print('Classes found in data folder:', self.classes)
         labels = self._read_header_labels(f)
         print('Labels have shape', labels.shape)
+        
 
+    def merge_and_update_classes(self, datasets):
+        all_classes = set()
+        for d in datasets:
+            all_classes = all_classes | set(d.classes)
+        all_classes = sorted(all_classes)
+        for d in datasets:
+            d.classes = all_classes
+        print('New length of labels:', len(all_classes))
+        
 
 
 

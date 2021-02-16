@@ -24,6 +24,8 @@ from util.store_models import save_model_architecture, save_model_checkpoint
 
 def main(args):
     np.random.seed(args.seed)
+    
+    torch.cuda.set_device(args.gpu_device)
     print(args.out_path)
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
     # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
@@ -34,9 +36,11 @@ def main(args):
     #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
     #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
     #     window_size=9500)
-    val_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4750, pad_infront=9500-4750, use_labels=True)
-    train_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4750, pad_infront=9500-4750, use_labels=True, classes=val_dataset_challenge.classes)
-
+    
+    train_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_infront=9500-4500, use_labels=True)
+    val_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_infront=9500-4500, use_labels=True)
+    train_dataset_challenge.merge_and_update_classes([val_dataset_challenge, train_dataset_challenge])
+    print(train_dataset_challenge.classes)
     model_classes = [
         baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
@@ -202,6 +206,8 @@ if __name__ == "__main__":
     parser.add_argument('--dry_run', dest='dry_run', action='store_true',
                         help="Only run minimal samples to test all models functionality")
     parser.set_defaults(dry_run=False)
+    
+    parser.add_argument("--gpu_device", type=int, default=0)
 
     args = parser.parse_args()
     main(args)
