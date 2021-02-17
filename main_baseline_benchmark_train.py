@@ -42,10 +42,10 @@ def main(args):
     train_dataset_challenge.merge_and_update_classes([val_dataset_challenge, train_dataset_challenge])
     print(train_dataset_challenge.classes)
     model_classes = [
-        baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
@@ -77,7 +77,11 @@ def main(args):
         accuracy_metrics.f1_score,
         accuracy_metrics.micro_avg_recall_score,
         accuracy_metrics.micro_avg_precision_score,
-        accuracy_metrics.accuracy
+        accuracy_metrics.accuracy,
+        accuracy_metrics.zero_fit_score,
+        accuracy_metrics.class_fit_score,
+        accuracy_metrics.class_count_prediction,
+        accuracy_metrics.class_count_truth
     ]
     for model_i, model in enumerate(model_classes):
         model_name = fullname(model)
