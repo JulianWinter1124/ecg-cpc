@@ -443,15 +443,9 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
         self.window_size = window_size
-        self.pad_to_size = pad_to_size
-        if files:
-            self.files = files
-        else:
-            self.files = self.search_files()
-        if classes is None:
-            self.classes = helper_code.get_classes(self.files)
-        else:
-            self.classes = classes
+        self.pad_to_size = pad_to_size or window_size
+        self.files = files or self.search_files()
+        self.classes = classes or helper_code.get_classes(self.files)
         self.print_file_attributes()
         self.channels = channels
         self.total_length = 1 #Trying a weird approach (calculated in __iter__)

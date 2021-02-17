@@ -176,11 +176,11 @@ def get_classes(files_without_ext):
 
 def encode_header_labels(header, classes):
     labels_act = np.zeros(len(classes))
-    for l in header:
+    for l in header.split('\n'):
         if l.startswith('#Dx:'):
-            labels_act = np.zeros(len(classes))
-            arrs = l.strip().split(' ')
-            for arr in arrs[1].split(','):
-                class_index = classes.index(arr.rstrip()) # Only use first positive index
+            arrs = l.strip().split(' ')[1]
+            print(arrs)
+            for arr in arrs.split(','):
+                class_index = classes.index(arr.strip()) # Only use first positive index
                 labels_act[class_index] = 1
     return labels_act

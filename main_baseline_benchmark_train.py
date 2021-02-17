@@ -36,8 +36,8 @@ def main(args):
     #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
     #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
     #     window_size=9500)
-    # path1='/media/julian/data/data/ECG/georgia_challenge'
-    # path2='/media/julian/data/data/ECG/ptbxl_challenge/'
+    # path1='/home/juwin106/data/georgia/WFDB'
+    # path2='/home/juwin106/data/ptbxl/WFDB'
     train_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge', window_size=4500, pad_to_size=4500, use_labels=True)
     val_dataset_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge/', window_size=4500, pad_to_size=4500, use_labels=True)
     train_dataset_challenge.merge_and_update_classes([val_dataset_challenge, train_dataset_challenge])
