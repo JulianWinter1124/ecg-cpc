@@ -160,7 +160,7 @@ class MSResNet(nn.Module):
         # self.layer7x7_4 = self._make_layer7(BasicBlock7x7, 512, layers[3], stride=2)
         self.maxpool7 = nn.AvgPool1d(kernel_size=6, stride=1, padding=0)
 
-        self.downsample = nn.Conv1d(282, 1, 1) #added myself
+        self.downsample = nn.Conv1d(126, 1, 1) #added myself
         # self.drop = nn.Dropout(p=0.2)
         self.fc = nn.Linear(256*3, num_classes)
 

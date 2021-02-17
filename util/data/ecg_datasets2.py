@@ -464,8 +464,12 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         while file_index < len(self.files):
             current_file = self.files[file_index]
             data = self._read_recording_file(current_file)
+            if len(data) - self.window_size > 0:
+                offset = np.random.randint(len(data) - self.window_size)  # Random offset
+            else:
+                offset = 0
             #print(current_file, len(data))
-            offset = np.random.randint(len(data) - self.window_size)  # Random offset
+
             if self.use_labels:
                 labels = self._read_header_labels(current_file)
                 if self.channels is None:
