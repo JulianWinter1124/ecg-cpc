@@ -179,7 +179,6 @@ def encode_header_labels(header, classes):
     for l in header.split('\n'):
         if l.startswith('#Dx:'):
             arrs = l.strip().split(' ')[1]
-            print(arrs)
             for arr in arrs.split(','):
                 class_index = classes.index(arr.strip()) # Only use first positive index
                 labels_act[class_index] = 1

@@ -108,7 +108,7 @@ def accuracy(y:t.Tensor, pred:t.Tensor, y_threshold=0.5, pred_threshold=0.5):
     return (t.nansum(tps)+t.nansum(tns))/(t.nansum(fps)+t.nansum(fns)+t.nansum(tps)+t.nansum(tns))
 
 def class_count_prediction(y:t.Tensor, pred:t.Tensor, y_threshold=0.5, pred_threshold=0.5):
-    return t.sum(pred, dim=0)
+    return t.sum(pred>pred_threshold, dim=0)
 
 def class_count_truth(y:t.Tensor, pred:t.Tensor, y_threshold=0.5, pred_threshold=0.5):
     return t.sum(y, dim=0)
