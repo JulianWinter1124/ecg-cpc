@@ -110,16 +110,18 @@ if __name__ == '__main__':
     # print(calc_conv1ds_input_length(1, kernel_sizes = [8, 6, 3, 3, 3], strides = [4, 2, 1, 1, 1], dilations = [1, 1, 1, 3, 9]))
     # print(calc_conv1ds_input_length(1,kernel_sizes = [7, 3, 3, 3, 3], strides = [2, 1, 1, 1, 1], dilations = [1, 1, 3, 9, 27]))
     # print(calc_conv1ds_output_length(9500, kernel_sizes=[7, 3, 3, 3, 3], strides=[2, 1, 1, 1, 1], dilations=[1, 1, 3, 9, 27]))
-    print(calc_conv1ds_output_length(9500, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    print(calc_conv1ds_output_length(465, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_input_length(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
-    print(calc_conv1ds_input_length_range(57, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
-    print(calc_conv1ds_output_length(9500, kernel_sizes=[3, 3, 3, 3, 3], strides=[1, 1, 1, 1, 1], dilations=[1, 3, 9, 27, 27*3]))
-    print(calc_conv1ds_input_length(1, kernel_sizes=[3, 3, 3, 3, 3], strides=[1, 1, 1, 1, 1],
-                                     dilations=[1, 3, 9, 27, 27 * 3]))
+
+    # print(calc_conv1ds_input_length(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    # print(calc_conv1ds_input_length_range(57, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    # print(calc_conv1ds_output_length(9500, kernel_sizes=[3, 3, 3, 3, 3], strides=[1, 1, 1, 1, 1], dilations=[1, 3, 9, 27, 27*3]))
+    # print(calc_conv1ds_input_length(1, kernel_sizes=[3, 3, 3, 3, 3], strides=[1, 1, 1, 1, 1],
+    #                                  dilations=[1, 3, 9, 27, 27 * 3]))
     #print(calc_conv1d_input_receptive_field(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
-    # rf = calc_conv1d_input_receptive_field(57, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='balanced')
+    rf = calc_conv1d_input_receptive_field(16000, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='balanced')
     # print(np.count_nonzero(rf))
-    # lv.plot_receptivefield_plot(rf)
+    lv.plot_receptivefield_plot(rf)
     # rfr = calc_conv1d_input_receptive_field(57, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='right')
     # rfl = calc_conv1d_input_receptive_field(57, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='left')
     # lv.plot_multiple_receptivefield_plot(rfr, rfl)
@@ -136,9 +138,10 @@ if __name__ == '__main__':
     #                                        dilations=[1, 3, 9, 27, 27 * 3],
     #                                        weights='balanced')
     # lv.plot_receptivefield_plot(rf, 'Receptive field for 57 pixel in output')
-    ks = 3
-    ln = 8
-    print(calc_conv1ds_output_length(9500, kernel_sizes=[ks]*ln, dilations=[ks**i for i in range(ln)], paddings=[ks**i for i in range(ln)]))
+    ks = 5
+    ln = 6
+    print(calc_conv1ds_output_length(4500, kernel_sizes=[ks]*ln, dilations=[ks**i for i in range(ln)])) #, paddings=[ks**i for i in range(ln)]
+    print(calc_conv1ds_input_length(1, kernel_sizes=[ks] * ln, dilations=[ks ** i for i in range(ln)])) #,paddings=[ks ** i for i in range(ln)]
     #rf1 = calc_conv1d_input_receptive_field(5405, kernel_sizes=[ks]*ln, dilations=[ks**i for i in range(ln)], paddings=[ks**i for i in range(ln)], weights='balanced')
     rf2 = calc_conv1d_input_receptive_field(1, kernel_sizes=[ks] * ln, dilations=[ks ** i for i in range(ln)],#, paddings=[ks**i for i in range(ln)]
                                             weights='balanced')
