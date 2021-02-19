@@ -58,7 +58,7 @@ def main(args):
         #baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         #baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         #baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
@@ -82,14 +82,14 @@ def main(args):
         #accuracy_metrics.fn_score_label,
         #accuracy_metrics.tn_score_label,
         #accuracy_metrics.tp_score_label,
-        accuracy_metrics.f1_score,
-        accuracy_metrics.micro_avg_recall_score,
-        accuracy_metrics.micro_avg_precision_score,
-        accuracy_metrics.accuracy,
-        accuracy_metrics.zero_fit_score,
-        accuracy_metrics.class_fit_score,
-        accuracy_metrics.class_count_prediction,
-        accuracy_metrics.class_count_truth
+        # accuracy_metrics.f1_score,
+        # accuracy_metrics.micro_avg_recall_score,
+        # accuracy_metrics.micro_avg_precision_score,
+        # accuracy_metrics.accuracy,
+        # accuracy_metrics.zero_fit_score,
+        # accuracy_metrics.class_fit_score,
+        # accuracy_metrics.class_count_prediction,
+        # accuracy_metrics.class_count_truth
     ]
     for model_i, model in enumerate(model_classes):
         model_name = fullname(model)
@@ -104,7 +104,7 @@ def main(args):
         model.train()
         #init optimizer
         optimizer = Adam(model.parameters(), lr=1e-3)
-        metrics = defaultdict(lambda: defaultdict(list))
+        metrics = defaultdict(lambda: defaultdict(lambda: list()))
         for epoch in range(1, args.epochs+1):
             starttime = time.time() #train
             for train_loader_i, train_loader in enumerate(train_loaders):
@@ -118,14 +118,14 @@ def main(args):
                     loss.backward()
                     optimizer.step()
                     #saving metrics
-                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    metrics[epoch]['trainloss'].append(loss.detach())
                     for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                        metrics[epoch]['acc_'+str(i)].append(fn(y=labels, pred=pred))
                     if args.dry_run:
                         break
+                    del data, pred, labels, loss
                 print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1, len(train_loaders)))
-                del data
-                del labels
+
                 torch.cuda.empty_cache()
             for val_loader_i, val_loader in enumerate(val_loaders): #validate
                 for dataset_tuple in val_loader:
@@ -135,17 +135,17 @@ def main(args):
                     pred = model(data, y=None) #makes model return prediction instead of loss
                     loss = bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
                     #saving metrics
-                    metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    metrics[epoch]['valloss'].append(loss.detach())
                     for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['val_acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                        metrics[epoch]['val_acc_'+str(i)].append(fn(y=labels, pred=pred))
                     if args.dry_run:
                         break
+                    del data, pred, labels, loss
                 print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
-                del data
-                del labels
-
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
-            metrics[epoch]['elapsed_time'].append(elapsed_time)
+
+            metrics[epoch] = tensor_lists_to_numpy(metrics[epoch])
+            metrics[epoch]['elapsed_time'] = elapsed_time
             print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
                 epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']), elapsed_time))
             if args.dry_run:
@@ -161,11 +161,11 @@ def main(args):
         del model #delete and free
         torch.cuda.empty_cache()
 
-def parse_tensor_to_numpy_or_scalar(input_tensor):
-    arr = input_tensor.detach().cpu().numpy()
-    if arr.size == 1:
-        return arr.item()
-    return arr
+def tensor_lists_to_numpy(epoch_metrics: dict):
+    parsed = {}
+    for k, v in epoch_metrics.items():
+        parsed[k] = torch.stack(v).cpu().numpy()
+    return parsed
 
 if __name__ == "__main__":
     import sys
