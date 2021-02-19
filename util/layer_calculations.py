@@ -71,8 +71,10 @@ def calc_conv1d_input_receptive_field(output_length, kernel_sizes: list, padding
         dilations = [1] * len(kernel_sizes)
     if strides is None:
         strides = [1] * len(kernel_sizes)
-
-    receptive_out = torch.ones((1, 1, output_length))
+    if type(output_length) == type(1):
+        receptive_out = torch.ones((1, 1, output_length))
+    else:
+        receptive_out = output_length #Assume array
     for padding, dilation, kernel_size, stride in reversed(list(zip(paddings, dilations, kernel_sizes, strides))):
         print('In:', receptive_out, end='->')
         receptive_out = _calc_conv1d_input_receptive_field(receptive_out=receptive_out, kernel_size=kernel_size, padding=padding, dilation=dilation, stride=stride, kernel_weights=weights)
@@ -110,7 +112,7 @@ if __name__ == '__main__':
     # print(calc_conv1ds_input_length(1, kernel_sizes = [8, 6, 3, 3, 3], strides = [4, 2, 1, 1, 1], dilations = [1, 1, 1, 3, 9]))
     # print(calc_conv1ds_input_length(1,kernel_sizes = [7, 3, 3, 3, 3], strides = [2, 1, 1, 1, 1], dilations = [1, 1, 3, 9, 27]))
     # print(calc_conv1ds_output_length(9500, kernel_sizes=[7, 3, 3, 3, 3], strides=[2, 1, 1, 1, 1], dilations=[1, 1, 3, 9, 27]))
-    print(calc_conv1ds_output_length(465, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    print(calc_conv1ds_output_length(20480, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_input_length(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
 
     # print(calc_conv1ds_input_length(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
@@ -119,8 +121,10 @@ if __name__ == '__main__':
     # print(calc_conv1ds_input_length(1, kernel_sizes=[3, 3, 3, 3, 3], strides=[1, 1, 1, 1, 1],
     #                                  dilations=[1, 3, 9, 27, 27 * 3]))
     #print(calc_conv1d_input_receptive_field(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
-    rf = calc_conv1d_input_receptive_field(16000, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='balanced')
-    # print(np.count_nonzero(rf))
+    rf = calc_conv1d_input_receptive_field(20480, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='balanced')
+    lv.plot_receptivefield_plot(rf)
+
+    rf = calc_conv1d_input_receptive_field(torch.tensor([[[1., 1.]]]), kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='balanced')
     lv.plot_receptivefield_plot(rf)
     # rfr = calc_conv1d_input_receptive_field(57, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='right')
     # rfl = calc_conv1d_input_receptive_field(57, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='left')

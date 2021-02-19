@@ -169,17 +169,17 @@ def get_classes(files_without_ext):
         with open(filename+'.hea', 'r') as f:
             for l in f:
                 if l.startswith('#Dx'):
-                    tmp = l.split(': ')[1].split(',')
+                    tmp = l.split(':')[1].split(',')
                     for c in tmp:
                         classes.add(c.strip())
-    return sorted(classes)
+    return dict(zip(sorted(classes), range(len(classes))))
 
 def encode_header_labels(header, classes):
     labels_act = np.zeros(len(classes))
     for l in header.split('\n'):
-        if l.startswith('#Dx:'):
-            arrs = l.strip().split(' ')[1]
-            for arr in arrs.split(','):
-                class_index = classes.index(arr.strip()) # Only use first positive index
+        if l.startswith('#Dx'):
+            tmp = l.split(':')[1].split(',')
+            for c in tmp:
+                class_index = classes[c.strip()]
                 labels_act[class_index] = 1
     return labels_act

@@ -512,8 +512,9 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
     def merge_and_update_classes(self, datasets):
         all_classes = set()
         for d in datasets:
-            all_classes = all_classes | set(d.classes)
+            all_classes = all_classes | set(d.classes.keys())
         all_classes = sorted(all_classes)
+        all_classes = dict(zip(all_classes, range(len(all_classes))))
         for d in datasets:
             d.classes = all_classes
         print('New length of labels:', len(all_classes))
