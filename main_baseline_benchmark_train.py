@@ -104,7 +104,7 @@ def main(args):
         model.train()
         #init optimizer
         optimizer = Adam(model.parameters(), lr=1e-3)
-        metrics = defaultdict(lambda: defaultdict(lambda: list()))
+        metrics = defaultdict(lambda: defaultdict(list))
         for epoch in range(1, args.epochs+1):
             starttime = time.time() #train
             for train_loader_i, train_loader in enumerate(train_loaders):
@@ -118,9 +118,9 @@ def main(args):
                     loss.backward()
                     optimizer.step()
                     #saving metrics
-                    metrics[epoch]['trainloss'].append(loss.detach())
+                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
                     for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['acc_'+str(i)].append(fn(y=labels, pred=pred))
+                        metrics[epoch]['acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                     if args.dry_run:
                         break
                     del data, pred, labels, loss
@@ -133,19 +133,19 @@ def main(args):
                     data = data.float().cuda()
                     labels = labels.float().cuda()
                     pred = model(data, y=None) #makes model return prediction instead of loss
-                    loss = bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
+                    loss = baseline_losses.MSE_loss(pred=pred, y=labels)
                     #saving metrics
-                    metrics[epoch]['valloss'].append(loss.detach())
+                    metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
                     for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['val_acc_'+str(i)].append(fn(y=labels, pred=pred))
+                        metrics[epoch]['val_acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                     if args.dry_run:
                         break
-                    del data, pred, labels, loss
                 print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
-            elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
+                del data
+                del labels
 
-            metrics[epoch] = tensor_lists_to_numpy(metrics[epoch])
-            metrics[epoch]['elapsed_time'] = elapsed_time
+            elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
+            metrics[epoch]['elapsed_time'].append(elapsed_time)
             print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
                 epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']), elapsed_time))
             if args.dry_run:
@@ -161,11 +161,11 @@ def main(args):
         del model #delete and free
         torch.cuda.empty_cache()
 
-def tensor_lists_to_numpy(epoch_metrics: dict):
-    parsed = {}
-    for k, v in epoch_metrics.items():
-        parsed[k] = torch.stack(v).cpu().numpy()
-    return parsed
+def parse_tensor_to_numpy_or_scalar(input_tensor):
+    arr = input_tensor.detach().cpu().numpy()
+    if arr.size == 1:
+        return arr.item()
+    return arr
 
 if __name__ == "__main__":
     import sys
