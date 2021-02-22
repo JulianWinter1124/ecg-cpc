@@ -119,10 +119,11 @@ def main(args):
                     optimizer.step()
                     #saving metrics
                     metrics[epoch]['trainloss'].append(loss.detach())
-                    for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['acc_'+str(i)].append(fn(y=labels, pred=pred))
-                    if args.dry_run:
-                        break
+                    with torch.no_grad:
+                        for i, fn in enumerate(metric_functions):
+                            metrics[epoch]['acc_'+str(i)].append(fn(y=labels, pred=pred))
+                        if args.dry_run:
+                            break
                     del data, pred, labels, loss
                 print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1, len(train_loaders)))
 
