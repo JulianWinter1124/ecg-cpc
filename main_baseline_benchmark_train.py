@@ -82,12 +82,12 @@ def main(args):
         #accuracy_metrics.fn_score_label,
         #accuracy_metrics.tn_score_label,
         #accuracy_metrics.tp_score_label,
-        # accuracy_metrics.f1_score,
+        #accuracy_metrics.f1_score,
         # accuracy_metrics.micro_avg_recall_score,
         # accuracy_metrics.micro_avg_precision_score,
         # accuracy_metrics.accuracy,
-        # accuracy_metrics.zero_fit_score,
-        # accuracy_metrics.class_fit_score,
+        accuracy_metrics.zero_fit_score,
+        accuracy_metrics.class_fit_score
         # accuracy_metrics.class_count_prediction,
         # accuracy_metrics.class_count_truth
     ]
