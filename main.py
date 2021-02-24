@@ -12,10 +12,10 @@ from architectures_various import baseline_cnn_explain
 from util.data import ecg_datasets2
 from architectures_baseline import baseline_convencoder, baseline_cnn_v0_3
 # from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
-# from cpc_architectures.cpc_encoder_vresnet import CPC, Predictor, AutoRegressor, Encoder
-from cpc_architectures import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_intersect, \
+# from architectures_cpc.cpc_encoder_vresnet import CPC, Predictor, AutoRegressor, Encoder
+from architectures_cpc import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_intersect, \
     cpc_downstream_model_multitarget_v2
-from cpc_architectures.downstream_model_multitarget import DownstreamLinearNet
+from old.downstream_model_multitarget import DownstreamLinearNet
 from optimizer import ScheduledOptim
 from training import cpc_train, cpc_validation, down_validation, baseline_train, baseline_validation, \
     decoder_validation, decoder_train

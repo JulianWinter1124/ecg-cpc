@@ -50,7 +50,7 @@ class CPC(nn.Module):
                 encoded_latent /= torch.sqrt(torch.sum(torch.square(encoded_latent)))
             for step in range(pred_latent.shape[0]): #TODO: can this be broadcasted?
                 softmax = self.lsoftmax(torch.mm(encoded_latent[step], pred_latent[step].T))  # output: (Batches, Batches)
-                if self.verbose: print(softmax.shape)
+                if self.verbose: print('softmax shape', softmax.shape)
                 correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(batch).cuda()) #Since
                 loss += torch.sum(torch.diag(softmax))
 

@@ -4,7 +4,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from util.data import ecg_datasets2
-from cpc_architectures import cpc_encoder_v2, cpc_encoder_decoder_v2
+from architectures_cpc import cpc_encoder_v2, cpc_encoder_decoder_v2
 from external.tcn.TCN.tcn import TemporalConvNet
 
 

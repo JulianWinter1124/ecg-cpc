@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
-from architectures_baseline_challenge import baseline_losses as bl
+from architectures_baseline_challenge import baseline_losses as bl, baseline_cnn_v15
 from architectures_baseline_challenge import baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
     baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, baseline_cnn_v8, baseline_cnn_v9, \
     baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14, baseline_cnn_v0_1, \
@@ -59,15 +59,17 @@ def main(args):
         #baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         #baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         #baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v10.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v11.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #baseline_cnn_v12.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
+        # baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v10.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v11.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # #baseline_cnn_v12.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # #baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                     out_classes=args.forward_classes, verbose=False)
     ]
 
     train_loaders = [
@@ -103,7 +105,7 @@ def main(args):
         model.cuda()
         model.train()
         #init optimizer
-        optimizer = Adam(model.parameters(), lr=1e-3)
+        optimizer = Adam(model.parameters(), lr=3e-4)
         metrics = defaultdict(lambda: defaultdict(list))
         for epoch in range(1, args.epochs+1):
             starttime = time.time() #train
@@ -119,30 +121,31 @@ def main(args):
                     optimizer.step()
                     #saving metrics
                     metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                    for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                    with torch.no_grad():
+                        for i, fn in enumerate(metric_functions):
+                            metrics[epoch]['acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                     if args.dry_run:
                         break
                     del data, pred, labels, loss
                 print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1, len(train_loaders)))
 
                 torch.cuda.empty_cache()
-            for val_loader_i, val_loader in enumerate(val_loaders): #validate
-                for dataset_tuple in val_loader:
-                    data, labels = dataset_tuple
-                    data = data.float().cuda()
-                    labels = labels.float().cuda()
-                    pred = model(data, y=None) #makes model return prediction instead of loss
-                    loss = baseline_losses.MSE_loss(pred=pred, y=labels)
-                    #saving metrics
-                    metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                    for i, fn in enumerate(metric_functions):
-                        metrics[epoch]['val_acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
-                    if args.dry_run:
-                        break
-                print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
-                del data
-                del labels
+            with torch.no_grad():
+                for val_loader_i, val_loader in enumerate(val_loaders): #validate
+                    for dataset_tuple in val_loader:
+                        data, labels = dataset_tuple
+                        data = data.float().cuda()
+                        labels = labels.float().cuda()
+                        pred = model(data, y=None) #makes model return prediction instead of loss
+                        loss = bl.MSE_loss(pred=pred, y=labels)
+                        #saving metrics
+                        metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                        for i, fn in enumerate(metric_functions):
+                            metrics[epoch]['val_acc_'+str(i)].append(parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                        if args.dry_run:
+                            break
+                    print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1, len(val_loaders)))
+                    del data, pred, labels, loss
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)
