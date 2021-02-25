@@ -1,3 +1,4 @@
+import glob
 import os
 import pickle
 
@@ -42,6 +43,21 @@ def load_model(full_model_file, model_checkpoint_file, optimizer):
     model = load_model_architecture(full_model_file)
     model, optimizer, epoch = load_model_checkpoint(model_checkpoint_file, model, optimizer)
     return model, optimizer, epoch
+
+
+def extract_model_files_from_dir(directory):
+    files = []
+    for root, dirs, dir_files in os.walk(directory):
+        fm_temp, ch_temp = [], []
+        for file in dir_files:
+            if 'full_model' in file and file.endswith('.pt'):
+                fm_temp.append(os.path.join(root, file))
+            elif 'checkpoint' in file and file.endswith('.pt'):
+                ch_temp.append(os.path.join(root, file))
+        if len(fm_temp) > 0 and len(ch_temp) > 0:
+            files.append((fm_temp, ch_temp))
+    return files
+
 
 
 @DeprecationWarning

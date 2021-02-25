@@ -2,14 +2,19 @@ import argparse
 import datetime
 import os
 import pickle
+import time
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+import torch
 from torch import nn
+from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from util.data import ecg_datasets2
-
+from util.full_class_name import fullname
+from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
 def main(args):
     np.random.seed(args.seed)
@@ -33,29 +38,19 @@ def main(args):
                            collate_fn=ecg_datasets2.collate_fn)
 
     model_folders = [
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-14',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-15',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-11',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-19',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-18',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-16',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_01_21-15',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-19',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-18',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-17',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_21-15',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/03_01_21-19',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_21-16',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_21-14',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_21-18',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_21-14'
+        'models/25_02_21-13'
     ]
     #infer class from model-arch file
-    for m_f in model_folders:
-        with open(os.path.join(m_f, 'model-arch.txt'), 'r') as arch_file:
-            l1 = arch_file.readline(1)
-            model_class = eval(l1.strip())
-            model_class() #put params here?? or retrain
+    models = []
+    for mfolder in model_folders:
+        model_files = extract_model_files_from_dir(mfolder)
+        for mfile in model_files:
+            fm_fs, cp_fs = mfile
+            fm_f = fm_fs[0]
+            cp_f = sorted(cp_fs)[-1]
+            model = load_model_architecture(fm_f)
+            model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None)
+            models.append(model)
     loaders = [
         trainloader,
         valloader
@@ -63,30 +58,65 @@ def main(args):
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
 
     ]
-    for model_i, model_path in enumerate(models):
-        #torch.load(model, os.path.join(args.out_path, str(i)+'_model_full.pt'))
-        #load model here into model
-        model = nn.Linear(1,1)
-        model.cuda()
-        for dataloader_i, dataloader in enumerate(loaders):
-            metrics = [[]*len(metric_functions)]
-            for dataset_tuple in dataloader:
-                if len(dataset_tuple) == 2:
-                    data, labels = dataset_tuple
-                elif len(dataset_tuple) == 3:
-                    data, labels, _ = dataset_tuple
-                else:
-                    print("Unknown dataset return tuple length")
-                    return
-                pred = model(data, y=None).cpu()
-                for i, fn in enumerate(metric_functions):
-                    metrics[i].append(fn(labels, pred))
-            pickle_name = "model-{}-dataset-{}.pickle".format('-'.join(model_path.split(os.sep)), dataloader_i)
-            with open(os.path.join(args.out_path, pickle_name), 'wb') as pick_file:
-                pickle.dump(metrics, pick_file)
-            print("\tFinished dataset {}. Progress: {}/{}".format(dataloader_i, dataloader_i+1, len(loaders)))
-        print("Finished model {}. Progress: {}/{}".format(model_path, model_i+1, len(models)))
+    for model_i, model in enumerate(models):
+        model_name = fullname(model)
+        output_path = os.path.join(args.out_path, model_name)
+        print("Evaluating {}. Output will  be saved to dir: {}".format(model_name, output_path))
+        # Create dirs and model info
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+        with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
+            cfg.write(str(args))
 
+        model.cuda()
+        # init optimizer
+        optimizer = Adam(model.parameters(), lr=3e-4)
+        metrics = defaultdict(lambda: defaultdict(list))
+        for epoch in range(1, args.epochs + 1):
+            starttime = time.time()  # train
+            for loader_i, loader in enumerate(loaders):
+                for dataset_tuple in loader:
+                    data, labels = dataset_tuple
+                    data = data.float().cuda()
+                    labels = labels.float().cuda()
+                    optimizer.zero_grad()
+                    pred = model(data, y=None)  # makes model return prediction instead of loss
+
+                    # saving metrics
+                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    with torch.no_grad():
+                        for i, fn in enumerate(metric_functions):
+                            metrics[epoch]['acc_' + str(i)].append(
+                                parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                    if args.dry_run:
+                        break
+                    del data, pred, labels
+                print("\tFinished training dataset {}. Progress: {}/{}".format(loader_i, loader_i + 1,
+                                                                               len(loaders)))
+
+                torch.cuda.empty_cache()
+
+            elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
+            metrics[epoch]['elapsed_time'].append(elapsed_time)
+            print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
+                epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
+                elapsed_time))
+            if args.dry_run:
+                break
+        pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.epochs)
+        # Saving metrics in pickle
+        with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
+            pickle.dump(dict(metrics), pick_file)
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(models)))
+        del model  # delete and free
+        torch.cuda.empty_cache()
+
+
+
+def parse_tensor_to_numpy_or_scalar(input_tensor):
+    arr = input_tensor.detach().cpu().numpy()
+    if arr.size == 1:
+        return arr.item()
+    return arr
 
 if __name__ == "__main__":
     import sys

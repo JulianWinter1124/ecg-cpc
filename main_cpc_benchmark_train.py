@@ -17,6 +17,7 @@ import cpc_downstream_model_multitarget_v1
 import cpc_downstream_model_multitarget_v2
 import cpc_downstream_only
 import cpc_encoder_v0
+import cpc_encoder_v4
 import cpc_intersect
 import cpc_predictor_v0
 from architectures_baseline_challenge import baseline_losses as bl
@@ -65,7 +66,7 @@ def main(args):
     val_dataset_challenge = ChainDataset([ptbxl])
     pretrain_classes = [
         cpc_intersect.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+            cpc_encoder_v4.Encoder(args.channels, args.latent_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
@@ -168,7 +169,7 @@ def main(args):
                     elapsed_time))
                 if args.dry_run:
                     break
-            pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.epochs)
+            pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.epochs)
             # Saving metrics in pickle
             with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
                 pickle.dump(dict(metrics), pick_file)

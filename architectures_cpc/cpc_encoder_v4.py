@@ -2,6 +2,8 @@ from torch import nn
 #Idea: Make a bug receptive field using dilations
 #Do not use strides to not miss any information
 #Use maxpool instead of strides to select a window where activation is biggest
+from util.print_layer import PrintLayer
+
 
 class Encoder(nn.Module):
     def __init__(self, channels, latent_size):
@@ -9,13 +11,16 @@ class Encoder(nn.Module):
         kernel_sizes = [5, 3, 3, 3, 3]
         strides = [1, 1, 1, 1, 1]
         dilations = [1, 5, 3*5, 3*3*5, 5*3*3*3]
-        max_pool_sizes = [3, 3, 3, 3, 1]
-        n_channels = [channels] + [latent_size] * len(kernel_sizes)
+        max_pool_sizes = [1, 1, 3, 3, 3]
+        n_channels = [channels, 3, 24, 32, 64, latent_size] #channels in, 3 to downsample into important channels, than upscale to find features filters
         #self.batch_norm = nn.BatchNorm1d(n_channels[0]) #not used in paper?
         self.convolutionals = nn.Sequential(
             *[e for t in [
-                (nn.Conv1d(in_channels=n_channels[i], out_channels=n_channels[i + 1], kernel_size=kernel_sizes[i], dilation=dilations[i], stride=strides[i], padding=0),
-                 nn.MaxPool1d(max_pool_sizes[i]),
+                (nn.Conv1d(in_channels=n_channels[i], out_channels=n_channels[i + 1], kernel_size=kernel_sizes[i],
+                           stride=strides[i], padding=0, dilation=dilations[i]),
+                 #PrintLayer('after conv'),
+                 #nn.MaxPool1d(max_pool_sizes[i]),
+                 #PrintLayer('after pool'),
                  (nn.ReLU())
                  ) for i in range(len(kernel_sizes))] for e in t]
         )
