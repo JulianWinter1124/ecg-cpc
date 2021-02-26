@@ -439,7 +439,7 @@ class ECGChallengeDatasetBatching(torch.utils.data.IterableDataset):
 
 
 class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
-    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, use_labels=False, classes=None):
+    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, return_labels=False, return_filename=False, classes=None):
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
         self.window_size = window_size
@@ -449,7 +449,8 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         self.print_file_attributes()
         self.channels = channels
         self.total_length = 1 #Trying a weird approach (calculated in __iter__)
-        self.use_labels = use_labels
+        self.return_labels = return_labels
+        self.return_filename = return_filename
 
 
     def __iter__(self):
@@ -458,23 +459,21 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         while file_index < len(self.files):
             current_file = self.files[file_index]
             data = self._read_recording_file(current_file)
+            if self.channels:
+                data = data[:, self.channels]
+            if self.return_labels:
+                labels = self._read_header_labels(current_file)
             if len(data) - self.window_size > 0:
                 offset = np.random.randint(len(data) - self.window_size)  # Random offset
             else:
                 offset = 0
-            #print(current_file, len(data))
-
-            if self.use_labels:
-                labels = self._read_header_labels(current_file)
-                if self.channels is None:
-                    yield np.pad(data[offset:self.window_size + offset, :], ((max(0, self.pad_to_size-min(self.window_size, len(data))), 0), (0,0))), labels[:]
-                else:
-                    yield np.pad(data[offset:self.window_size + offset, self.channels], ((max(0, self.pad_to_size-min(self.window_size, len(data))), 0), (0,0))), labels[:]
+                data = np.pad(data, ((max(0, self.pad_to_size-min(self.window_size, len(data))), 0), (0,0)))
+            print(current_file, len(data))
+            if not any([self.return_filename, self.return_labels]):
+                yield data
             else:
-                if self.channels is None:
-                    yield np.pad(data[offset:self.window_size + offset, :], ((max(0, self.pad_to_size-min(self.window_size, len(data))), 0), (0,0)))
-                else:
-                    yield np.pad(data[offset:self.window_size + offset, self.channels], ((max(0, self.pad_to_size-min(self.window_size, len(data))), 0), (0,0)))
+                yield [data] + ([labels] if self.return_labels else []) + ([current_file] if self.return_filename else [])
+
             file_index += 1
 
     def _read_recording_file(self, path_without_ext):

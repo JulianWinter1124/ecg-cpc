@@ -53,13 +53,13 @@ def main(args):
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
     georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=4500, pad_to_size=4500, use_labels=True)
+                                                        window_size=4500, pad_to_size=4500, return_labels=True)
     cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=4500, pad_to_size=4500, use_labels=True)
+                                                           window_size=4500, pad_to_size=4500, return_labels=True)
     cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4500,
-                                                     pad_to_size=4500, use_labels=True)
+                                                     pad_to_size=4500, return_labels=True)
     ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4500,
-                                                      pad_to_size=4500, use_labels=True)
+                                                      pad_to_size=4500, return_labels=True)
 
     georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
     train_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc])

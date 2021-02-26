@@ -10,35 +10,42 @@ import numpy as np
 import torch
 from torch import nn
 from torch.optim import Adam
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ChainDataset
 
+import accuracy_metrics
+from external import helper_code
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
 from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
 def main(args):
     np.random.seed(args.seed)
-
+    torch.cuda.set_device(args.gpu_device)
+    print(args.out_path)
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
     with open(os.path.join(args.out_path, 'params.txt'), 'w') as cfg:
-        cfg.write(args)
-    train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-        '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-        # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-        window_size=9500)
+        cfg.write(str(args))
+    # georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
+    # cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
+    # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
+    # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
-    trainloader = DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1,
-                             collate_fn=ecg_datasets2.collate_fn)
+    georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+                                                        window_size=4500, pad_to_size=4500, return_labels=True, return_filename=True)
+    cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+                                                           window_size=4500, pad_to_size=4500, return_labels=True, return_filename=True)
+    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4500,
+                                                     pad_to_size=4500, return_labels=True, return_filename=True)
+    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4500,
+                                                      pad_to_size=4500, return_labels=True, return_filename=True)
 
-    val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-        '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-        # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-        window_size=9500)
-    valloader = DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1,
-                           collate_fn=ecg_datasets2.collate_fn)
+    georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
+    classes = georgia.classes
+    train_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc])
+    val_dataset_challenge = ChainDataset([ptbxl])
 
     model_folders = [
-        'models/25_02_21-13'
+        'models/17_02_21-12'
     ]
     #infer class from model-arch file
     models = []
@@ -52,11 +59,12 @@ def main(args):
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None)
             models.append(model)
     loaders = [
-        trainloader,
-        valloader
+        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=True, num_workers=1,
+                   collate_fn=ecg_datasets2.collate_fn)
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
-
+        accuracy_metrics.micro_avg_precision_score,
+        accuracy_metrics.micro_avg_recall_score,
     ]
     for model_i, model in enumerate(models):
         model_name = fullname(model)
@@ -71,18 +79,17 @@ def main(args):
         # init optimizer
         optimizer = Adam(model.parameters(), lr=3e-4)
         metrics = defaultdict(lambda: defaultdict(list))
-        for epoch in range(1, args.epochs + 1):
+        for epoch in range(1, 2):
             starttime = time.time()  # train
             for loader_i, loader in enumerate(loaders):
                 for dataset_tuple in loader:
-                    data, labels = dataset_tuple
+                    data, labels, filename = dataset_tuple
                     data = data.float().cuda()
                     labels = labels.float().cuda()
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
-
-                    # saving metrics
-                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    print(labels.shape, pred.shape)
+                    helper_code.save_challenge_predictions(output_path, filename, classes=classes, scores=pred, labels=labels)
                     with torch.no_grad():
                         for i, fn in enumerate(metric_functions):
                             metrics[epoch]['acc_' + str(i)].append(
@@ -90,27 +97,21 @@ def main(args):
                     if args.dry_run:
                         break
                     del data, pred, labels
-                print("\tFinished training dataset {}. Progress: {}/{}".format(loader_i, loader_i + 1,
-                                                                               len(loaders)))
-
+                print("\tFinished dataset {}. Progress: {}/{}".format(loader_i, loader_i + 1, len(loaders)))
                 torch.cuda.empty_cache()
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)
-            print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
-                epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
-                elapsed_time))
+            print("Done. Elapsed time: {}".format(elapsed_time))
             if args.dry_run:
                 break
-        pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.epochs)
+        pickle_name = "model-{}-test.pickle".format(model_name)
         # Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
             pickle.dump(dict(metrics), pick_file)
         print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(models)))
         del model  # delete and free
         torch.cuda.empty_cache()
-
-
 
 def parse_tensor_to_numpy_or_scalar(input_tensor):
     arr = input_tensor.detach().cpu().numpy()
@@ -124,8 +125,6 @@ if __name__ == "__main__":
     print(sys.argv)
 
     parser = argparse.ArgumentParser(description='Contrastive Predictive Coding')
-    parser.add_argument('--train_mode', type=str, choices=['cpc', 'downstream', 'baseline', 'decoder', 'explain'],
-                        help='Select mode. Possible: cpc, downstream, baseline, decoder')
     # datapath
     # Other params
     parser.add_argument('--saved_model', type=str,
@@ -141,14 +140,14 @@ if __name__ == "__main__":
     parser.add_argument('--out_path', help="The output directory for losses and models",
                         default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
 
-    parser.add_argument('--forward_classes', type=int, default=41,
+    parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")
 
     parser.add_argument('--warmup_steps', type=int, default=0, help="The number of warmup steps")
 
     parser.add_argument('--batch_size', type=int, default=24, help="The batch size")
 
-    parser.add_argument('--latent_size', type=int, default=768,
+    parser.add_argument('--latent_size', type=int, default=128,
                         help="The size of the latent encoding for one window")
 
     parser.add_argument('--timesteps_in', type=int, default=6,
@@ -165,6 +164,12 @@ if __name__ == "__main__":
 
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
+
+    parser.add_argument('--dry_run', dest='dry_run', action='store_true',
+                        help="Only run minimal samples to test all models functionality")
+    parser.set_defaults(dry_run=False)
+
+    parser.add_argument("--gpu_device", type=int, default=0)
 
     args = parser.parse_args()
     main(args)
