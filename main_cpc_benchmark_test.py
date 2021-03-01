@@ -45,7 +45,7 @@ def main(args):
     val_dataset_challenge = ChainDataset([ptbxl])
 
     model_folders = [
-        'models/17_02_21-12'
+        'models/25_02_21-13'
     ]
     #infer class from model-arch file
     models = []
@@ -83,13 +83,13 @@ def main(args):
             starttime = time.time()  # train
             for loader_i, loader in enumerate(loaders):
                 for dataset_tuple in loader:
-                    data, labels, filename = dataset_tuple
+                    data, labels, filenames = dataset_tuple
                     data = data.float().cuda()
                     labels = labels.float().cuda()
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
                     print(labels.shape, pred.shape)
-                    helper_code.save_challenge_predictions(output_path, filename, classes=classes, scores=pred, labels=labels)
+                    helper_code.save_challenge_predictions(output_path, filenames, classes=classes, scores=pred, labels=labels)
                     with torch.no_grad():
                         for i, fn in enumerate(metric_functions):
                             metrics[epoch]['acc_' + str(i)].append(
