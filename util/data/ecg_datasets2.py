@@ -465,10 +465,10 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
                 labels = self._read_header_labels(current_file)
             if len(data) - self.window_size > 0:
                 offset = np.random.randint(len(data) - self.window_size)  # Random offset
+                data = data[offset:self.window_size+offset]
             else:
                 offset = 0
                 data = np.pad(data, ((max(0, self.pad_to_size-min(self.window_size, len(data))), 0), (0,0)))
-            print(current_file, len(data))
             if not any([self.return_filename, self.return_labels]):
                 yield data
             else:
@@ -516,7 +516,7 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         all_classes = dict(zip(all_classes, range(len(all_classes))))
         for d in datasets:
             d.classes = all_classes
-        print('New length of labels:', len(all_classes))
+        print('Labels for datasets set to:', all_classes)
         
 
 

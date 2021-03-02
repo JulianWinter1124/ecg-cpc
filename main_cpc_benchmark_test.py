@@ -5,6 +5,7 @@ import pickle
 import time
 from collections import defaultdict
 from pathlib import Path
+import pandas as pd
 
 import numpy as np
 import torch
@@ -31,13 +32,13 @@ def main(args):
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
     georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=4500, pad_to_size=4500, return_labels=True, return_filename=True)
+                                                        window_size=5000, pad_to_size=5000, return_labels=True, return_filename=True)
     cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=4500, pad_to_size=4500, return_labels=True, return_filename=True)
-    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4500,
-                                                     pad_to_size=4500, return_labels=True, return_filename=True)
-    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4500,
-                                                      pad_to_size=4500, return_labels=True, return_filename=True)
+                                                           window_size=5000, pad_to_size=5000, return_labels=True, return_filename=True)
+    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=5000,
+                                                     pad_to_size=5000, return_labels=True, return_filename=True)
+    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=5000,
+                                                      pad_to_size=5000, return_labels=True, return_filename=True)
 
     georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
     classes = georgia.classes
@@ -45,7 +46,7 @@ def main(args):
     val_dataset_challenge = ChainDataset([ptbxl])
 
     model_folders = [
-        'models/25_02_21-13'
+        'models/01_03_21-14'
     ]
     #infer class from model-arch file
     models = []
@@ -74,11 +75,17 @@ def main(args):
         Path(output_path).mkdir(parents=True, exist_ok=True)
         with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
             cfg.write(str(args))
-
+        with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
+            print(fullname(model), file=f)
+            print(model, file=f)
         model.cuda()
         # init optimizer
         optimizer = Adam(model.parameters(), lr=3e-4)
         metrics = defaultdict(lambda: defaultdict(list))
+        pred_dataframe = pd.DataFrame(columns=classes)
+        pred_dataframe.index.name = 'filename'
+        label_dataframe = pd.DataFrame(columns=classes)
+        label_dataframe.index.name = 'filename'
         for epoch in range(1, 2):
             starttime = time.time()  # train
             for loader_i, loader in enumerate(loaders):
@@ -88,8 +95,13 @@ def main(args):
                     labels = labels.float().cuda()
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
-                    print(labels.shape, pred.shape)
-                    helper_code.save_challenge_predictions(output_path, filenames, classes=classes, scores=pred, labels=labels)
+                    pred = pred.detach().cpu()
+                    labels = labels.cpu()
+                    labels_numpy = parse_tensor_to_numpy_or_scalar(labels)
+                    pred_numpy = parse_tensor_to_numpy_or_scalar(pred)
+                    pred_dataframe = pred_dataframe.append(pd.DataFrame(pred_numpy, columns=classes, index=filenames))
+                    label_dataframe = label_dataframe.append(pd.DataFrame(labels_numpy, columns=classes, index=filenames))
+                    helper_code.save_challenge_predictions(output_path, filenames, classes=classes, scores=pred_numpy, labels=labels_numpy)
                     with torch.no_grad():
                         for i, fn in enumerate(metric_functions):
                             metrics[epoch]['acc_' + str(i)].append(
@@ -97,7 +109,13 @@ def main(args):
                     if args.dry_run:
                         break
                     del data, pred, labels
+                csv_pred_name = "model-{}-dataloader-{}-output.csv".format(model_name, loader_i)
+                csv_label_name = "labels-dataloader-{}.csv".format(loader_i)
                 print("\tFinished dataset {}. Progress: {}/{}".format(loader_i, loader_i + 1, len(loaders)))
+                print("\tSaving prediction and label to csv.")
+                pred_dataframe.to_csv(os.path.join(output_path, csv_pred_name))
+                label_dataframe.to_csv(os.path.join(output_path, csv_label_name))
+                print("\tSaved files {} and {}".format(csv_pred_name, csv_label_name))
                 torch.cuda.empty_cache()
 
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
@@ -105,6 +123,7 @@ def main(args):
             print("Done. Elapsed time: {}".format(elapsed_time))
             if args.dry_run:
                 break
+
         pickle_name = "model-{}-test.pickle".format(model_name)
         # Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
@@ -113,11 +132,21 @@ def main(args):
         del model  # delete and free
         torch.cuda.empty_cache()
 
+def save_dict_to_csv_file(filepath, data, column_names=None):
+    with open(filepath) as f:
+        if not column_names is None:
+            f.write(','.join(column_names)+'\n')
+        for dc in data:
+            f.write(','.join(dc)+'\n')
+
+
 def parse_tensor_to_numpy_or_scalar(input_tensor):
-    arr = input_tensor.detach().cpu().numpy()
-    if arr.size == 1:
-        return arr.item()
-    return arr
+    if type(input_tensor) == torch.Tensor:
+        arr = input_tensor.detach().cpu().numpy() if input_tensor.is_cuda else input_tensor.numpy()
+        if arr.size == 1:
+            return arr.item()
+        return arr
+    return input_tensor
 
 if __name__ == "__main__":
     import sys

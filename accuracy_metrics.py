@@ -49,7 +49,7 @@ def tp_score_label(y:t.Tensor, pred:t.Tensor, y_threshold = 0.5, pred_threshold=
     :param pred_threshold: 
     :return: 
     """
-    mask = y >= y_threshold
+    mask = (y >= y_threshold)
     return t.sum(t.where(mask, pred, t.tensor(-0.1, dtype=pred.dtype, device=pred.device)) >= pred_threshold, dim=0) / t.sum(mask, dim=0)
 
 def fp_score_label(y:t.Tensor, pred:t.Tensor, y_threshold = 0.5, pred_threshold=0.5):

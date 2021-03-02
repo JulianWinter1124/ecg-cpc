@@ -11,23 +11,10 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-import cpc_autoregressive_v0
-import cpc_combined
-import cpc_downstream_model_multitarget_v1
-import cpc_downstream_model_multitarget_v2
-import cpc_downstream_only
-import cpc_encoder_v0
-import cpc_encoder_v4
-import cpc_intersect
-import cpc_predictor_v0
-from architectures_baseline_challenge import baseline_losses as bl
-from architectures_baseline_challenge import baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
-    baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, baseline_cnn_v8, baseline_cnn_v9, \
-    baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14, baseline_cnn_v0_1, \
-    baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1
 import accuracy_metrics
-import architectures_cpc
+from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, cpc_predictor_v0
 
+from architectures_baseline_challenge import baseline_losses as bl
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
 from util.store_models import save_model_architecture, save_model_checkpoint

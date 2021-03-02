@@ -190,14 +190,14 @@ def save_challenge_predictions(output_directory, filenames, classes, scores, lab
         sc = scores[i]
         ls = labels[i]
         recording = os.path.splitext(filename)[0]
-        new_file = filename.replace('.mat','.csv')
-        output_file = os.path.join(output_directory,new_file)
+        new_file = filename.replace('.mat','') + '.csv'
+
+        output_file = os.path.join(output_directory, new_file)
 
         # Include the filename as the recording number
         recording_string = '#{}'.format(recording)
         class_string = ','.join(classes)
         label_string = ','.join(str(i) for i in ls)
         score_string = ','.join(str(i) for i in sc)
-
         with open(output_file, 'w') as f:
             f.write(recording_string + '\n' + class_string + '\n' + label_string + '\n' + score_string + '\n')
