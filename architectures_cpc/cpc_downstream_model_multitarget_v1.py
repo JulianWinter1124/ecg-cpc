@@ -13,7 +13,7 @@ class DownstreamLinearNet(nn.Module):
             self.cpc_model.freeze_layers()
         else:
             self.cpc_model.unfreeze_layers()
-        self.cpc_model.train_mode = False
+        self.cpc_model.cpc_train_mode = False
         self.use_context=use_context
         self.use_latents = use_latents
         self.verbose = verbose

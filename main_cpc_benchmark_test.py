@@ -30,23 +30,25 @@ def main(args):
     # cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
     # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
-
+    window_size = 4500
     georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=5000, pad_to_size=5000, return_labels=True, return_filename=True)
+                                                        window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True)
     cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=5000, pad_to_size=5000, return_labels=True, return_filename=True)
-    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=5000,
-                                                     pad_to_size=5000, return_labels=True, return_filename=True)
-    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=5000,
-                                                      pad_to_size=5000, return_labels=True, return_filename=True)
+                                                           window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True)
+    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=window_size,
+                                                     pad_to_size=window_size, return_labels=True, return_filename=True)
+    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=window_size,
+                                                      pad_to_size=window_size, return_labels=True, return_filename=True)
 
     georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
     classes = georgia.classes
     train_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc])
+    all_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc, ptbxl])
     val_dataset_challenge = ChainDataset([ptbxl])
 
     model_folders = [
-        'models/01_03_21-14'
+        #'models/01_03_21-14'
+        'models/04_03_21-14'
     ]
     #infer class from model-arch file
     models = []
@@ -60,8 +62,10 @@ def main(args):
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None)
             models.append(model)
     loaders = [
-        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=True, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn)
+        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+                   collate_fn=ecg_datasets2.collate_fn),
+        # DataLoader(all_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+        #            collate_fn=ecg_datasets2.collate_fn)
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
         accuracy_metrics.micro_avg_precision_score,

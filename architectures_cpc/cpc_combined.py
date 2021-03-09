@@ -10,8 +10,8 @@ class CPCCombined(nn.Module):
         self.freeze_cpc = freeze_cpc
 
     def forward(self, X, y=None):
-        if self.cpc_model.train_mode:
-            self.cpc_model.train_mode=False
+        if self.cpc_model.cpc_train_mode:
+            self.cpc_model.cpc_train_mode=False
         if self.freeze_cpc:
             with torch.no_grad():
                 encoded_x, context, hidden = self.cpc_model(X)
@@ -20,6 +20,6 @@ class CPCCombined(nn.Module):
         return self.downstream_model(encoded_x, context, y=y)
 
     def pretrain(self, X, y=None, hidden=None):
-        if not self.cpc_model.train_mode:
-            self.cpc_model.train_mode = True
+        if not self.cpc_model.cpc_train_mode:
+            self.cpc_model.cpc_train_mode = True
         return self.cpc_model(X, y, hidden)

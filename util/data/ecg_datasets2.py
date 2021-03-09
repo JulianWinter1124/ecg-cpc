@@ -439,7 +439,7 @@ class ECGChallengeDatasetBatching(torch.utils.data.IterableDataset):
 
 
 class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
-    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, return_labels=False, return_filename=False, classes=None):
+    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, return_labels=False, return_filename=False, classes=None, normalize_fn=None):
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
         self.window_size = window_size
@@ -451,6 +451,7 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         self.total_length = 1 #Trying a weird approach (calculated in __iter__)
         self.return_labels = return_labels
         self.return_filename = return_filename
+        self.normalize_fn = normalize_fn if not normalize_fn is None else lambda x: x
 
 
     def __iter__(self):
@@ -458,7 +459,7 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         shuffle(self.files)
         while file_index < len(self.files):
             current_file = self.files[file_index]
-            data = self._read_recording_file(current_file)
+            data = self.normalize_fn(self._read_recording_file(current_file))
             if self.channels:
                 data = data[:, self.channels]
             if self.return_labels:
@@ -560,3 +561,8 @@ def collate_fn(batch): #https://github.com/pytorch/pytorch/blob/master/torch/uti
         transposed = zip(*batch)
         return [collate_fn(samples) for samples in transposed]
 
+def normalize_feature_scaling(data, low:int=0, high:int=1):
+    mini = np.min(data, axis=1)[:, np.newaxis]
+    maxi = np.max(data, axis=1)[:, np.newaxis]
+    dif = np.where(maxi-mini==0, 1, maxi-mini)
+    return (data-mini)/(dif)*high-low

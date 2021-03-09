@@ -12,6 +12,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
 import accuracy_metrics
+import cpc_base
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, cpc_predictor_v0
 
 from architectures_baseline_challenge import baseline_losses as bl
@@ -40,25 +41,39 @@ def main(args):
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
     georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=4500, pad_to_size=4500, return_labels=True)
+                                                        window_size=4500, pad_to_size=4500, return_labels=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=4500, pad_to_size=4500, return_labels=True)
+                                                           window_size=4500, pad_to_size=4500, return_labels=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4500,
-                                                     pad_to_size=4500, return_labels=True)
+                                                     pad_to_size=4500, return_labels=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
     ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4500,
-                                                      pad_to_size=4500, return_labels=True)
+                                                      pad_to_size=4500, return_labels=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    # nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4500,
+    #                                                   pad_to_size=4500, return_labels=False,
+    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
     georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
     train_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc])
     val_dataset_challenge = ChainDataset([ptbxl])
     pretrain_classes = [
         cpc_intersect.CPC(
-            cpc_encoder_v4.Encoder(args.channels, args.latent_size),
+            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False
-        )
+        ),
+        # cpc_base.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, verbose=False
+        # ),
     ]
     downstream_classes = [
         cpc_downstream_only.DownstreamLinearNet(

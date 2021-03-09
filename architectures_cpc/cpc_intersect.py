@@ -16,7 +16,7 @@ class CPC(nn.Module):
         self.latent_size = latent_size
         self.normalize_latents = normalize_latents
         self.verbose = verbose
-        self.train_mode = True
+        self.cpc_train_mode = True
 
     def forward(self, X, y=None, hidden=None):
         if self.verbose: print('input', X.shape)
@@ -34,7 +34,7 @@ class CPC(nn.Module):
             hidden = self.autoregressive.init_hidden(batch_size=batch)
         context, hidden = self.autoregressive(encoded_x, hidden)
 
-        if not self.train_mode:
+        if not self.cpc_train_mode:
             return encoded_x, context[-1, :, :], hidden
         if self.verbose: print('context', context.shape)
         #offset = np.random.choice(encoded_x_steps - self.timesteps_out - self.timesteps_ignore, 10, replace=False)  # Draw 10 randoms
