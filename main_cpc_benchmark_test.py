@@ -32,13 +32,17 @@ def main(args):
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
     window_size = 4500
     georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True)
+                                                        window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True)
+                                                           window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=window_size,
-                                                     pad_to_size=window_size, return_labels=True, return_filename=True)
+                                                     pad_to_size=window_size, return_labels=True, return_filename=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
     ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=window_size,
-                                                      pad_to_size=window_size, return_labels=True, return_filename=True)
+                                                      pad_to_size=window_size, return_labels=True, return_filename=True,
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
     georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
     classes = georgia.classes
@@ -48,7 +52,8 @@ def main(args):
 
     model_folders = [
         #'models/01_03_21-14'
-        'models/04_03_21-14'
+        #'models/04_03_21-14',
+        'models/09_03_21-16'
     ]
     #infer class from model-arch file
     models = []
