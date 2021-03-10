@@ -473,7 +473,7 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
             if not any([self.return_filename, self.return_labels]):
                 yield data
             else:
-                yield [data] + ([labels] if self.return_labels else []) + ([current_file] if self.return_filename else [])
+                yield [data] + ([labels] if self.return_labels else [None]) + ([current_file] if self.return_filename else [])
 
             file_index += 1
 

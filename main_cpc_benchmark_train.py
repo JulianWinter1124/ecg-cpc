@@ -12,7 +12,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
 import accuracy_metrics
-import cpc_base
+#import cpc_base
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, cpc_predictor_v0
 
 from architectures_baseline_challenge import baseline_losses as bl
@@ -53,7 +53,7 @@ def main(args):
                                                       pad_to_size=4500, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
     nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4500,
-                                                      pad_to_size=4500, return_labels=False, classes={'undefined': 0},
+                                                      pad_to_size=4500, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
     georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
