@@ -52,13 +52,15 @@ def main(args):
     ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4500,
                                                       pad_to_size=4500, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    # nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4500,
-    #                                                   pad_to_size=4500, return_labels=False,
-    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4500,
+                                                      pad_to_size=4500, return_labels=False, classes={'undefined': 0},
+                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
     georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
-    train_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc])
-    val_dataset_challenge = ChainDataset([ptbxl])
+    pretrain_train_dataset = ChainDataset([nature, cpsc_train, georgia, cpsc])
+    pretrain_val_dataset = ChainDataset([ptbxl])
+    downstream_train_dataset = ChainDataset([georgia, cpsc_train, cpsc])
+    downstream_val_dataset = ChainDataset([ptbxl])
     pretrain_classes = [
         cpc_intersect.CPC(
             cpc_encoder_v0.Encoder(args.channels, args.latent_size),
@@ -86,18 +88,23 @@ def main(args):
         # )
     ]
     combined_models = [
-        cpc_combined.CPCCombined(pretrain_classes[0], downstream_classes[0]),
+        cpc_combined.CPCCombined(pretrain_classes[0], downstream_classes[0], freeze_cpc=False),
         # cpc_combined.CPCCombined(pretrain_classes[0], downstream_classes[1])
     ]
-
-    train_loaders = [
-        # DataLoader(train_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
-        DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=True, num_workers=1,
+    pretrain_train_loaders = [
+        DataLoader(pretrain_train_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn)
     ]
-    val_loaders = [
-        # DataLoader(val_dataset_ptbxl, batch_size=args.batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
-        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=True, num_workers=1,
+    pretrain_val_loaders = [
+        DataLoader(pretrain_val_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
+                   collate_fn=ecg_datasets2.collate_fn)
+    ]
+    downstream_train_loaders = [
+        DataLoader(downstream_train_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
+                   collate_fn=ecg_datasets2.collate_fn)
+    ]
+    downstream_val_loaders = [
+        DataLoader(downstream_val_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn)
     ]
     metric_functions = [
@@ -131,7 +138,7 @@ def main(args):
             metrics = defaultdict(lambda: defaultdict(list))
             for epoch in range(1, args.epochs + 1):
                 starttime = time.time()  # train
-                for train_loader_i, train_loader in enumerate(train_loaders):
+                for train_loader_i, train_loader in enumerate(pretrain_train_loaders):
                     for dataset_tuple in train_loader:
                         data, _ = dataset_tuple
                         data = data.float().cuda()
@@ -146,10 +153,10 @@ def main(args):
                             break
                         del data, loss, hidden
                     print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
-                                                                                   len(train_loaders)))
+                                                                                   len(pretrain_train_loaders)))
                     torch.cuda.empty_cache()
                 with torch.no_grad():
-                    for val_loader_i, val_loader in enumerate(val_loaders):  # validate
+                    for val_loader_i, val_loader in enumerate(pretrain_val_loaders):  # validate
                         for dataset_tuple in val_loader:
                             data, _ = dataset_tuple
                             data = data.float().cuda()
@@ -160,7 +167,7 @@ def main(args):
                             if args.dry_run:
                                 break
                         print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
-                                                                                         len(val_loaders)))
+                                                                                         len(pretrain_val_loaders)))
                         del data, loss, hidden
 
                 elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
@@ -199,7 +206,7 @@ def main(args):
             metrics = defaultdict(lambda: defaultdict(list))
             for epoch in range(1, args.epochs + 1):
                 starttime = time.time()  # train
-                for train_loader_i, train_loader in enumerate(train_loaders):
+                for train_loader_i, train_loader in enumerate(downstream_train_loaders):
                     for dataset_tuple in train_loader:
                         data, labels = dataset_tuple
                         data = data.float().cuda()
@@ -219,11 +226,11 @@ def main(args):
                             break
                         del data, pred, labels, loss
                     print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
-                                                                                   len(train_loaders)))
+                                                                                   len(downstream_train_loaders)))
 
                     torch.cuda.empty_cache()
                 with torch.no_grad():
-                    for val_loader_i, val_loader in enumerate(val_loaders):  # validate
+                    for val_loader_i, val_loader in enumerate(downstream_val_loaders):  # validate
                         for dataset_tuple in val_loader:
                             data, labels = dataset_tuple
                             data = data.float().cuda()
@@ -238,7 +245,7 @@ def main(args):
                             if args.dry_run:
                                 break
                         print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
-                                                                                         len(val_loaders)))
+                                                                                         len(downstream_val_loaders)))
                         del data, pred, labels, loss
 
                 elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
