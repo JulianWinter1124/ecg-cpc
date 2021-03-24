@@ -33,14 +33,18 @@ class CPC(nn.Module):
         if hidden is None:
             hidden = self.autoregressive.init_hidden(batch_size=batch)
         context, hidden = self.autoregressive(encoded_x, hidden)
+        if self.verbose: print('context', context.shape)
 
         if not self.cpc_train_mode:
             return encoded_x, context[-1, :, :], hidden
-        if self.verbose: print('context', context.shape)
         #offset = np.random.choice(encoded_x_steps - self.timesteps_out - self.timesteps_ignore, 10, replace=False)  # Draw 10 randoms
+
         loss = torch.tensor([0.0]).cuda()
         correct = torch.tensor([0.0]).cuda()
-        assert len(context)-(self.timesteps_out+self.timesteps_ignore-self.timesteps_in) >= 1
+        if encoded_x_steps-self.timesteps_out-self.timesteps_ignore-self.timesteps_in < 1:
+            print('Not enough encoded values for CPC training. Lower timesteps_in/timesteps_out/timesteps_ignore or change window_size + encoder')
+            return loss, correct, hidden
+
         for i in range(self.timesteps_out):
             pred_latent = self.predictor(context[self.timesteps_in:-(self.timesteps_out+self.timesteps_ignore+1), :, :], i)
             encoded_latent = encoded_x[self.timesteps_in+i+1:-(self.timesteps_out+self.timesteps_ignore)+i, :, :].squeeze(0) #shape is batch, latent_size

@@ -151,12 +151,14 @@ class PTBXLData():
         dataframe = pd.read_csv(csvfile)
         return dataframe
 
-    def train_test_split(self, record_files_relative):
+    def train_test_split(self, record_files, relative=True):
+        if not relative:
+            record_files = {os.path.basename(f):f for f in record_files}
         df = self.read_ptbxl_database()
         selection = df[['strat_fold', 'filename_hr', 'filename_lr']]
         print('Files found in DB:', len(selection))
         train, val, test = [], [], []
-        rfrset = set(record_files_relative)
+        rfrset = set(list(record_files.values))
         for i, [fold, fhr, flr] in selection.iterrows():
             fhr = os.path.basename(fhr)
             flr = os.path.basename(flr)

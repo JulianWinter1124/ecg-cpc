@@ -10,12 +10,9 @@ import numpy as np
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
-from architectures_baseline_challenge import baseline_losses as bl, baseline_cnn_v15
-from architectures_baseline_challenge import baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
-    baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, baseline_cnn_v8, baseline_cnn_v9, \
-    baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14, baseline_cnn_v0_1, \
-    baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1
-import accuracy_metrics
+from architectures_baseline_challenge import baseline_losses as bl
+from architectures_baseline_challenge import baseline_cnn_v9
+from util.metrics import training_metrics
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
 from util.store_models import save_model_architecture, save_model_checkpoint
@@ -87,8 +84,8 @@ def main(args):
         # accuracy_metrics.micro_avg_recall_score,
         # accuracy_metrics.micro_avg_precision_score,
         # accuracy_metrics.accuracy,
-        accuracy_metrics.zero_fit_score,
-        accuracy_metrics.class_fit_score
+        training_metrics.zero_fit_score,
+        training_metrics.class_fit_score
         # accuracy_metrics.class_count_prediction,
         # accuracy_metrics.class_count_truth
     ]

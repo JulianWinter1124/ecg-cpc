@@ -9,11 +9,10 @@ import pandas as pd
 
 import numpy as np
 import torch
-from torch import nn
-from torch.optim import Adam, SGD
+from torch.optim import SGD
 from torch.utils.data import DataLoader, ChainDataset
 
-import accuracy_metrics
+from util.metrics import training_metrics
 from architectures_various import baseline_cnn_explain
 from external import helper_code
 from util.data import ecg_datasets2
@@ -74,8 +73,8 @@ def main(args):
         #            collate_fn=ecg_datasets2.collate_fn)
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
-        accuracy_metrics.micro_avg_precision_score,
-        accuracy_metrics.micro_avg_recall_score,
+        training_metrics.micro_avg_precision_score,
+        training_metrics.micro_avg_recall_score,
     ]
     for model_i, model in enumerate(models):
         model_name = fullname(model)

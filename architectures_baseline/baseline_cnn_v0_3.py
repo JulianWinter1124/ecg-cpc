@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-import accuracy_metrics as acm
+from util.metrics import training_metrics as acm
 from old.data_storage import DataStorage
 
 

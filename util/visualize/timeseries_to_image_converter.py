@@ -116,3 +116,13 @@ def kernel_to_image(layer_name, layer_weights:torch.Tensor):
         ax.set_xticks([])
         ax.set_yticks([])
     plt.show()
+
+if __name__ == '__main__': #Usage example
+    model_f = '../models/18_01_21-14/baseline_modelstate_epoch200.pt'
+    model_state_dict = torch.load(model_f)['model_state_dict']
+    print(model_state_dict.keys())
+    for k in model_state_dict.keys():
+        if 'weight' in k:
+            conv = model_state_dict[k].cpu()
+            print('layer weight shape:', conv.shape)
+            kernel_to_image(k, conv)

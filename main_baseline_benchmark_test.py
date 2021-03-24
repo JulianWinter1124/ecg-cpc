@@ -12,14 +12,11 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from architectures_baseline import baseline_losses, baseline_cnn_v0, baseline_cnn_v2, baseline_cnn_v3, \
-    baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, baseline_cnn_v8, baseline_cnn_v9, \
-    baseline_cnn_v10, baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v14, baseline_cnn_v0_1, \
-    baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1
-import accuracy_metrics
+from architectures_baseline import baseline_losses
+from util.metrics import training_metrics
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
-from util.store_models import save_model_architecture, save_model_checkpoint
+from util.store_models import save_model_checkpoint
 from util import store_models
 
 
@@ -50,10 +47,10 @@ def main(args):
         #accuracy_metrics.fn_score_label,
         #accuracy_metrics.tn_score_label,
         #accuracy_metrics.tp_score_label,
-        accuracy_metrics.f1_score,
-        accuracy_metrics.micro_avg_recall_score,
-        accuracy_metrics.micro_avg_precision_score,
-        accuracy_metrics.accuracy
+        training_metrics.f1_score,
+        training_metrics.micro_avg_recall_score,
+        training_metrics.micro_avg_precision_score,
+        training_metrics.accuracy
     ]
     for model_i, model_path in enumerate(model_folders):
         model_arch_path = glob.glob(os.path.join(model_path, '*full_model.pt'))[0]

@@ -453,6 +453,21 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         self.return_filename = return_filename
         self.normalize_fn = normalize_fn if not normalize_fn is None else lambda x: x
 
+    def generate_datasets_from_split_file(self, ttsfile='train-test-splits.txt'):
+        splits = load_train_test_split(os.path.join(self.BASE_DIR, ttsfile))
+        return tuple(ECGChallengeDatasetBaseline(self.BASE_DIR, self.window_size, self.pad_to_size, files=s,
+                                                 channels=self.channels, return_labels=self.return_labels,
+                                                 return_filename=self.return_filename, classes=self.classes,
+                                                 normalize_fn=self.normalize_fn)
+                     for s in splits)
+
+    def generate_datasets_from_split_list(self, trainf, valf, testf):
+        splits = [trainf, valf, testf]
+        return tuple(ECGChallengeDatasetBaseline(self.BASE_DIR, self.window_size, self.pad_to_size, files=s,
+                                                 channels=self.channels, return_labels=self.return_labels,
+                                                 return_filename=self.return_filename, classes=self.classes,
+                                                 normalize_fn=self.normalize_fn)
+                     for s in splits)
 
     def __iter__(self):
         file_index = 0
@@ -497,6 +512,27 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         print(len(records), 'record files found in ', self.BASE_DIR)
         return list(map(lambda x: os.path.splitext(x)[0], records)) #remove extension
 
+    def random_train_split(self, train_fraction=0.7, val_fraction=0.2, test_fraction=0.1, save=True, save_path_overwrite=None):
+        assert train_fraction+val_fraction+test_fraction <= 1
+        N = len(self.files)
+        shuffle(self.files)
+        train_slice = slice(0, int(train_fraction*N))
+        val_slice = slice(train_slice.stop, train_slice.stop+int(val_fraction*N))
+        test_slice = slice(val_slice.stop, val_slice.stop+int(test_fraction*N))
+        if save:
+            p = save_path_overwrite or self.BASE_DIR
+            save_train_test_split(os.path.join(p, 'train-test-splits.txt'), self.files[train_slice], self.files[val_slice], self.files[test_slice])
+        return self.files[train_slice], self.files[val_slice], self.files[test_slice]
+
+    def train_split_with_function(self, file_mapping_function, save_path=None):
+        splits = [[], [], []]
+        for f in self.files:
+            i = file_mapping_function(f)
+            splits[i].append(f)
+        if not save_path is None:
+            save_train_test_split(os.path.join(save_path, 'train-test-splits.txt'), splits[0], splits[1], splits[2])
+        return splits[0], splits[1], splits[2]
+
     def print_file_attributes(self):
         f = self.files[0]
         print('Information for file', f)
@@ -518,8 +554,29 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         for d in datasets:
             d.classes = all_classes
         print('Labels for datasets set to:', all_classes)
-        
 
+
+
+def load_train_test_split(tts_file_path:str):
+    splits = [[],[],[]]
+    with open(tts_file_path, 'r') as f:
+        line_count = 0
+        for line in f:
+            if not line.strip().startswith('#') or line == '\n': #Comment line or empty line
+                splits[line_count] = [f.strip() for f in line.split(',')]
+                line_count += 1
+            if line_count >= 3:
+                break
+    return splits[0], splits[1], splits[2]
+
+def save_train_test_split(tts_file:str, trainf=[], valf=[], testf=[]):
+    with open(tts_file, 'w') as f:
+        f.write('#train files\n')
+        f.write(",".join(trainf)+'\n')
+        f.write('#val files\n')
+        f.write(",".join(valf) + '\n')
+        f.write('#test files\n')
+        f.write(",".join(testf))
 
 
 def collate_fn(batch): #https://github.com/pytorch/pytorch/blob/master/torch/utils/data/_utils/collate.py

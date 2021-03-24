@@ -112,7 +112,7 @@ if __name__ == '__main__':
     # print(calc_conv1ds_input_length(1, kernel_sizes = [8, 6, 3, 3, 3], strides = [4, 2, 1, 1, 1], dilations = [1, 1, 1, 3, 9]))
     # print(calc_conv1ds_input_length(1,kernel_sizes = [7, 3, 3, 3, 3], strides = [2, 1, 1, 1, 1], dilations = [1, 1, 3, 9, 27]))
     # print(calc_conv1ds_output_length(9500, kernel_sizes=[7, 3, 3, 3, 3], strides=[2, 1, 1, 1, 1], dilations=[1, 1, 3, 9, 27]))
-    print(calc_conv1ds_output_length(4500, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    print(calc_conv1ds_output_length(900000, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_output_length(5000, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_input_length(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
 

@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import glob
 import os
 import pickle
 import time
@@ -11,12 +12,15 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-import accuracy_metrics
+import cpc_base
+import cpc_encoder_as_strided
+from util import store_models
+from util.metrics import training_metrics
 #import cpc_base
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, cpc_predictor_v0
 
 from architectures_baseline_challenge import baseline_losses as bl
-from util.data import ecg_datasets2
+from util.data import ecg_datasets2, ptbxl_data
 from util.full_class_name import fullname
 from util.store_models import save_model_architecture, save_model_checkpoint
 
@@ -24,7 +28,7 @@ from util.store_models import save_model_architecture, save_model_checkpoint
 def main(args):
     np.random.seed(args.seed)
 
-    torch.cuda.set_device(args.gpu_device)
+    #torch.cuda.set_device(args.gpu_device)
     print(args.out_path)
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
     # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
@@ -40,44 +44,67 @@ def main(args):
     # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
-    georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=4500, pad_to_size=4500, return_labels=True,
+    georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+                                                        window_size=4650, pad_to_size=4650, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=4500, pad_to_size=4500, return_labels=True,
+    cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+                                                           window_size=4650, pad_to_size=4650, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4500,
-                                                     pad_to_size=4500, return_labels=True,
+    cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4650,
+                                                     pad_to_size=4650, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4500,
-                                                      pad_to_size=4500, return_labels=True,
+    ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4650,
+                                                      pad_to_size=4650, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4500,
-                                                      pad_to_size=4500, return_labels=True,
+    nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4650,
+                                                      pad_to_size=4650, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
-    georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
-    pretrain_train_dataset = ChainDataset([nature, cpsc_train, georgia, cpsc])
-    pretrain_val_dataset = ChainDataset([ptbxl])
-    downstream_train_dataset = ChainDataset([georgia, cpsc_train, cpsc])
-    downstream_val_dataset = ChainDataset([ptbxl])
-    pretrain_classes = [
+    georgia_challenge.merge_and_update_classes([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature])
+
+    if args.redo_splits:
+        print("Warning! Redoing splits!")
+        ptbxl_challenge.random_train_split()
+        cpsc_challenge.random_train_split()
+        cpsc2_challenge.random_train_split()
+        georgia_challenge.random_train_split()
+
+    
+    ptbxl_train, ptbxl_val, _ = ptbxl_challenge.generate_datasets_from_split_file()
+    georgia_train, georgia_val, _ = georgia_challenge.generate_datasets_from_split_file()
+    cpsc_train, cpsc_val, _ = cpsc_challenge.generate_datasets_from_split_file()
+    cpsc2_train, cpsc2_val, _ = cpsc2_challenge.generate_datasets_from_split_file()
+
+    
+
+    pretrain_train_dataset = ChainDataset([nature, ptbxl_train, georgia_train, cpsc_train, cpsc2_train]) #CPC TRAIN
+    pretrain_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val]) #CPC VAL
+    downstream_train_dataset = ChainDataset([ptbxl_train, georgia_train, cpsc_train, cpsc2_train])
+    downstream_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val])
+    pretrain_models = [
+        # cpc_intersect.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False
+        # ),
         cpc_intersect.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False
         ),
-        # cpc_base.CPC(
-        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
         #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
         #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
         #     args.timesteps_in, args.timesteps_out, args.latent_size,
         #     timesteps_ignore=0, verbose=False
         # ),
     ]
-    downstream_classes = [
+    downstream_models = [
         cpc_downstream_only.DownstreamLinearNet(
             latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
             use_latents=False, use_context=True, verbose=False
@@ -88,9 +115,21 @@ def main(args):
         # )
     ]
     combined_models = [
-        cpc_combined.CPCCombined(pretrain_classes[0], downstream_classes[0], freeze_cpc=False),
-        # cpc_combined.CPCCombined(pretrain_classes[0], downstream_classes[1])
+        cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0]), #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'optimizer':None}
+        #cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1])
     ]
+    trained_combined_model_folders = [ #continue training for these
+        #'models/18_03_21-18/architectures_cpc.cpc_combined.CPCCombined'
+    ]
+    for model_i, model_path in enumerate(trained_combined_model_folders): #hack bad
+        model_arch_path = glob.glob(os.path.join(model_path, '*full_model.pt'))[0]
+        model_checkpoint_path = glob.glob(os.path.join(model_path, '*checkpoint*.pt'))[-1]
+        print('Found path to model architecture {} and checkpoint {}'.format(model_arch_path, model_checkpoint_path))
+        model = store_models.load_model_architecture(model_arch_path)  # load correct class
+        model, _, epoch = store_models.load_model_checkpoint(model_checkpoint_path, model, None)  # load model weights
+        new_model = cpc_combined.CPCCombined(model.cpc_model, downstream_models[0])
+        combined_models = [new_model] + combined_models #prepend to list
+
     pretrain_train_loaders = [
         DataLoader(pretrain_train_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn)
@@ -116,11 +155,12 @@ def main(args):
         # accuracy_metrics.micro_avg_recall_score,
         # accuracy_metrics.micro_avg_precision_score,
         # accuracy_metrics.accuracy,
-        accuracy_metrics.zero_fit_score,
-        accuracy_metrics.class_fit_score
+        training_metrics.zero_fit_score,
+        training_metrics.class_fit_score
         # accuracy_metrics.class_count_prediction,
         # accuracy_metrics.class_count_truth
     ]
+
     def pretrain():
         for model_i, model in enumerate(combined_models):
             model_name = fullname(model)
@@ -136,7 +176,7 @@ def main(args):
             # init optimizer
             optimizer = Adam(model.parameters(), lr=3e-4)
             metrics = defaultdict(lambda: defaultdict(list))
-            for epoch in range(1, args.epochs + 1):
+            for epoch in range(1, args.pretrain_epochs + 1):
                 starttime = time.time()  # train
                 for train_loader_i, train_loader in enumerate(pretrain_train_loaders):
                     for dataset_tuple in train_loader:
@@ -173,18 +213,18 @@ def main(args):
                 elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
                 metrics[epoch]['elapsed_time'].append(elapsed_time)
                 print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f}. Avg train acc: {:.4f}. Avg val acc: {:.4f}. Elapsed time: {}".format(
-                    epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
+                    epoch, args.pretrain_epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
                     np.mean(metrics[epoch]['trainacc']), np.mean(metrics[epoch]['valacc']),
                     elapsed_time))
                 if args.dry_run:
                     break
-            pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.epochs)
+            pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.pretrain_epochs)
             # Saving metrics in pickle
             with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
                 pickle.dump(dict(metrics), pick_file)
             # Save model + model weights + optimizer state
-            save_model_checkpoint(output_path, epoch=args.epochs, model=model, optimizer=optimizer, name=model_name)
-            print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(pretrain_classes)))
+            save_model_checkpoint(output_path, epoch=args.pretrain_epochs, model=model, optimizer=optimizer, name=model_name)
+            print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(pretrain_models)))
 
             del model  # delete and free
             torch.cuda.empty_cache()
@@ -204,7 +244,7 @@ def main(args):
             # init optimizer
             optimizer = Adam(model.parameters(), lr=3e-4)
             metrics = defaultdict(lambda: defaultdict(list))
-            for epoch in range(1, args.epochs + 1):
+            for epoch in range(1, args.downstream_epochs + 1):
                 starttime = time.time()  # train
                 for train_loader_i, train_loader in enumerate(downstream_train_loaders):
                     for dataset_tuple in train_loader:
@@ -251,16 +291,16 @@ def main(args):
                 elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
                 metrics[epoch]['elapsed_time'].append(elapsed_time)
                 print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
-                    epoch, args.epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
+                    epoch, args.downstream_epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
                     elapsed_time))
                 if args.dry_run:
                     break
-            pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.epochs)
+            pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.downstream_epochs)
             # Saving metrics in pickle
             with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
                 pickle.dump(dict(metrics), pick_file)
             # Save model + model weights + optimizer state
-            save_model_checkpoint(output_path, epoch=args.epochs, model=model, optimizer=optimizer, name=model_name)
+            save_model_checkpoint(output_path, epoch=args.downstream_epochs, model=model, optimizer=optimizer, name=model_name)
             print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(combined_models)))
 
             del model  # delete and free
@@ -287,6 +327,10 @@ if __name__ == "__main__":
                         help='Model path to load weights from. Has to be given for downstream mode.')
 
     parser.add_argument('--epochs', type=int, help='The number of Epochs to train', default=100)
+
+    parser.add_argument('--pretrain_epochs', type=int, help='The number of Epochs to pretrain', default=100)
+
+    parser.add_argument('--downstream_epochs', type=int, help='The number of Epochs to downtrain', default=100)
 
     parser.add_argument('--seed', type=int, help='The seed used', default=None)
 
@@ -315,7 +359,7 @@ if __name__ == "__main__":
     parser.add_argument('--channels', type=int, default=12,
                         help="The number of channels the data will have")  # TODO: auto detect
 
-    parser.add_argument('--window_length', type=int, default=512,
+    parser.add_argument('--window_size', type=int, default=512,
                         help="The number of datapoints per channel per window")
 
     parser.add_argument('--hidden_size', type=int, default=512,
@@ -324,6 +368,10 @@ if __name__ == "__main__":
     parser.add_argument('--dry_run', dest='dry_run', action='store_true',
                         help="Only run minimal samples to test all models functionality")
     parser.set_defaults(dry_run=False)
+
+    parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
+                        help="Redo splits. Warning! File will be overwritten!")
+    parser.set_defaults(redo_splits=False)
 
     parser.add_argument("--gpu_device", type=int, default=0)
 

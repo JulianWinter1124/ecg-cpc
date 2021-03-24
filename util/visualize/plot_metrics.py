@@ -1,0 +1,117 @@
+from itertools import cycle
+
+import matplotlib.pyplot as plt
+import numpy as np
+from numpy import interp
+from sklearn.metrics import auc
+
+
+def plot_roc_singleclass(tpr, fpr, roc_auc, class_n):
+    plt.figure()
+    lw = 2
+    plt.plot(fpr[class_n], tpr[class_n], color='darkorange',
+             lw=lw, label='ROC curve: '+str(class_n)+'(area = %0.2f)' % roc_auc[class_n])
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic for single class: ' + str(class_n))
+    plt.legend(loc="lower right")
+    plt.show()
+
+def plot_precision_recall_microavg(recall, precision, average_precision):
+    plt.figure()
+    plt.step(recall['micro'], precision['micro'], where='post')
+
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 1.0])
+    plt.title(
+        'Average precision score, micro-averaged over all classes: AP={0:0.2f}'
+        .format(average_precision["micro"]))
+
+
+def plot_precision_recall_multiclass(precision, recall, average_precision, n_classes, selection=None):
+    cm = plt.get_cmap('gist_rainbow')
+    if selection is None:
+        selection = range(n_classes)
+    # setup plot details
+    colors = cycle([cm(1.*i/n_classes) for i in selection])
+
+    plt.figure(figsize=(12, 10))
+    f_scores = np.linspace(0.2, 0.8, num=4)
+    lines = []
+    labels = []
+    for f_score in f_scores:
+        x = np.linspace(0.01, 1)
+        y = f_score * x / (2 * x - f_score)
+        l, = plt.plot(x[y >= 0], y[y >= 0], color='gray', alpha=0.2)
+        plt.annotate('f1={0:0.1f}'.format(f_score), xy=(0.9, y[45] + 0.02))
+    lines.append(l) #yes only one
+    labels.append('iso-f1 curves')
+
+    l, = plt.plot(recall["micro"], precision["micro"], color='gold', lw=2)
+    lines.append(l)
+    labels.append('micro-average Precision-recall (area = {0:0.2f})'
+                  ''.format(average_precision["micro"]))
+
+    for i, color in zip(selection, colors):
+        l, = plt.plot(recall[i], precision[i], color=color, lw=2)
+        lines.append(l)
+        labels.append('Precision-recall for class {0} (area = {1:0.2f})'
+                      ''.format(i, average_precision[i]))
+
+    fig = plt.gcf()
+    fig.subplots_adjust(right=0.2)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Extension of Precision-Recall curve to multi-class')
+    plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.show()
+
+def plot_roc_multiclass(tpr, fpr, roc_auc, n_classes:int, selection=None):
+    selection = range(n_classes) if selection is None else selection
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in selection]))
+    lw = 1
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in selection:
+        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+
+    # Finally average it and compute AUC
+    mean_tpr /= n_classes
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+    # Plot all ROC curves
+    plt.figure()
+    plt.plot(fpr["micro"], tpr["micro"],
+             label='micro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["micro"]),
+             color='deeppink', linestyle=':', linewidth=4)
+
+    plt.plot(fpr["macro"], tpr["macro"],
+             label='macro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["macro"]),
+             color='navy', linestyle=':', linewidth=4)
+
+    colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+    for i, color in zip(selection, colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                 label='ROC curve of class {0} (area = {1:0.2f})'
+                 ''.format(i, roc_auc[i]))
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Some extension of Receiver operating characteristic to multi-class')
+    plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left')
+    plt.show()

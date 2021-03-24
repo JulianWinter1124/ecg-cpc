@@ -22,7 +22,7 @@ from training import cpc_train, cpc_validation, down_validation, baseline_train,
 from util.full_class_name import fullname
 from util.data.ptbxl_data import PTBXLData
 from util.store_models import save_model_state, load_model_state
-from util.visualize.temporal_to_image_converter import timeseries_to_image
+from util.visualize.timeseries_to_image_converter import timeseries_to_image
 
 
 def main(args):

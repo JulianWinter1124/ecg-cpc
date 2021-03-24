@@ -9,13 +9,12 @@ import pandas as pd
 
 import numpy as np
 import torch
-from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-import accuracy_metrics
+from util.metrics import training_metrics
 from external import helper_code
-from util.data import ecg_datasets2
+from util.data import ecg_datasets2, ptbxl_data
 from util.full_class_name import fullname
 from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
@@ -31,29 +30,38 @@ def main(args):
     # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
     window_size = 4500
-    georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True,
-                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=window_size, pad_to_size=window_size, return_labels=True, return_filename=True,
-                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=window_size,
-                                                     pad_to_size=window_size, return_labels=True, return_filename=True,
-                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=window_size,
-                                                      pad_to_size=window_size, return_labels=True, return_filename=True,
-                                                        normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+                                                                  window_size=window_size, pad_to_size=window_size,
+                                                                  return_labels=True, return_filename=True,
+                                                                  normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+                                                               window_size=window_size, pad_to_size=window_size,
+                                                               return_labels=True, return_filename=True,
+                                                               normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
+                                                                window_size=window_size, pad_to_size=window_size,
+                                                                return_labels=True, return_filename=True,
+                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
+                                                                window_size=window_size, pad_to_size=window_size,
+                                                                return_labels=True, return_filename=True,
+                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
-    georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
-    classes = georgia.classes
-    train_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc])
-    all_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc, ptbxl])
-    val_dataset_challenge = ChainDataset([ptbxl])
+    georgia_challenge.merge_and_update_classes([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge])
+    classes = georgia_challenge.classes
+
+    _, _, ptbxl_test = ptbxl_challenge.generate_datasets_from_split_file()
+    _, _, georgia_test = georgia_challenge.generate_datasets_from_split_file()
+    _, _, cpsc_test = cpsc_challenge.generate_datasets_from_split_file()
+    _, _, cpsc2_test = cpsc2_challenge.generate_datasets_from_split_file()
+
+    test_dataset_challenge = ChainDataset([ptbxl_test, georgia_test, cpsc_test, cpsc2_test])
+    #all_dataset_challenge = ChainDataset[ptbxl_challenge, georgia_challenge, cpsc_challenge, cpsc2_challenge]
 
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/09_03_21-16'
+        'models/23_03_21-14'
     ]
     #infer class from model-arch file
     models = []
@@ -67,18 +75,18 @@ def main(args):
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None)
             models.append(model)
     loaders = [
-        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+        DataLoader(test_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn),
         # DataLoader(all_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
         #            collate_fn=ecg_datasets2.collate_fn)
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
-        accuracy_metrics.micro_avg_precision_score,
-        accuracy_metrics.micro_avg_recall_score,
+        training_metrics.micro_avg_precision_score,
+        training_metrics.micro_avg_recall_score,
     ]
     for model_i, model in enumerate(models):
         model_name = fullname(model)
-        output_path = os.path.join(args.out_path, model_name)
+        output_path = os.path.join(args.out_path, model_name+str(model_i))
         print("Evaluating {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -197,7 +205,7 @@ if __name__ == "__main__":
     parser.add_argument('--channels', type=int, default=12,
                         help="The number of channels the data will have")  # TODO: auto detect
 
-    parser.add_argument('--window_length', type=int, default=512,
+    parser.add_argument('--window_size', type=int, default=512,
                         help="The number of datapoints per channel per window")
 
     parser.add_argument('--hidden_size', type=int, default=512,
