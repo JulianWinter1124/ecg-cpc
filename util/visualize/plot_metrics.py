@@ -64,13 +64,12 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, n_cla
                       ''.format(i, average_precision[i]))
 
     fig = plt.gcf()
-    fig.subplots_adjust(right=0.2)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Extension of Precision-Recall curve to multi-class')
-    plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=6)
     plt.show()
 
 def plot_roc_multiclass(tpr, fpr, roc_auc, n_classes:int, selection=None):
@@ -113,5 +112,5 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, n_classes:int, selection=None):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title('Some extension of Receiver operating characteristic to multi-class')
-    plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left')
+    plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
     plt.show()

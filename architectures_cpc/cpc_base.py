@@ -42,6 +42,8 @@ class CPC(nn.Module):
         for k in range(0, self.timesteps_out): #Do this for each timestep
             latent_k = latents[-self.timesteps_out + k] #batches, latents
             pred_k = self.predictor(context, k) # Shape (Batches, latents)
+            #pred_k[0].T @ latent_k
+            #loss += torch.log(torch.exp(pred_k[0].T@latent_k[0])
             softmax = self.lsoftmax(torch.mm(latent_k, pred_k.T)) #output: (Batches, Batches)
             correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(n_batches).cuda())
             loss += torch.sum(torch.diag(softmax))

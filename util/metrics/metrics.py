@@ -86,7 +86,7 @@ def read_binary_label_csv_from_model_folder(model_folder):
     return labels
 
 if __name__ == '__main__': #usage example
-    model_folder = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/24_03_21-13/architectures_cpc.cpc_combined.CPCCombined0'
+    model_folder = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_04_21-15/architectures_cpc.cpc_combined.CPCCombined0'
     labels = read_binary_label_csv_from_model_folder(model_folder)
     pred = read_output_csv_from_model_folder(model_folder)
     n_classes = pred.shape[1]

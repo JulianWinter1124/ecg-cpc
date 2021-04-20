@@ -1,10 +1,13 @@
 import torch
 from torch import nn
+import numpy as np
+
+from util.utility.sparse_print import SparsePrint
 
 
 class CPC(nn.Module):
 
-    def __init__(self, encoder, autoregressive, predictor, timesteps_in, timesteps_out, latent_size, timesteps_ignore=0, normalize_latents=False, verbose=False):
+    def __init__(self, encoder, autoregressive, predictor, timesteps_in, timesteps_out, latent_size, timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'):
         super().__init__()
         self.encoder = encoder
         self.autoregressive = autoregressive
@@ -17,6 +20,11 @@ class CPC(nn.Module):
         self.normalize_latents = normalize_latents
         self.verbose = verbose
         self.cpc_train_mode = True
+        if sampling_mode in ['all', 'same', 'random']:
+            self.sampling_mode = sampling_mode
+        else:
+            self.sampling_mode = 'same'
+        self.sprint = SparsePrint()
 
     def forward(self, X, y=None, hidden=None):
         if self.verbose: print('input', X.shape)
@@ -44,23 +52,73 @@ class CPC(nn.Module):
         if encoded_x_steps-self.timesteps_out-self.timesteps_ignore-self.timesteps_in < 1:
             print('Not enough encoded values for CPC training. Lower timesteps_in/timesteps_out/timesteps_ignore or change window_size + encoder')
             return loss, correct, hidden
+        if self.sampling_mode == 'same':
+            for k in range(self.timesteps_out):
+                pred_latent = self.predictor(context[self.timesteps_in:-(self.timesteps_out+self.timesteps_ignore+1), :, :], k)
+                encoded_latent = encoded_x[self.timesteps_in+k+1:-(self.timesteps_out+self.timesteps_ignore)+k, :, :].squeeze(0) #shape is batch, latent_size
+                if self.verbose: print(pred_latent.shape, encoded_latent.shape)
+                if self.normalize_latents:
+                    pred_latent /= torch.sqrt(torch.sum(torch.square(pred_latent)))
+                    encoded_latent /= torch.sqrt(torch.sum(torch.square(encoded_latent)))
+                for step in range(pred_latent.shape[0]): #TODO: can this be broadcasted?
+                    softmax = self.lsoftmax(torch.mm(encoded_latent[step], pred_latent[step].T))  # output: (Batches, Batches)
+                    if self.verbose: print('softmax shape', softmax.shape)
+                    correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(batch).cuda()) #Since
+                    loss += torch.sum(torch.diag(softmax))
 
-        for i in range(self.timesteps_out):
-            pred_latent = self.predictor(context[self.timesteps_in:-(self.timesteps_out+self.timesteps_ignore+1), :, :], i)
-            encoded_latent = encoded_x[self.timesteps_in+i+1:-(self.timesteps_out+self.timesteps_ignore)+i, :, :].squeeze(0) #shape is batch, latent_size
-            if self.verbose: print(pred_latent.shape, encoded_latent.shape)
+            loss /= (batch * self.timesteps_out * pred_latent.shape[0]) * -1.0
+            accuracy = correct.true_divide(batch * self.timesteps_out  * pred_latent.shape[0])
+            return accuracy, loss, hidden
+
+        if self.sampling_mode == 'all':
+            encoded_latent = encoded_x.transpose(0, 1) #output shape: Batch, latents, latent_size
+            #TODO: maybe also use all timesteps instead of random
+            t = np.random.randint(low=self.timesteps_in, high=encoded_x_steps-self.timesteps_out-self.timesteps_ignore)  #Select current timestep at random
+
             if self.normalize_latents:
-                pred_latent /= torch.sqrt(torch.sum(torch.square(pred_latent)))
                 encoded_latent /= torch.sqrt(torch.sum(torch.square(encoded_latent)))
-            for step in range(pred_latent.shape[0]): #TODO: can this be broadcasted?
-                softmax = self.lsoftmax(torch.mm(encoded_latent[step], pred_latent[step].T))  # output: (Batches, Batches)
-                if self.verbose: print('softmax shape', softmax.shape)
-                correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(batch).cuda()) #Since
-                loss += torch.sum(torch.diag(softmax))
+            for k in range(self.timesteps_ignore, self.timesteps_out):
+                pred_latent = self.predictor(context[t, :, :], k).squeeze(0)
+                  # shape is batch, n_latents, latent_size
+                if self.normalize_latents:
+                    pred_latent /= torch.sqrt(torch.sum(torch.square(pred_latent)))
+                #torch.matmul(encoded_latent, pred_latent.T).shape == B x latents x B
+                softmax = self.lsoftmax(torch.matmul(encoded_latent, pred_latent.T).reshape(batch, encoded_x_steps*batch)) #reshape for argmax to B, latents*B
+                argmaxs = torch.argmax(softmax, dim=1)
+                correct += torch.sum(argmaxs == torch.arange(batch).cuda()+t*batch) #Correct index will be at offset t
+                loss += torch.sum(torch.diag(softmax.reshape(batch, encoded_x_steps, batch)[:, t+k, :]))
 
-        loss /= (batch * self.timesteps_out * pred_latent.shape[0]) * -1.0
-        accuracy = correct.true_divide(batch * self.timesteps_out * pred_latent.shape[0])
-        return accuracy, loss, hidden
+            loss /= (batch * self.timesteps_out) * -1.0  # * pred_latent.shape[0]
+            accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
+            return accuracy, loss, hidden
+
+        if self.sampling_mode == 'random':
+            raise NotImplementedError
+
+        if self.sampling_mode == 'future':
+            # TODO: maybe also use all timesteps instead of random
+            t = np.random.randint(low=self.timesteps_in,
+                                  high=encoded_x_steps - self.timesteps_out - self.timesteps_ignore)  # Select current timestep at random
+
+            encoded_latent = encoded_x[t:].transpose(0, 1)  # output shape: Batch, latents*, latent_size
+            if self.normalize_latents:
+                encoded_latent /= torch.sqrt(torch.sum(torch.square(encoded_latent)))
+            for k in range(self.timesteps_ignore, self.timesteps_out):
+                pred_latent = self.predictor(context[t, :, :], k).squeeze(0)
+                # shape is batch, n_latents, latent_size
+                if self.normalize_latents:
+                    pred_latent /= torch.sqrt(torch.sum(torch.square(pred_latent)))
+                # torch.matmul(encoded_latent, pred_latent.T).shape == B x latents x B
+                softmax = self.lsoftmax(torch.matmul(encoded_latent, pred_latent.T).reshape(batch,
+                                                                                            encoded_x_steps * batch))  # reshape for argmax to B, latents*B
+                argmaxs = torch.argmax(softmax, dim=1)
+                correct += torch.sum(
+                    argmaxs == torch.arange(batch).cuda() + t * batch)  # TODO: Correct index will be at offset t
+                loss += torch.sum(torch.diag(softmax.reshape(batch, encoded_x_steps, batch)[:, t + k, :]))
+
+            loss /= (batch * self.timesteps_out) * -1.0  # * pred_latent.shape[0]
+            accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
+            return accuracy, loss, hidden
 
     def freeze_layers(self):
         for param in self.parameters():
