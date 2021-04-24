@@ -87,7 +87,7 @@ def main(args):
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+            timesteps_ignore=2, normalize_latents=False, verbose=False, sampling_mode='some'
         ),
         # cpc_intersect.CPC(
         #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),

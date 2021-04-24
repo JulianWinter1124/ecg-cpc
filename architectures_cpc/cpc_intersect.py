@@ -20,7 +20,7 @@ class CPC(nn.Module):
         self.normalize_latents = normalize_latents
         self.verbose = verbose
         self.cpc_train_mode = True
-        if sampling_mode in ['all', 'same', 'random']:
+        if sampling_mode in ['all', 'same', 'random', 'future']:
             self.sampling_mode = sampling_mode
         else:
             self.sampling_mode = 'same'
@@ -58,8 +58,8 @@ class CPC(nn.Module):
                 encoded_latent = encoded_x[self.timesteps_in+k+1:-(self.timesteps_out+self.timesteps_ignore)+k, :, :].squeeze(0) #shape is batch, latent_size
                 if self.verbose: print(pred_latent.shape, encoded_latent.shape)
                 if self.normalize_latents:
-                    pred_latent /= torch.sqrt(torch.sum(torch.square(pred_latent)))
-                    encoded_latent /= torch.sqrt(torch.sum(torch.square(encoded_latent)))
+                    encoded_latent /= torch.norm(pred_latent, p=2, dim=-1, keepdim=True)
+                    encoded_latent /= torch.norm(encoded_latent, p=2, dim=-1, keepdim=True)
                 for step in range(pred_latent.shape[0]): #TODO: can this be broadcasted?
                     softmax = self.lsoftmax(torch.mm(encoded_latent[step], pred_latent[step].T))  # output: (Batches, Batches)
                     if self.verbose: print('softmax shape', softmax.shape)
@@ -76,17 +76,21 @@ class CPC(nn.Module):
             t = np.random.randint(low=self.timesteps_in, high=encoded_x_steps-self.timesteps_out-self.timesteps_ignore)  #Select current timestep at random
 
             if self.normalize_latents:
-                encoded_latent /= torch.sqrt(torch.sum(torch.square(encoded_latent)))
+                encoded_latent = batch*encoded_latent/torch.norm(encoded_latent, p=2, dim=-1, keepdim=True)
             for k in range(self.timesteps_ignore, self.timesteps_out):
                 pred_latent = self.predictor(context[t, :, :], k).squeeze(0)
                   # shape is batch, n_latents, latent_size
                 if self.normalize_latents:
-                    pred_latent /= torch.sqrt(torch.sum(torch.square(pred_latent)))
+                    pred_latent = batch*pred_latent/torch.norm(pred_latent, p=2, dim=-1, keepdim=True) #Multiplying with batch so softmax stable
+                    # prod = torch.matmul(encoded_latent, pred_latent.T).reshape(batch, encoded_x_steps*batch)
+                    # prod_sum = torch.sum(prod, dim=-1, keepdim=True)
+                    # softmax = torch.log(torch.div(prod, prod_sum))
+
                 #torch.matmul(encoded_latent, pred_latent.T).shape == B x latents x B
-                softmax = self.lsoftmax(torch.matmul(encoded_latent, pred_latent.T).reshape(batch, encoded_x_steps*batch)) #reshape for argmax to B, latents*B
+                softmax = self.lsoftmax(torch.matmul(encoded_latent, pred_latent.T).reshape(batch, encoded_x_steps * batch))  # reshape for argmax to B, latents*B
                 argmaxs = torch.argmax(softmax, dim=1)
                 correct += torch.sum(argmaxs == torch.arange(batch).cuda()+t*batch) #Correct index will be at offset t
-                loss += torch.sum(torch.diag(softmax.reshape(batch, encoded_x_steps, batch)[:, t+k, :]))
+                loss += torch.sum(torch.diag(softmax.reshape(batch, encoded_x_steps, batch)[:, t+self.timesteps_ignore+k, :]))
 
             loss /= (batch * self.timesteps_out) * -1.0  # * pred_latent.shape[0]
             accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
@@ -101,20 +105,21 @@ class CPC(nn.Module):
                                   high=encoded_x_steps - self.timesteps_out - self.timesteps_ignore)  # Select current timestep at random
 
             encoded_latent = encoded_x[t:].transpose(0, 1)  # output shape: Batch, latents*, latent_size
+            encoded_x_steps = encoded_latent.shape[1]
             if self.normalize_latents:
-                encoded_latent /= torch.sqrt(torch.sum(torch.square(encoded_latent)))
+                encoded_latent = batch*encoded_latent/torch.norm(encoded_latent, p=2, dim=-1, keepdim=True)
             for k in range(self.timesteps_ignore, self.timesteps_out):
                 pred_latent = self.predictor(context[t, :, :], k).squeeze(0)
                 # shape is batch, n_latents, latent_size
                 if self.normalize_latents:
-                    pred_latent /= torch.sqrt(torch.sum(torch.square(pred_latent)))
+                    pred_latent = batch * pred_latent / torch.norm(pred_latent, p=2, dim=-1, keepdim=True)
                 # torch.matmul(encoded_latent, pred_latent.T).shape == B x latents x B
                 softmax = self.lsoftmax(torch.matmul(encoded_latent, pred_latent.T).reshape(batch,
                                                                                             encoded_x_steps * batch))  # reshape for argmax to B, latents*B
                 argmaxs = torch.argmax(softmax, dim=1)
                 correct += torch.sum(
-                    argmaxs == torch.arange(batch).cuda() + t * batch)  # TODO: Correct index will be at offset t
-                loss += torch.sum(torch.diag(softmax.reshape(batch, encoded_x_steps, batch)[:, t + k, :]))
+                    argmaxs == torch.arange(batch).cuda())  # TODO: Correct index will be at offset t
+                loss += torch.sum(torch.diag(softmax.reshape(batch, encoded_x_steps, batch)[:, k, :])) #+t is gone
 
             loss /= (batch * self.timesteps_out) * -1.0  # * pred_latent.shape[0]
             accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]

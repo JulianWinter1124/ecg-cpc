@@ -33,8 +33,12 @@ def precision_recall(labels:np.ndarray, predictions:np.ndarray, n_classes): #see
                                                                     predictions.ravel())
     average_precision["micro"] = average_precision_score(labels, predictions,
                                                          average="micro")
-    print('Average precision score, micro-averaged over all classes: {0:0.2f}'
+    average_precision["macro"] = average_precision_score(labels, predictions,
+                                                         average="macro")
+    print('Average precision score, micro-averaged over all classes: {0:0.5f}'
           .format(average_precision["micro"]))
+    print('Average precision score, macro-averaged over all classes: {0:0.5f}'
+          .format(average_precision["macro"]))
     return precision, recall, average_precision
 
 def f1_scores_with_class_counts(counts):
@@ -77,18 +81,24 @@ def convert_pred_to_binary(predictions, thresholds):
 def read_output_csv_from_model_folder(model_folder = 'models/10_03_21-18/architectures_cpc.cpc_combined.CPCCombined1'):
     pred_path = glob.glob(os.path.join(model_folder, '*output.csv'))[0]
     dfp = pd.read_csv(pred_path)
-    return dfp.values[:, 1:]
+    return dfp.values[:, 1:], dfp.columns[1:].values #1 is file
+
+def read_label_csv_from_model_folder(model_folder):
+    label_path = glob.glob(os.path.join(model_folder, '*labels*.csv'))[0]
+    dfl = pd.read_csv(label_path)
+    labels = dfl.values[:, 1:]
+    return labels, dfl.columns[1:].values
 
 def read_binary_label_csv_from_model_folder(model_folder):
     label_path = glob.glob(os.path.join(model_folder, '*labels*.csv'))[0]
     dfl = pd.read_csv(label_path)
-    labels = dfl.values[:, 1:].astype(int)
-    return labels
+    labels = dfl.values[:, 1:].astype(int) #convert to int for binary pred
+    return labels, dfl.columns[1:].values
 
 if __name__ == '__main__': #usage example
-    model_folder = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_04_21-15/architectures_cpc.cpc_combined.CPCCombined0'
-    labels = read_binary_label_csv_from_model_folder(model_folder)
-    pred = read_output_csv_from_model_folder(model_folder)
+    model_folder = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_04_21-17/architectures_cpc.cpc_combined.CPCCombined0'
+    labels, _= read_binary_label_csv_from_model_folder(model_folder)
+    pred, _ = read_output_csv_from_model_folder(model_folder)
     n_classes = pred.shape[1]
     tpr, fpr, roc_auc, thresholds = ROC(labels, pred)
     tps, fps, best_thresholds = select_best_thresholds(tpr, fpr, thresholds, n_classes)

@@ -34,7 +34,7 @@ def main(args):
         # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
         window_size=9500)
     model_folders = [
-        'models/20_04_21-14/architectures_cpc.cpc_combined.CPCCombined'
+        'models/22_04_21-15/architectures_cpc.cpc_combined.CPCCombined'
     ]
 
     train_loaders = [
