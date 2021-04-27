@@ -29,21 +29,21 @@ def main(args):
     # cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
     # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
-    window_size = 4650
+
     georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                                  window_size=window_size, pad_to_size=window_size,
+                                                                  window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                   return_labels=True, return_filename=True,
                                                                   normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                               window_size=window_size, pad_to_size=window_size,
+                                                               window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                return_labels=True, return_filename=True,
                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
-                                                                window_size=window_size, pad_to_size=window_size,
+                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
                                                                 normalize_fn=ecg_datasets2.normalize_feature_scaling)
     ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
-                                                                window_size=window_size, pad_to_size=window_size,
+                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
                                                                 normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
@@ -61,7 +61,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/26_04_21-18'
+        'models/27_04_21-14'
     ]
     #infer class from model-arch file
     models = []
@@ -201,6 +201,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--timesteps_out', type=int, default=6,
                         help="The number of windows being predicted from the context (cpc task exclusive)")
+
+    parser.add_argument('--crop_size', type=int, default=4500,
+                        help="The size of the data that it is cropped to. If data is smaller than this number, data gets padded with zeros")
 
     parser.add_argument('--channels', type=int, default=12,
                         help="The number of channels the data will have")  # TODO: auto detect

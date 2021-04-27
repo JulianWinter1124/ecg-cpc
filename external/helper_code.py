@@ -174,13 +174,19 @@ def get_classes(files_without_ext):
                         classes.add(c.strip())
     return dict(zip(sorted(classes), range(len(classes))))
 
-def encode_header_labels(header, classes):
+def encode_header_labels(header, classes, onerror_class='426783006'):
     labels_act = np.zeros(len(classes))
     for l in header.split('\n'):
         if l.startswith('#Dx'):
             tmp = l.split(':')[1].split(',')
             for c in tmp:
-                class_index = classes[c.strip()]
+                cl = c.strip()
+                if cl in classes:
+                    class_index = classes[cl]
+                else:
+                    if onerror_class is None:
+                        return None
+                    class_index = classes[onerror_class]
                 labels_act[class_index] = 1
     return labels_act
 

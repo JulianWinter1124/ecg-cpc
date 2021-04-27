@@ -12,6 +12,7 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
+from architectures_baseline_challenge import baseline_cnn_v9, baseline_cnn_v4, baseline_cnn_v14
 from util import store_models
 from util.metrics import training_metrics, baseline_losses as bl
 #import cpc_base
@@ -42,19 +43,19 @@ def main(args):
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
     georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                        window_size=4650, pad_to_size=4650, return_labels=True,
+                                                        window_size=args.crop_size, pad_to_size=args.crop_size, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
-                                                           window_size=4650, pad_to_size=4650, return_labels=True,
+                                                           window_size=args.crop_size, pad_to_size=args.crop_size, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4650,
-                                                     pad_to_size=4650, return_labels=True,
+    cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=args.crop_size,
+                                                     pad_to_size=args.crop_size, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4650,
-                                                      pad_to_size=4650, return_labels=True,
+    ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=args.crop_size,
+                                                      pad_to_size=args.crop_size, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4650,
-                                                      pad_to_size=4650, return_labels=True,
+    nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=args.crop_size,
+                                                      pad_to_size=args.crop_size, return_labels=True,
                                                         normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
     georgia_challenge.merge_and_update_classes([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature])
@@ -111,8 +112,14 @@ def main(args):
         #     use_latents=True, use_context=False, verbose=False
         # )
     ]
-    combined_models = [ #TODO: give 'is_trained' param so you can easily switch if model needs to train
-        cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0]), #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'optimizer':None}
+    combined_models = [ #TODO: give 'is_trained' param so you can easily switch if model needs to train,
+        baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                     out_classes=args.forward_classes, verbose=False)
+        #baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                    # out_classes=args.forward_classes, verbose=False)
+        # baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+        #                             out_classes=args.forward_classes, verbose=False),
+        # cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0]), #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'optimizer':None}
         #cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1])
     ]
     trained_combined_model_folders = [ #continue training for these
@@ -158,152 +165,156 @@ def main(args):
         # accuracy_metrics.class_count_truth
     ]
 
-    def pretrain():
-        for model_i, model in enumerate(combined_models):
-            model_name = fullname(model)
-            output_path = os.path.join(args.out_path, model_name)
-            print("Begin pretraining of {}. Output will  be saved to dir: {}".format(model_name, output_path))
-            # Create dirs and model info
-            Path(output_path).mkdir(parents=True, exist_ok=True)
-            with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
-                cfg.write(str(args))
-            save_model_architecture(output_path, model, model_name)
-            model.cuda()
-            model.train()
-            # init optimizer
-            optimizer = Adam(model.parameters(), lr=3e-4)
-            metrics = defaultdict(lambda: defaultdict(list))
-            for epoch in range(1, args.pretrain_epochs + 1):
-                starttime = time.time()  # train
-                for train_loader_i, train_loader in enumerate(pretrain_train_loaders):
-                    for dataset_tuple in train_loader:
+    def pretrain(model_i, model):
+        model_name = fullname(model)
+        pretrain_fun = getattr(model, 'pretrain', None)
+        if not callable(pretrain_fun): #this is not a CPC model!
+            print(f'{model_name} is not a CPC model (needs to implement pretrain)... Skipping pretrain call')
+            return
+        output_path = os.path.join(args.out_path, model_name)
+        print("Begin pretraining of {}. Output will  be saved to dir: {}".format(model_name, output_path))
+        # Create dirs and model info
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+        with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
+            cfg.write(str(args))
+        save_model_architecture(output_path, model, model_name)
+        model.cuda()
+        model.train()
+        # init optimizer
+        optimizer = Adam(model.parameters(), lr=3e-4)
+        metrics = defaultdict(lambda: defaultdict(list))
+        for epoch in range(1, args.pretrain_epochs + 1):
+            starttime = time.time()  # train
+            for train_loader_i, train_loader in enumerate(pretrain_train_loaders):
+                for dataset_tuple in train_loader:
+                    data, _ = dataset_tuple
+                    data = data.float().cuda()
+                    optimizer.zero_grad()
+                    acc, loss, hidden = model.pretrain(data, y=None, hidden=None)
+                    loss.backward()
+                    optimizer.step()
+                    # saving metrics
+                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    metrics[epoch]['trainacc'].append(parse_tensor_to_numpy_or_scalar(acc))
+                    if args.dry_run:
+                        break
+                    del data, loss, hidden
+                print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
+                                                                               len(pretrain_train_loaders)))
+                torch.cuda.empty_cache()
+            with torch.no_grad():
+                for val_loader_i, val_loader in enumerate(pretrain_val_loaders):  # validate
+                    for dataset_tuple in val_loader:
                         data, _ = dataset_tuple
                         data = data.float().cuda()
-                        optimizer.zero_grad()
                         acc, loss, hidden = model.pretrain(data, y=None, hidden=None)
-                        loss.backward()
-                        optimizer.step()
                         # saving metrics
-                        metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                        metrics[epoch]['trainacc'].append(parse_tensor_to_numpy_or_scalar(acc))
+                        metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                        metrics[epoch]['valacc'].append(parse_tensor_to_numpy_or_scalar(acc))
                         if args.dry_run:
                             break
-                        del data, loss, hidden
-                    print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
-                                                                                   len(pretrain_train_loaders)))
-                    torch.cuda.empty_cache()
-                with torch.no_grad():
-                    for val_loader_i, val_loader in enumerate(pretrain_val_loaders):  # validate
-                        for dataset_tuple in val_loader:
-                            data, _ = dataset_tuple
-                            data = data.float().cuda()
-                            acc, loss, hidden = model.pretrain(data, y=None, hidden=None)
-                            # saving metrics
-                            metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                            metrics[epoch]['valacc'].append(parse_tensor_to_numpy_or_scalar(acc))
-                            if args.dry_run:
-                                break
-                        print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
-                                                                                         len(pretrain_val_loaders)))
-                        del data, loss, hidden
+                    print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
+                                                                                     len(pretrain_val_loaders)))
+                    del data, loss, hidden
 
-                elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
-                metrics[epoch]['elapsed_time'].append(elapsed_time)
-                print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f}. Avg train acc: {:.4f}. Avg val acc: {:.4f}. Elapsed time: {}".format(
-                    epoch, args.pretrain_epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
-                    np.mean(metrics[epoch]['trainacc']), np.mean(metrics[epoch]['valacc']),
-                    elapsed_time))
-                if args.dry_run:
-                    break
-            pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.pretrain_epochs)
-            # Saving metrics in pickle
-            with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
-                pickle.dump(dict(metrics), pick_file)
-            # Save model + model weights + optimizer state
-            save_model_checkpoint(output_path, epoch=args.pretrain_epochs, model=model, optimizer=optimizer, name=model_name)
-            print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(pretrain_models)))
+            elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
+            metrics[epoch]['elapsed_time'].append(elapsed_time)
+            print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f}. Avg train acc: {:.4f}. Avg val acc: {:.4f}. Elapsed time: {}".format(
+                epoch, args.pretrain_epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
+                np.mean(metrics[epoch]['trainacc']), np.mean(metrics[epoch]['valacc']),
+                elapsed_time))
+            if args.dry_run:
+                break
+        pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.pretrain_epochs)
+        # Saving metrics in pickle
+        with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
+            pickle.dump(dict(metrics), pick_file)
+        # Save model + model weights + optimizer state
+        save_model_checkpoint(output_path, epoch=args.pretrain_epochs, model=model, optimizer=optimizer, name=model_name)
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(pretrain_models)))
 
-            del model  # delete and free
-            torch.cuda.empty_cache()
+        del model  # delete and free
+        torch.cuda.empty_cache()
 
-    def downstream():
-        for model_i, model in enumerate(combined_models):
-            model_name = fullname(model)
-            output_path = os.path.join(args.out_path, model_name)
-            print("Begin training of {}. Output will  be saved to dir: {}".format(model_name, output_path))
-            # Create dirs and model info
-            Path(output_path).mkdir(parents=True, exist_ok=True)
-            with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
-                cfg.write(str(args))
-            save_model_architecture(output_path, model, model_name)
-            model.cuda()
-            model.train()
-            # init optimizer
-            optimizer = Adam(model.parameters(), lr=3e-4)
-            metrics = defaultdict(lambda: defaultdict(list))
-            for epoch in range(1, args.downstream_epochs + 1):
-                starttime = time.time()  # train
-                for train_loader_i, train_loader in enumerate(downstream_train_loaders):
-                    for dataset_tuple in train_loader:
+    def downstream(model_i, model):
+        model_name = fullname(model)
+        output_path = os.path.join(args.out_path, model_name)
+        print("Begin training of {}. Output will  be saved to dir: {}".format(model_name, output_path))
+        # Create dirs and model info
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+        with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
+            cfg.write(str(args))
+        save_model_architecture(output_path, model, model_name)
+        model.cuda()
+        model.train()
+        # init optimizer
+        optimizer = Adam(model.parameters(), lr=3e-4)
+        metrics = defaultdict(lambda: defaultdict(list))
+        for epoch in range(1, args.downstream_epochs + 1):
+            starttime = time.time()  # train
+            for train_loader_i, train_loader in enumerate(downstream_train_loaders):
+                for dataset_tuple in train_loader:
+                    data, labels = dataset_tuple
+                    data = data.float().cuda()
+                    labels = labels.float().cuda()
+                    optimizer.zero_grad()
+                    pred = model(data, y=None)  # makes model return prediction instead of loss
+                    loss = bl.binary_cross_entropy(pred=pred, y=labels) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
+                    loss.backward()
+                    optimizer.step()
+                    # saving metrics
+                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                    with torch.no_grad():
+                        for i, fn in enumerate(metric_functions):
+                            metrics[epoch]['acc_' + str(i)].append(
+                                parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                    if args.dry_run:
+                        break
+                    del data, pred, labels, loss
+                print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
+                                                                               len(downstream_train_loaders)))
+
+                torch.cuda.empty_cache()
+            with torch.no_grad():
+                for val_loader_i, val_loader in enumerate(downstream_val_loaders):  # validate
+                    for dataset_tuple in val_loader:
                         data, labels = dataset_tuple
                         data = data.float().cuda()
                         labels = labels.float().cuda()
-                        optimizer.zero_grad()
                         pred = model(data, y=None)  # makes model return prediction instead of loss
-                        loss = bl.binary_cross_entropy(pred=pred, y=labels) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
-                        loss.backward()
-                        optimizer.step()
+                        loss = bl.MSE_loss(pred=pred, y=labels)
                         # saving metrics
-                        metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                        with torch.no_grad():
-                            for i, fn in enumerate(metric_functions):
-                                metrics[epoch]['acc_' + str(i)].append(
-                                    parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                        metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                        for i, fn in enumerate(metric_functions):
+                            metrics[epoch]['val_acc_' + str(i)].append(
+                                parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                         if args.dry_run:
                             break
-                        del data, pred, labels, loss
-                    print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
-                                                                                   len(downstream_train_loaders)))
+                    print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
+                                                                                     len(downstream_val_loaders)))
+                    del data, pred, labels, loss
 
-                    torch.cuda.empty_cache()
-                with torch.no_grad():
-                    for val_loader_i, val_loader in enumerate(downstream_val_loaders):  # validate
-                        for dataset_tuple in val_loader:
-                            data, labels = dataset_tuple
-                            data = data.float().cuda()
-                            labels = labels.float().cuda()
-                            pred = model(data, y=None)  # makes model return prediction instead of loss
-                            loss = bl.MSE_loss(pred=pred, y=labels)
-                            # saving metrics
-                            metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                            for i, fn in enumerate(metric_functions):
-                                metrics[epoch]['val_acc_' + str(i)].append(
-                                    parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
-                            if args.dry_run:
-                                break
-                        print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
-                                                                                         len(downstream_val_loaders)))
-                        del data, pred, labels, loss
+            elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
+            metrics[epoch]['elapsed_time'].append(elapsed_time)
+            print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
+                epoch, args.downstream_epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
+                elapsed_time))
+            if args.dry_run:
+                break
+        pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.downstream_epochs)
+        # Saving metrics in pickle
+        with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
+            pickle.dump(dict(metrics), pick_file)
+        # Save model + model weights + optimizer state
+        save_model_checkpoint(output_path, epoch=args.downstream_epochs, model=model, optimizer=optimizer, name=model_name)
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(combined_models)))
 
-                elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
-                metrics[epoch]['elapsed_time'].append(elapsed_time)
-                print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
-                    epoch, args.downstream_epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
-                    elapsed_time))
-                if args.dry_run:
-                    break
-            pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.downstream_epochs)
-            # Saving metrics in pickle
-            with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
-                pickle.dump(dict(metrics), pick_file)
-            # Save model + model weights + optimizer state
-            save_model_checkpoint(output_path, epoch=args.downstream_epochs, model=model, optimizer=optimizer, name=model_name)
-            print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(combined_models)))
+        del model  # delete and free
+        torch.cuda.empty_cache()
 
-            del model  # delete and free
-            torch.cuda.empty_cache()
-    pretrain()
-    downstream()
+    for model_i, model in enumerate(combined_models): #TODO: easily select what training is necessary!
+        pretrain(model_i, model)
+        downstream(model_i, model)
 
 def parse_tensor_to_numpy_or_scalar(input_tensor):
     arr = input_tensor.detach().cpu().numpy()
@@ -358,6 +369,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--window_size', type=int, default=512,
                         help="The number of datapoints per channel per window")
+
+    parser.add_argument('--crop_size', type=int, default=4500,
+                        help="The size of the data that it is cropped to. If data is smaller than this number, data gets padded with zeros")
 
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")

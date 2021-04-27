@@ -36,7 +36,7 @@ def create_metric_plots_1(model_folder, labels, pred):
     plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, n_classes)
 
 if __name__ == '__main__':
-    model_folders = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_04_21-20/architectures_cpc.cpc_combined.CPCCombined0']#auto_find_tested_models() #or manual list
+    model_folders = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_04_21-18/architectures_baseline_challenge.baseline_cnn_v9.BaselineNet0']#auto_find_tested_models() #or manual list
     print(model_folders)
     for model_folder in model_folders:
         try:

@@ -9,6 +9,7 @@ from torch.utils.data import IterableDataset
 from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format
 
 from external import helper_code
+from util.utility import timestamp
 
 
 class ECGDataset(torch.utils.data.IterableDataset):
@@ -500,9 +501,9 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         fp = path_without_ext + '.hea'
         return helper_code.load_header(fp)
 
-    def _read_header_labels(self, path_without_ext):
+    def _read_header_labels(self, path_without_ext, onerror_class='426783006'):
         header = self._read_header_file(path_without_ext)
-        return helper_code.encode_header_labels(header, self.classes)
+        return helper_code.encode_header_labels(header, self.classes, onerror_class)
 
     def __len__(self):
         return self.total_length
@@ -524,6 +525,14 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
             save_train_test_split(os.path.join(p, 'train-test-splits.txt'), self.files[train_slice], self.files[val_slice], self.files[test_slice])
         return self.files[train_slice], self.files[val_slice], self.files[test_slice]
 
+    def count_classes(self):
+        counts = np.zeros(len(self.classes), dtype=int)
+        for i, f in enumerate(self.files):
+            labels = self._read_header_labels(f).astype(float)
+            counts += labels != 0.0 #Count where label isnt 0
+        return counts
+
+
     def train_split_with_function(self, file_mapping_function, save_path=None):
         splits = [[], [], []]
         for f in self.files:
@@ -543,7 +552,6 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         print('Classes found in data folder:', self.classes)
         labels = self._read_header_labels(f)
         print('Labels have shape', labels.shape)
-        
 
     def merge_and_update_classes(self, datasets):
         all_classes = set()
@@ -555,7 +563,40 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
             d.classes = all_classes
         print('Labels for datasets set to:', all_classes)
 
+    def remove_unknown_label_files(self):
+        for f in self.files[:]:
+            if self._read_header_labels(f, onerror_class=None) is None:
+                print('removed', f)
+                self.files.remove(f)
 
+
+def filter_update_classes_by_count(datasets, min_count, add_unknown=False):
+    counts, all_classes = count_merged_classes(datasets)
+    filtered_classes = set()
+    for k, v in all_classes.items():
+        if counts[v] >= min_count:
+            filtered_classes.add(k)
+    if add_unknown:
+        filtered_classes.add('-1')
+    filtered_classes = dict(zip(filtered_classes, range(len(filtered_classes))))
+    for d in datasets:
+        d.classes = filtered_classes
+        d.remove_unknown_label_files()
+    return filtered_classes
+
+def count_merged_classes(datasets):
+    all_classes = set()
+    for d in datasets:
+        all_classes = all_classes | set(d.classes.keys())
+    all_classes = sorted(all_classes)
+    all_classes = dict(zip(all_classes, range(len(all_classes))))
+    counts = np.zeros(len(all_classes), dtype=int)
+    for d in datasets:
+        temp_classes = d.classes.copy() #set back later
+        d.classes = all_classes
+        counts += d.count_classes()
+        d.classes = temp_classes #set back
+    return counts, all_classes
 
 def load_train_test_split(tts_file_path:str):
     splits = [[],[],[]]
@@ -570,6 +611,8 @@ def load_train_test_split(tts_file_path:str):
     return splits[0], splits[1], splits[2]
 
 def save_train_test_split(tts_file:str, trainf=[], valf=[], testf=[]):
+    if os.path.isfile(tts_file): #make a backup just in case
+        os.rename(tts_file, timestamp.string_timestamp_minutes()+tts_file)
     with open(tts_file, 'w') as f:
         f.write('#train files\n')
         f.write(",".join(trainf)+'\n')
