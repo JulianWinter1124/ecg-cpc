@@ -12,15 +12,12 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-import cpc_base
-import cpc_encoder_as_strided
 from util import store_models
-from util.metrics import training_metrics
+from util.metrics import training_metrics, baseline_losses as bl
 #import cpc_base
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, cpc_predictor_v0
 
-from architectures_baseline_challenge import baseline_losses as bl
-from util.data import ecg_datasets2, ptbxl_data
+from util.data import ecg_datasets2
 from util.full_class_name import fullname
 from util.store_models import save_model_architecture, save_model_checkpoint
 
@@ -87,7 +84,7 @@ def main(args):
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=2, normalize_latents=False, verbose=False, sampling_mode='some'
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='some'
         ),
         # cpc_intersect.CPC(
         #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
@@ -114,7 +111,7 @@ def main(args):
         #     use_latents=True, use_context=False, verbose=False
         # )
     ]
-    combined_models = [
+    combined_models = [ #TODO: give 'is_trained' param so you can easily switch if model needs to train
         cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0]), #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'optimizer':None}
         #cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1])
     ]
@@ -253,7 +250,7 @@ def main(args):
                         labels = labels.float().cuda()
                         optimizer.zero_grad()
                         pred = model(data, y=None)  # makes model return prediction instead of loss
-                        loss = bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
+                        loss = bl.binary_cross_entropy(pred=pred, y=labels) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
                         loss.backward()
                         optimizer.step()
                         # saving metrics

@@ -10,9 +10,8 @@ import numpy as np
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
-from architectures_baseline_challenge import baseline_losses as bl
 from architectures_baseline_challenge import baseline_cnn_v9
-from util.metrics import training_metrics
+from util.metrics import training_metrics, baseline_losses as bl
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
 from util.store_models import save_model_architecture, save_model_checkpoint
@@ -25,27 +24,45 @@ def main(args):
     torch.cuda.set_device(args.gpu_device)
     print(args.out_path)
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
-    # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-    #     window_size=9500)
-    # val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-    #     window_size=9500)
-    # georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
-    # cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
-    # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
-    # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
+    georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+                                                                  window_size=4650, pad_to_size=4650,
+                                                                  return_labels=True,
+                                                                  normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+                                                               window_size=4650, pad_to_size=4650, return_labels=True,
+                                                               normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
+                                                                window_size=4650,
+                                                                pad_to_size=4650, return_labels=True,
+                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
+                                                                window_size=4650,
+                                                                pad_to_size=4650, return_labels=True,
+                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database', window_size=4650,
+                                                       pad_to_size=4650, return_labels=True,
+                                                       normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
-    georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/', window_size=4500, pad_to_size=4500, return_labels=True)
-    cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/', window_size=4500, pad_to_size=4500, return_labels=True)
-    cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge', window_size=4500, pad_to_size=4500, return_labels=True)
-    ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge', window_size=4500, pad_to_size=4500, return_labels=True)
-    
-    georgia.merge_and_update_classes([georgia, cpsc, ptbxl, cpsc_train])
-    train_dataset_challenge = ChainDataset([georgia, cpsc_train, cpsc])
-    val_dataset_challenge = ChainDataset([ptbxl])
+    georgia_challenge.merge_and_update_classes(
+        [georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature])
+
+
+    if args.redo_splits:
+        print("Warning! Redoing splits!")
+        ptbxl_challenge.random_train_split()
+        cpsc_challenge.random_train_split()
+        cpsc2_challenge.random_train_split()
+        georgia_challenge.random_train_split()
+
+    ptbxl_train, ptbxl_val, _ = ptbxl_challenge.generate_datasets_from_split_file()
+    georgia_train, georgia_val, _ = georgia_challenge.generate_datasets_from_split_file()
+    cpsc_train, cpsc_val, _ = cpsc_challenge.generate_datasets_from_split_file()
+    cpsc2_train, cpsc2_val, _ = cpsc2_challenge.generate_datasets_from_split_file()
+
+    pretrain_train_dataset = ChainDataset([nature, ptbxl_train, georgia_train, cpsc_train, cpsc2_train])  # CPC TRAIN
+    pretrain_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val])  # CPC VAL
+    downstream_train_dataset = ChainDataset([ptbxl_train, georgia_train, cpsc_train, cpsc2_train])
+    downstream_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val])
     model_classes = [
         #baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         #baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),

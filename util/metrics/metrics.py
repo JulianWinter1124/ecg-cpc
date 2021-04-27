@@ -6,6 +6,35 @@ import os
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import average_precision_score
 
+def zero_fit_score(labels, predictions, average:str=None):
+    #print(labels.shape) #== samples x n_classes
+    _, n_classes = labels.shape
+    labels = labels.astype(float)
+    mask = labels == 0.0
+    dists = np.sqrt(np.square(np.where(mask, labels - predictions, 0.0)))
+    if average == 'micro': #Average over all samples
+        return 1.0 - np.sum(dists) / np.sum(mask)  # zero fit goal
+    if average == 'macro':
+        class_average = np.sum(dists, axis=0)/np.sum(mask, axis=0)
+        return 1.0 - np.nanmean(class_average)
+    else: #Dont take average
+        return 1.0 - np.sum(dists, axis=0)/np.sum(mask, axis=0)
+
+
+def class_fit_score(labels, predictions, average:str=None) -> float:
+    # print(labels.shape) #== samples x n_classes
+    _, n_classes = labels.shape
+    labels = labels.astype(float)
+    mask = labels != 0.0
+    dists = np.sqrt(np.square(np.where(mask, labels - predictions, 0.0)))
+    if average == 'micro':  # Average over all samples
+        return 1.0 - np.sum(dists) / np.sum(mask)  # zero fit goal
+    if average == 'macro':
+        class_average = np.sum(dists, axis=0) / np.sum(mask, axis=0)
+        return 1.0 - np.nanmean(class_average)
+    else:  # Dont take average
+        return 1.0 - np.sum(dists, axis=0) / np.sum(mask, axis=0)
+
 def ROC(labels:np.ndarray, predictions:np.ndarray): #see scikit learn doc
     n_classes = labels.shape[1]
     fpr = dict()
@@ -81,12 +110,12 @@ def convert_pred_to_binary(predictions, thresholds):
 def read_output_csv_from_model_folder(model_folder = 'models/10_03_21-18/architectures_cpc.cpc_combined.CPCCombined1'):
     pred_path = glob.glob(os.path.join(model_folder, '*output.csv'))[0]
     dfp = pd.read_csv(pred_path)
-    return dfp.values[:, 1:], dfp.columns[1:].values #1 is file
+    return dfp.values[:, 1:].astype(float), dfp.columns[1:].values #1 is file
 
 def read_label_csv_from_model_folder(model_folder):
     label_path = glob.glob(os.path.join(model_folder, '*labels*.csv'))[0]
     dfl = pd.read_csv(label_path)
-    labels = dfl.values[:, 1:]
+    labels = dfl.values[:, 1:].astype(float)
     return labels, dfl.columns[1:].values
 
 def read_binary_label_csv_from_model_folder(model_folder):

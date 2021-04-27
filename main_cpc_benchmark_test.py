@@ -29,7 +29,7 @@ def main(args):
     # cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
     # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
-    window_size = 4500
+    window_size = 4650
     georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                                   window_size=window_size, pad_to_size=window_size,
                                                                   return_labels=True, return_filename=True,
@@ -61,7 +61,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/23_03_21-14'
+        'models/26_04_21-18'
     ]
     #infer class from model-arch file
     models = []
