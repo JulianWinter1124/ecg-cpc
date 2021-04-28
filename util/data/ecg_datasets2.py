@@ -513,7 +513,7 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         print(len(records), 'record files found in ', self.BASE_DIR)
         return list(map(lambda x: os.path.splitext(x)[0], records)) #remove extension
 
-    def random_train_split(self, train_fraction=0.7, val_fraction=0.2, test_fraction=0.1, save=True, save_path_overwrite=None):
+    def random_train_split(self, train_fraction=0.7, val_fraction=0.2, test_fraction=0.1, save=True, save_path_overwrite=None, filename_overwrite=None):
         assert train_fraction+val_fraction+test_fraction <= 1
         N = len(self.files)
         shuffle(self.files)
@@ -522,8 +522,45 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         test_slice = slice(val_slice.stop, val_slice.stop+int(test_fraction*N))
         if save:
             p = save_path_overwrite or self.BASE_DIR
-            save_train_test_split(os.path.join(p, 'train-test-splits.txt'), self.files[train_slice], self.files[val_slice], self.files[test_slice])
+            fname = filename_overwrite or 'train-test-splits.txt'
+            save_train_test_split(os.path.join(p, fname), self.files[train_slice], self.files[val_slice], self.files[test_slice])
         return self.files[train_slice], self.files[val_slice], self.files[test_slice]
+
+    def random_train_split_with_class_count(self, train_fraction=0.7, val_fraction=0.2, test_fraction=0.1, save=True, save_path_overwrite=None, filename_overwrite=None):
+        assert train_fraction+val_fraction+test_fraction <= 1
+        class_buckets = [[] for x in range(len(self.classes))] #Creates classes buckets
+        for i, f in enumerate(self.files):
+            label = self._read_header_labels(f)
+            label_idx = np.argwhere(label).flatten()
+            for l in label_idx: #can return more than one (multi-label)
+                class_buckets[l].append(f) #Put this file into class l bucket
+        train_files, val_files, test_files = [], [], []
+        sorted_idx = list(sorted(range(len(class_buckets)), key=lambda x: len(class_buckets[x]))) #make index sorted by class count low->high
+        print(sorted_idx)
+        while len(sorted_idx) > 0:
+            idx = sorted_idx[0]
+            shuffle(class_buckets[idx])
+            b = class_buckets[idx]
+            c_N = len(b)
+            train_slice = slice(0, int(train_fraction * c_N))
+            val_slice = slice(train_slice.stop, train_slice.stop + int(val_fraction * c_N))
+            test_slice = slice(val_slice.stop, val_slice.stop + int(test_fraction * c_N))
+            train_files += b[train_slice]
+            val_files += b[val_slice]
+            test_files += b[test_slice]
+            used_set = set(b[train_slice]+b[val_slice]+b[test_slice])
+            for j in sorted_idx[1:]:
+                class_buckets[j] = [x for x in class_buckets[j] if x not in used_set] #REMOVE THIS FILE FROM ALL OTHER BUCKETS
+            sorted_idx = list(sorted(sorted_idx[1:], key=lambda x: len(class_buckets[x]))) #sort again (removal may change order)
+
+        train_files = list(set(train_files))
+        val_files = list(set(val_files))
+        test_files = list(set(test_files))
+        if save:
+            p = save_path_overwrite or self.BASE_DIR
+            fname = filename_overwrite or 'train-test-splits.txt'
+            save_train_test_split(os.path.join(p, fname), train_files, val_files, test_files)
+        return train_files, val_files, test_files
 
     def count_classes(self):
         counts = np.zeros(len(self.classes), dtype=int)
@@ -612,7 +649,10 @@ def load_train_test_split(tts_file_path:str):
 
 def save_train_test_split(tts_file:str, trainf=[], valf=[], testf=[]):
     if os.path.isfile(tts_file): #make a backup just in case
-        os.rename(tts_file, timestamp.string_timestamp_minutes()+tts_file)
+        sf = os.path.split(tts_file)
+        print(os.path.join(sf[0], timestamp.string_timestamp_minutes())+sf[1])
+        os.rename(tts_file, os.path.join(sf[0], timestamp.string_timestamp_minutes())+sf[1])
+
     with open(tts_file, 'w') as f:
         f.write('#train files\n')
         f.write(",".join(trainf)+'\n')

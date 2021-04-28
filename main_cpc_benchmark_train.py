@@ -60,12 +60,15 @@ def main(args):
 
     georgia_challenge.merge_and_update_classes([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature])
 
+    print(ecg_datasets2.filter_update_classes_by_count(
+        [georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature], 20))
+
     if args.redo_splits:
         print("Warning! Redoing splits!")
-        ptbxl_challenge.random_train_split()
-        cpsc_challenge.random_train_split()
-        cpsc2_challenge.random_train_split()
-        georgia_challenge.random_train_split()
+        ptbxl_challenge.random_train_split_with_class_count()
+        cpsc_challenge.random_train_split_with_class_count()
+        cpsc2_challenge.random_train_split_with_class_count()
+        georgia_challenge.random_train_split_with_class_count()
 
     
     ptbxl_train, ptbxl_val, _ = ptbxl_challenge.generate_datasets_from_split_file()
