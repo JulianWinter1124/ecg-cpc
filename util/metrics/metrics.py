@@ -11,7 +11,7 @@ def zero_fit_score(labels, predictions, average:str=None):
     _, n_classes = labels.shape
     labels = labels.astype(float)
     mask = labels == 0.0
-    dists = np.sqrt(np.square(np.where(mask, labels - predictions, 0.0)))
+    dists = np.square(np.where(mask, labels - predictions, 0.0))
     if average == 'micro': #Average over all samples
         return 1.0 - np.sum(dists) / np.sum(mask)  # zero fit goal
     if average == 'macro':
@@ -78,6 +78,18 @@ def f1_scores_with_class_counts(counts):
         NXi = np.sum(counts[:, i])
         f_score[i] = 2*Nii/(NiX+NXi) if (NiX+NXi)!=0 else 0
     return f_score
+
+def brier_score(labels, predictions, average=None):
+    print(labels.shape)
+    labels = labels.astype(float)
+    dists = np.square(labels - predictions)
+    if average == 'micro':  # Average over all samples
+        return 1.0 - np.nanmean(dists)  # zero fit goal
+    if average == 'macro':
+        class_average = np.nanmean(dists, axis=0)
+        return 1.0 - np.nanmean(class_average)
+    else:  # Dont take average
+        return 1.0 - np.nanmean(dists, axis=0)
 
 
 

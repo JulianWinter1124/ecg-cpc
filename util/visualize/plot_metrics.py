@@ -6,17 +6,17 @@ from numpy import interp
 from sklearn.metrics import auc
 
 
-def plot_roc_singleclass(tpr, fpr, roc_auc, class_n):
+def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i):
     plt.figure()
     lw = 2
-    plt.plot(fpr[class_n], tpr[class_n], color='darkorange',
-             lw=lw, label='ROC curve: '+str(class_n)+'(area = %0.2f)' % roc_auc[class_n])
+    plt.plot(fpr[class_i], tpr[class_i], color='darkorange',
+             lw=lw, label='ROC curve: ' + class_name + '(area = %0.2f)' % roc_auc[class_i])
     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic for single class: ' + str(class_n))
+    plt.title('Receiver operating characteristic for single class: ' + class_name)
     plt.legend(loc="lower right")
     plt.show()
 
@@ -33,7 +33,8 @@ def plot_precision_recall_microavg(recall, precision, average_precision):
         .format(average_precision["micro"]))
 
 
-def plot_precision_recall_multiclass(precision, recall, average_precision, n_classes, selection=None):
+def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None):
+    n_classes = len(classes)
     cm = plt.get_cmap('gist_rainbow')
     if selection is None:
         selection = range(n_classes)
@@ -60,8 +61,8 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, n_cla
     for i, color in zip(selection, colors):
         l, = plt.plot(recall[i], precision[i], color=color, lw=2)
         lines.append(l)
-        labels.append('Precision-recall for class {0} (area = {1:0.2f})'
-                      ''.format(i, average_precision[i]))
+        labels.append('{0} (area = {1:0.2f})'
+                      ''.format(classes[i], average_precision[i]))
 
     fig = plt.gcf()
     plt.xlim([0.0, 1.0])
@@ -72,7 +73,8 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, n_cla
     plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=6)
     plt.show()
 
-def plot_roc_multiclass(tpr, fpr, roc_auc, n_classes:int, selection=None):
+def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None):
+    n_classes = len(classes)
     selection = range(n_classes) if selection is None else selection
     all_fpr = np.unique(np.concatenate([fpr[i] for i in selection]))
     lw = 1
@@ -103,8 +105,8 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, n_classes:int, selection=None):
     colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
     for i, color in zip(selection, colors):
         plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-                 label='ROC curve of class {0} (area = {1:0.2f})'
-                 ''.format(i, roc_auc[i]))
+                 label='{0} (area = {1:0.2f})'
+                 ''.format(classes[i], roc_auc[i]))
 
     plt.plot([0, 1], [0, 1], 'k--', lw=lw)
     plt.xlim([0.0, 1.0])

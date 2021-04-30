@@ -12,7 +12,12 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-from architectures_baseline_challenge import baseline_cnn_v9, baseline_cnn_v4, baseline_cnn_v14
+import baseline_cnn_v0
+import baseline_cnn_v1
+import baseline_cnn_v3
+import baseline_cnn_v5
+import baseline_cnn_v7
+from architectures_baseline_challenge import baseline_cnn_v9, baseline_cnn_v4, baseline_cnn_v14, baseline_cnn_v2, baseline_cnn_v15, baseline_cnn_v6
 from util import store_models
 from util.metrics import training_metrics, baseline_losses as bl
 #import cpc_base
@@ -60,10 +65,10 @@ def main(args):
 
     georgia_challenge.merge_and_update_classes([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature])
 
-    print(ecg_datasets2.filter_update_classes_by_count(
-        [georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature], 20))
+
 
     if args.redo_splits:
+        ecg_datasets2.filter_update_classes_by_count([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature], min_count=20)
         print("Warning! Redoing splits!")
         ptbxl_challenge.random_train_split_with_class_count()
         cpsc_challenge.random_train_split_with_class_count()
@@ -71,12 +76,14 @@ def main(args):
         georgia_challenge.random_train_split_with_class_count()
 
     
-    ptbxl_train, ptbxl_val, _ = ptbxl_challenge.generate_datasets_from_split_file()
-    georgia_train, georgia_val, _ = georgia_challenge.generate_datasets_from_split_file()
-    cpsc_train, cpsc_val, _ = cpsc_challenge.generate_datasets_from_split_file()
-    cpsc2_train, cpsc2_val, _ = cpsc2_challenge.generate_datasets_from_split_file()
+    ptbxl_train, ptbxl_val, t1 = ptbxl_challenge.generate_datasets_from_split_file()
+    georgia_train, georgia_val, t2 = georgia_challenge.generate_datasets_from_split_file()
+    cpsc_train, cpsc_val, t3 = cpsc_challenge.generate_datasets_from_split_file()
+    cpsc2_train, cpsc2_val, t4 = cpsc2_challenge.generate_datasets_from_split_file()
 
-    
+    ecg_datasets2.filter_update_classes_by_count([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature], 1)
+    print(ptbxl_train.classes)
+
 
     pretrain_train_dataset = ChainDataset([nature, ptbxl_train, georgia_train, cpsc_train, cpsc2_train]) #CPC TRAIN
     pretrain_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val]) #CPC VAL
@@ -88,7 +95,7 @@ def main(args):
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='some'
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
         # cpc_intersect.CPC(
         #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
@@ -116,13 +123,22 @@ def main(args):
         # )
     ]
     combined_models = [ #TODO: give 'is_trained' param so you can easily switch if model needs to train,
-        baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                     out_classes=args.forward_classes, verbose=False)
-        #baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-                                    # out_classes=args.forward_classes, verbose=False)
+        # baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+        #                             out_classes=args.forward_classes, verbose=False),
+        # # baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # # baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # # baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
+        #baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
         # baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
         #                             out_classes=args.forward_classes, verbose=False),
-        # cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0]), #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'optimizer':None}
+        #cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0]), #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'optimizer':None}
         #cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1])
     ]
     trained_combined_model_folders = [ #continue training for these

@@ -594,8 +594,7 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         all_classes = set()
         for d in datasets:
             all_classes = all_classes | set(d.classes.keys())
-        all_classes = sorted(all_classes)
-        all_classes = dict(zip(all_classes, range(len(all_classes))))
+        all_classes = dict(zip(sorted(all_classes), range(len(all_classes))))
         for d in datasets:
             d.classes = all_classes
         print('Labels for datasets set to:', all_classes)
@@ -615,7 +614,7 @@ def filter_update_classes_by_count(datasets, min_count, add_unknown=False):
             filtered_classes.add(k)
     if add_unknown:
         filtered_classes.add('-1')
-    filtered_classes = dict(zip(filtered_classes, range(len(filtered_classes))))
+    filtered_classes = dict(zip(sorted(filtered_classes), range(len(filtered_classes))))
     for d in datasets:
         d.classes = filtered_classes
         d.remove_unknown_label_files()
