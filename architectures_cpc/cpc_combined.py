@@ -8,6 +8,7 @@ class CPCCombined(nn.Module):
         self.cpc_model = cpc_model
         self.downstream_model = downstream_model
         self.freeze_cpc = freeze_cpc
+        self.requires_grad_(True)
         self._unfreeze_cpc()
 
 

@@ -1,3 +1,4 @@
+import os
 from itertools import cycle
 
 import matplotlib.pyplot as plt
@@ -6,7 +7,7 @@ from numpy import interp
 from sklearn.metrics import auc
 
 
-def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i):
+def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i, savepath=None):
     plt.figure()
     lw = 2
     plt.plot(fpr[class_i], tpr[class_i], color='darkorange',
@@ -18,9 +19,11 @@ def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i):
     plt.ylabel('True Positive Rate')
     plt.title('Receiver operating characteristic for single class: ' + class_name)
     plt.legend(loc="lower right")
+    if savepath:
+        plt.savefig(os.path.join(savepath, f'precision-recall-{class_name}.png'), bbox_inches='tight')
     plt.show()
 
-def plot_precision_recall_microavg(recall, precision, average_precision):
+def plot_precision_recall_microavg(recall, precision, average_precision, savepath=None):
     plt.figure()
     plt.step(recall['micro'], precision['micro'], where='post')
 
@@ -31,9 +34,11 @@ def plot_precision_recall_microavg(recall, precision, average_precision):
     plt.title(
         'Average precision score, micro-averaged over all classes: AP={0:0.2f}'
         .format(average_precision["micro"]))
+    if savepath:
+        plt.savefig(os.path.join(savepath, 'precision-recall-microavg.png'))
 
 
-def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None):
+def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None, savepath=None):
     n_classes = len(classes)
     cm = plt.get_cmap('gist_rainbow')
     if selection is None:
@@ -71,9 +76,11 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, class
     plt.ylabel('Precision')
     plt.title('Extension of Precision-Recall curve to multi-class')
     plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=6)
+    if savepath:
+        plt.savefig(os.path.join(savepath, 'precision-recall-multiclass.png'), bbox_inches='tight')
     plt.show()
 
-def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None):
+def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepath=None):
     n_classes = len(classes)
     selection = range(n_classes) if selection is None else selection
     all_fpr = np.unique(np.concatenate([fpr[i] for i in selection]))
@@ -115,4 +122,6 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None):
     plt.ylabel('True Positive Rate')
     plt.title('Some extension of Receiver operating characteristic to multi-class')
     plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
+    if savepath:
+        plt.savefig(os.path.join(savepath, 'ROC-multiclass.png'), bbox_inches='tight')
     plt.show()

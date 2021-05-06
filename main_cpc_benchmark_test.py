@@ -11,6 +11,7 @@ import numpy as np
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
+from torchviz import make_dot
 
 from util.metrics import training_metrics
 from external import helper_code
@@ -64,7 +65,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/30_04_21-18'
+        'models/04_05_21-16'
 
     ]
     #infer class from model-arch file
@@ -100,6 +101,7 @@ def main(args):
             print(fullname(model), file=f)
             print(model, file=f)
         model.cuda()
+        first = True
         # init optimizer
         optimizer = Adam(model.parameters(), lr=3e-4)
         metrics = defaultdict(lambda: defaultdict(list))
@@ -114,8 +116,14 @@ def main(args):
                     data, labels, filenames = dataset_tuple
                     data = data.float().cuda()
                     labels = labels.float().cuda()
+                    # if first:
+                    #     dummy = torch.randn_like(data, requires_grad=True)
+                    #     dummy_p = model(dummy)
+                    #     make_dot(dummy_p, params=dict(list(model.named_parameters()) + [('x', dummy)])).render(model_name+'-viz', output_path, format="png")
+                    #     first = False
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
+
                     pred = pred.detach().cpu()
                     labels = labels.cpu()
                     labels_numpy = parse_tensor_to_numpy_or_scalar(labels)

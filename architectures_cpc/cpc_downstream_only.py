@@ -14,10 +14,11 @@ class DownstreamLinearNet(nn.Module):
         if self.use_context:
             self.linear_context = nn.Linear(context_size, out_classes)
         if self.use_latents:
-            self.flatten = nn.Flatten()
+            self.output_size = 1
+            self.pool = nn.AdaptiveMaxPool1d(output_size=self.output_size)
             self.linear_latents = nn.Sequential(
-                nn.Linear(57*latent_size, context_size),
-                nn.Linear(context_size, out_classes),
+                nn.Flatten(),
+                nn.Linear(self.output_size*latent_size, out_classes),
             )
         self.activation = nn.Sigmoid()
         #self.loss = nn.KLDivLoss()
@@ -32,7 +33,8 @@ class DownstreamLinearNet(nn.Module):
         elif self.use_context:
             pred = self.linear_context(context)
         elif self.use_latents:
-            pred = self.linear_latents(self.flatten(latents.transpose(1, 0)))
+            pooled = self.pool(latents.T).permute(1, 0, -1) #Reduce outsteps to outputsize and reshape to batch, latents, output_size
+            pred = self.linear_latents(pooled)
         output = self.activation(pred)
         #print('pred shape', pred.shape)
         if y is None:  #
@@ -57,7 +59,6 @@ class DownstreamLinearNet(nn.Module):
                         self.n_out_classes * batch))  # correct if probabilty within 0.01
             # accuracy = torch.sum(torch.eq(torch.argmax(logits, dim=1), torch.argmax(y, dim=1))) / batch
             return accuracies, loss
-
 
 
 

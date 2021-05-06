@@ -37,9 +37,9 @@ def create_metric_plots_1(model_folder, labels, pred, classes):
 
     normal_class = '426783006'
     normal_class_idx = np.where(classes == normal_class)[0][0]
-    plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes)
-    plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx)
-    plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes)
+    plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder)
+    plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder)
+    plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder)
 
 def create_csv_table(output_folder, filename, labels, pred, classes):
     n_classes = len(classes)
@@ -53,7 +53,7 @@ def save_csv(output_folder, filename, data, column_titles):
 
 
 if __name__ == '__main__':
-    model_folders = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_04_21-20/architectures_baseline_challenge.baseline_cnn_v6.BaselineNet0']#auto_find_tested_models() #or manual list
+    model_folders = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_05_21-20/architectures_cpc.cpc_combined.CPCCombined0']#auto_find_tested_models() #or manual list
     print(model_folders)
     for model_folder in model_folders:
         try:

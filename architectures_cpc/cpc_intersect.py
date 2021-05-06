@@ -35,7 +35,7 @@ class CPC(nn.Module):
             X = X.transpose(1, 2)
         batch, channels, length = X.shape #assume baseline dataset shape
         encoded_x = self.encoder(X) #encode whole data: shape: (batch, latent_size, length->out_length) #THIS IS NOT HOW ITS SHOWN IN THE PAPER
-        encoded_x = encoded_x.permute(2, 0, 1)
+        encoded_x = encoded_x.permute(2, 0, 1) #shape outlength, batch, latent_size
         if self.verbose: print('encoder_x', encoded_x.shape)
         encoded_x_steps, _, _  = encoded_x.shape
         if hidden is None:
@@ -51,6 +51,7 @@ class CPC(nn.Module):
         correct = torch.tensor([0.0]).cuda()
         if encoded_x_steps-self.timesteps_out-self.timesteps_ignore-self.timesteps_in < 1:
             print('Not enough encoded values for CPC training. Lower timesteps_in/timesteps_out/timesteps_ignore or change window_size + encoder')
+            print(f'Encoded {encoded_x_steps} steps but need at least {(self.timesteps_out+self.timesteps_ignore+self.timesteps_in)}')
             return loss, correct, hidden
         if self.sampling_mode == 'same':
             for k in range(self.timesteps_out):
@@ -58,7 +59,7 @@ class CPC(nn.Module):
                 encoded_latent = encoded_x[self.timesteps_in+k+1:-(self.timesteps_out+self.timesteps_ignore)+k, :, :].squeeze(0) #shape is batch, latent_size
                 if self.verbose: print(pred_latent.shape, encoded_latent.shape)
                 if self.normalize_latents:
-                    encoded_latent /= torch.norm(pred_latent, p=2, dim=-1, keepdim=True)
+                    pred_latent /= torch.norm(pred_latent, p=2, dim=-1, keepdim=True)
                     encoded_latent /= torch.norm(encoded_latent, p=2, dim=-1, keepdim=True)
                 for step in range(pred_latent.shape[0]): #TODO: can this be broadcasted?
                     softmax = self.lsoftmax(torch.mm(encoded_latent[step], pred_latent[step].T))  # output: (Batches, Batches)
