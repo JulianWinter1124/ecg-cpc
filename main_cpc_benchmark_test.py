@@ -65,7 +65,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/04_05_21-16'
+        'models/06_05_21-13'
 
     ]
     #infer class from model-arch file

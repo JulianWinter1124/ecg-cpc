@@ -1,6 +1,5 @@
 import argparse
 import datetime
-import glob
 import os
 import pickle
 import time
@@ -12,41 +11,44 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-import baseline_cnn_v0
-import baseline_cnn_v1
-import baseline_cnn_v3
-import baseline_cnn_v5
-import baseline_cnn_v7
 import cpc_encoder_as_strided
-from architectures_baseline_challenge import baseline_cnn_v9, baseline_cnn_v4, baseline_cnn_v14, baseline_cnn_v2, baseline_cnn_v15, baseline_cnn_v6
-from util import store_models
-from util.metrics import training_metrics, baseline_losses as bl
-#import cpc_base
-from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, cpc_predictor_v0
+from architectures_baseline_challenge import baseline_cnn_v9, baseline_cnn_v14, baseline_cnn_v15, baseline_cnn_v10,\
+    baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v7, baseline_cnn_v8
 
+# import cpc_base
+from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, \
+    cpc_predictor_v0
+from util import store_models
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
+from util.metrics import training_metrics, baseline_losses as bl
 from util.store_models import save_model_architecture, save_model_checkpoint
 
 
 def main(args):
     np.random.seed(args.seed)
+    torch.cuda.set_device(args.gpu_device)
+    print(f'Device set to : {torch.cuda.current_device()}. Selected was {args.gpu_device}')
+    torch.cuda.manual_seed(args.seed)
+    print(f'Seed set to : {args.seed}.')
 
-    #torch.cuda.set_device(args.gpu_device)
-    print(args.out_path)
+    print(f'Model outputpath: {args.out_path}')
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
-    # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-    #     window_size=9500)
-    # val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
-    #     '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-    #     # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-    #     window_size=9500)
-    # georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
-    # cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
-    # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
-    # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
+    # georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB',
+    #                                                     window_size=args.crop_size, pad_to_size=args.crop_size, return_labels=True,
+    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    # cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train/',
+    #                                                        window_size=args.crop_size, pad_to_size=args.crop_size, return_labels=True,
+    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    # cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=args.crop_size,
+    #                                                  pad_to_size=args.crop_size, return_labels=True,
+    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    # ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=args.crop_size,
+    #                                                   pad_to_size=args.crop_size, return_labels=True,
+    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
+    # nature = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/nature', window_size=args.crop_size,
+    #                                                   pad_to_size=args.crop_size, return_labels=True,
+    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
     georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                         window_size=args.crop_size, pad_to_size=args.crop_size, return_labels=True,
@@ -93,13 +95,13 @@ def main(args):
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=True, verbose=False, sampling_mode='all'
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
         cpc_intersect.CPC(
             cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
+            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
         cpc_intersect.CPC(
@@ -113,8 +115,8 @@ def main(args):
             cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
                                                   args.window_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
+            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
         ),
         # cpc_intersect.CPC(
@@ -130,17 +132,15 @@ def main(args):
             latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
             use_latents=False, use_context=True, verbose=False
         ),
-        cpc_downstream_only.DownstreamLinearNet(
-            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-            use_latents=True, use_context=False, verbose=False
-        )
+        # cpc_downstream_only.DownstreamLinearNet(
+        #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+        #     use_latents=True, use_context=False, verbose=False
+        # )
     ]
     trained_model_dicts = [ #continue training for these in some way
-        {'folder': 'models/18_03_21-18/architectures_cpc.cpc_combined.CPCCombined',
-         'will_pretrain': False,
-         'will_downtrain': True,
-         'model': None #Model will be loaded by method below
-         },
+        # {'folder': 'models/18_03_21-18/architectures_cpc.cpc_combined.CPCCombined',
+        #  'model': None #Model will be loaded by method below
+        #  },
     ]
     for model_i, trained_model_dict in enumerate(trained_model_dicts): #hack bad
         model_path = trained_model_dict['folder']
@@ -154,23 +154,18 @@ def main(args):
             trained_model_dict['model'] = model #load model into dict
             break #only take first you find
     models = [
-        # baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-        #                             out_classes=args.forward_classes, verbose=False),
-        # # baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # # baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # # baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
-        #baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
-        # baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
-        #                             out_classes=args.forward_classes, verbose=False),
-        #cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0]), #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'optimizer':None}
-        {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':True},
+        baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v10.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v11.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_cnn_v12.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True}
     ]
@@ -355,10 +350,15 @@ def main(args):
         torch.cuda.empty_cache()
 
     for model_i, model_dict in enumerate(models): #TODO: easily select what training is necessary!
-        model = model_dict['model']
-        if model_dict['will_pretrain']:
+        if type(model_dict) == dict:
+            model = model_dict['model']
+            if model_dict['will_pretrain']:
+                pretrain(model_i, model)
+            if model_dict['will_downtrain']:
+                downstream(model_i, model)
+        else: #assume its a model and the dev was to lazy to make it a dict
+            model = model_dict
             pretrain(model_i, model)
-        if model_dict['will_downtrain']:
             downstream(model_i, model)
 
 def parse_tensor_to_numpy_or_scalar(input_tensor):
@@ -385,7 +385,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--downstream_epochs', type=int, help='The number of Epochs to downtrain', default=100)
 
-    parser.add_argument('--seed', type=int, help='The seed used', default=None)
+    parser.add_argument('--seed', type=int, help='The seed used', default=0)
 
     parser.add_argument('--forward_mode', help="The forward mode to be used.", default='context',
                         type=str)  # , choices=['context, latents, all']

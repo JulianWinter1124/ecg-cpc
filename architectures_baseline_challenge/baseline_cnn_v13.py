@@ -18,9 +18,9 @@ class BaselineNet(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.2),
         )
-        self.res_downsample = nn.Conv1d(in_channels=9500, out_channels=4745, kernel_size=1)
+        self.res_downsample = nn.Conv1d(in_channels=4500, out_channels=2245, kernel_size=1)
         #self.downsample = nn.Conv1d(in_channels=4745, out_channels=1, kernel_size=1)
-        self.fc = nn.Linear(56940, out_classes)
+        self.fc = nn.Linear(26940, out_classes)
         self.activation = nn.Sigmoid()
         self.criterion = nn.BCELoss()
     def forward(self, x, y=None):

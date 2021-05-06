@@ -53,7 +53,7 @@ def save_csv(output_folder, filename, data, column_titles):
 
 
 if __name__ == '__main__':
-    model_folders = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_05_21-20/architectures_cpc.cpc_combined.CPCCombined0']#auto_find_tested_models() #or manual list
+    model_folders = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_05_21-15/architectures_cpc.cpc_combined.CPCCombined0']#auto_find_tested_models() #or manual list
     print(model_folders)
     for model_folder in model_folders:
         try:
