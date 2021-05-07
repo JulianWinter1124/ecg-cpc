@@ -7,15 +7,33 @@ import numpy as np
 from util.metrics.baseline_losses import bidirectional_cross_entropy, cross_entropy, binary_cross_entropy
 from util.metrics import metrics as m
 import util.visualize.plot_metrics as plotm
+from util.store_models import extract_model_files_from_dir
+
+
+def auto_find_tested_models_recursive(path='models/'):
+    #only works with specific file structure date/modelfolder/files
+    files = []
+    for root, dirs, dir_files in os.walk(path):
+        fm_temp, ch_temp = [], []
+        for file in dir_files:
+            if 'labels' in file and file.endswith('.csv'):
+                fm_temp.append(os.path.join(root, file))
+            elif 'output' in file and file.endswith('.csv'):
+                ch_temp.append(os.path.join(root, file))
+        if len(fm_temp) > 0 and len(ch_temp) > 0:
+            files.append(os.path.split(fm_temp[0])[0])
+    return files
 
 def auto_find_tested_models(path='models/'):
-    #only works with specific file structure date/modelfolder/files
     csvs = glob.glob(os.path.join(path, '*/*/*.csv')) #Finds all csv files with above structure
     csv_paths = list(reversed(list(set([os.path.abspath(os.path.split(csv)[0]) for csv in csvs]))))
     return csv_paths
 
+
+
 def create_metric_plots_1(model_folder, labels, pred, classes):
     print("creating for:", model_folder)
+    model_folder_name = os.path.split(model_folder)[1]
     n_classes = len(classes)
     tpr, fpr, roc_auc, thresholds = m.ROC(labels, pred)
     tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
@@ -34,12 +52,13 @@ def create_metric_plots_1(model_folder, labels, pred, classes):
     print('macro', m.brier_score(labels, pred, 'macro'))
     print('micro', m.brier_score(labels, pred, 'micro'))
     class_brier_scores = m.brier_score(labels, pred)
+    print('Top 1 score', m.top1_score(labels, pred))
 
     normal_class = '426783006'
     normal_class_idx = np.where(classes == normal_class)[0][0]
-    plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder)
-    plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder)
-    plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder)
+    plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_folder_name)
+    plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_folder_name)
+    plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder, plot_name=model_folder_name)
 
 def create_csv_table(output_folder, filename, labels, pred, classes):
     n_classes = len(classes)
@@ -53,7 +72,7 @@ def save_csv(output_folder, filename, data, column_titles):
 
 
 if __name__ == '__main__':
-    model_folders = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_05_21-15/architectures_cpc.cpc_combined.CPCCombined0']#auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/07_05_21-19/baseline_rnn.BaselineNet0') #auto_find_tested_models() #or manual list
     print(model_folders)
     for model_folder in model_folders:
         try:

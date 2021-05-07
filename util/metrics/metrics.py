@@ -35,6 +35,23 @@ def class_fit_score(labels, predictions, average:str=None) -> float:
     else:  # Dont take average
         return 1.0 - np.sum(dists, axis=0) / np.sum(mask, axis=0)
 
+def top1_score(labels, predictions):
+    correct = 0
+    total = 0
+    for l_i in range(len(labels)):
+        label = labels[l_i]
+        pred = predictions[l_i]
+        unique_label_probs = list(reversed(sorted(set(label)-{0.0})))
+        pred_prob_idxs = np.argsort(pred)[::-1]
+        total_local = 0
+        for prob in unique_label_probs:
+            label_prob_idxs = np.argwhere(label == prob) #Get idxs of all occurences
+            for i in range(len(label_prob_idxs)):
+                correct += (pred_prob_idxs[i+total_local] in label_prob_idxs) and pred[pred_prob_idxs[i+total_local]]>0 #add total
+            total_local += len(label_prob_idxs)
+        total += total_local
+    return 1.0*correct/total
+
 def ROC(labels:np.ndarray, predictions:np.ndarray): #see scikit learn doc
     n_classes = labels.shape[1]
     fpr = dict()

@@ -30,8 +30,8 @@ def load_model_architecture(full_model_file): #
     model = torch.load(full_model_file)
     return model
 
-def load_model_checkpoint(model_checkpoint_file, model, optimizer=None):
-    checkpoint = torch.load(model_checkpoint_file)
+def load_model_checkpoint(model_checkpoint_file, model, optimizer=None, device_id='cuda:0'):
+    checkpoint = torch.load(model_checkpoint_file, map_location=device_id)
     model.load_state_dict(checkpoint['model_state_dict'])
     if not optimizer is None:
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

@@ -22,7 +22,10 @@ from util.store_models import load_model_checkpoint, load_model_architecture, ex
 def main(args):
     np.random.seed(args.seed)
     torch.cuda.set_device(args.gpu_device)
-    print(args.out_path)
+    print(f'Device set to : {torch.cuda.current_device()}. Selected was {args.gpu_device}')
+    torch.cuda.manual_seed(args.seed)
+    print(f'Seed set to : {args.seed}.')
+    print(f'Model outputpath: {args.out_path}')
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
     with open(os.path.join(args.out_path, 'params.txt'), 'w') as cfg:
         cfg.write(str(args))
@@ -65,7 +68,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/06_05_21-13'
+        'models/07_05_21-18'
 
     ]
     #infer class from model-arch file
@@ -77,7 +80,7 @@ def main(args):
             fm_f = fm_fs[0]
             cp_f = sorted(cp_fs)[-1]
             model = load_model_architecture(fm_f)
-            model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None)
+            model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
             models.append(model)
     loaders = [
         DataLoader(test_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
@@ -190,7 +193,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--epochs', type=int, help='The number of Epochs to train', default=100)
 
-    parser.add_argument('--seed', type=int, help='The seed used', default=None)
+    parser.add_argument('--seed', type=int, help='The seed used', default=0)
 
     parser.add_argument('--forward_mode', help="The forward mode to be used.", default='context',
                         type=str)  # , choices=['context, latents, all']
