@@ -1,4 +1,5 @@
 import glob
+import json
 import os
 import pickle
 
@@ -25,6 +26,11 @@ def save_model_architecture(output_path, model, name=""):
     with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
         print(fullname(model), file=f)
         print(model, file=f)
+
+def save_model_variables(output_path, model):
+    with open(os.path.join(output_path, 'model_variables.txt'), 'w') as f:
+        print(fullname(model), file=f)
+        print(json.dumps(extract_params_from_model(model), sort_keys=True, indent=2), file=f)
 
 def load_model_architecture(full_model_file): #
     model = torch.load(full_model_file)
@@ -58,6 +64,22 @@ def extract_model_files_from_dir(directory):
             files.append((fm_temp, ch_temp))
     return files
 
+def extract_params_from_model(obj, prefix=''):
+    print('Got object:', obj)
+    if issubclass(type(obj), torch.nn.Module):
+        return extract_params_from_model(obj.__dict__, fullname(obj))
+    elif issubclass(type(obj), dict):
+        params = {}
+        for k, v in obj.items():
+            if not k.startswith('_') or k == '_modules':
+                params.update({k:extract_params_from_model(v)})
+        return {prefix:params} if params else {}
+    elif issubclass(type(obj), list):
+        return [extract_params_from_model(l) for l in obj]
+    elif not hasattr(obj, '__dict__'):
+        return obj
+    else:
+        return None
 
 
 @DeprecationWarning

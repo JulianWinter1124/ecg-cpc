@@ -61,6 +61,7 @@ def ROC(labels:np.ndarray, predictions:np.ndarray): #see scikit learn doc
     for i in range(n_classes):
         fpr[i], tpr[i], thresholds[i] = roc_curve(labels[:, i], predictions[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
+
     fpr["micro"], tpr["micro"], _ = roc_curve(labels.ravel(), predictions.ravel())
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
     return tpr, fpr, roc_auc, thresholds

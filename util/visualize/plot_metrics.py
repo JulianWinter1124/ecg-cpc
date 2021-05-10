@@ -40,10 +40,10 @@ def plot_precision_recall_microavg(recall, precision, average_precision, savepat
 
 def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None, savepath=None, plot_name=''):
     n_classes = len(classes)
-    cm = plt.get_cmap('gist_rainbow')
     if selection is None:
         selection = range(n_classes)
     # setup plot details
+    cm = plt.get_cmap('gist_rainbow')
     colors = cycle([cm(1.*i/n_classes) for i in selection])
 
     plt.figure(figsize=(12, 10))
@@ -109,7 +109,9 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepat
                    ''.format(roc_auc["macro"]),
              color='navy', linestyle=':', linewidth=4)
 
-    colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+    cm = plt.get_cmap('gist_rainbow')
+    colors = cycle([cm(1.*i/n_classes) for i in selection])
+
     for i, color in zip(selection, colors):
         plt.plot(fpr[i], tpr[i], color=color, lw=lw,
                  label='{0} (area = {1:0.2f})'
