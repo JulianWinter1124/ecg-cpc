@@ -27,7 +27,12 @@ def save_model_architecture(output_path, model, name=""):
         print(fullname(model), file=f)
         print(model, file=f)
 
-def save_model_variables(output_path, model):
+def save_model_architecture_text_only(output_path, model, name=""):
+    with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
+        print(fullname(model), file=f)
+        print(model, file=f)
+
+def save_model_variables_text_only(output_path, model):
     with open(os.path.join(output_path, 'model_variables.txt'), 'w') as f:
         print(fullname(model), file=f)
         print(json.dumps(extract_params_from_model(model), sort_keys=True, indent=2), file=f)
@@ -65,7 +70,6 @@ def extract_model_files_from_dir(directory):
     return files
 
 def extract_params_from_model(obj, prefix=''):
-    print('Got object:', obj)
     if issubclass(type(obj), torch.nn.Module):
         return extract_params_from_model(obj.__dict__, fullname(obj))
     elif issubclass(type(obj), dict):

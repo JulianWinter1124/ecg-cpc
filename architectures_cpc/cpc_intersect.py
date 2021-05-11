@@ -56,7 +56,7 @@ class CPC(nn.Module):
         if self.sampling_mode == 'same':
             for k in range(self.timesteps_out):
                 pred_latent = self.predictor(context[self.timesteps_in:-(self.timesteps_out+self.timesteps_ignore+1), :, :], k)
-                encoded_latent = encoded_x[self.timesteps_in+k+1:-(self.timesteps_out+self.timesteps_ignore)+k, :, :].squeeze(0) #shape is batch, latent_size
+                encoded_latent = encoded_x[self.timesteps_in+k+1:-(self.timesteps_out+self.timesteps_ignore)+k, :, :] #shape is batch, latent_size
                 if self.verbose: print(pred_latent.shape, encoded_latent.shape)
                 if self.normalize_latents:
                     pred_latent /= torch.norm(pred_latent, p=2, dim=-1, keepdim=True)

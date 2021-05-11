@@ -14,7 +14,8 @@ from torch.utils.data import DataLoader, ChainDataset
 import baseline_alex
 import baseline_alex_v2
 import baseline_rnn
-import baseline_rnn_simplest
+import baseline_rnn_simplest_gru
+import cpc_downstream_twolinear
 import cpc_encoder_as_strided
 from architectures_baseline_challenge import baseline_cnn_v9, baseline_cnn_v14, baseline_cnn_v15, baseline_cnn_v10,\
     baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v7, baseline_cnn_v8
@@ -26,7 +27,7 @@ from util import store_models
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
 from util.metrics import training_metrics, baseline_losses as bl
-from util.store_models import save_model_architecture, save_model_checkpoint, save_model_variables
+from util.store_models import save_model_architecture, save_model_checkpoint, save_model_variables_text_only
 
 
 def main(args):
@@ -136,9 +137,9 @@ def main(args):
             latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
             use_latents=False, use_context=True, verbose=False
         ),
-        # cpc_downstream_only.DownstreamLinearNet(
+        # cpc_downstream_twolinear.DownstreamLinearNet(
         #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-        #     use_latents=True, use_context=False, verbose=False
+        #     use_latents=True, use_context=True, verbose=False
         # )
     ]
     trained_model_dicts = [ #continue training for these in some way
@@ -167,14 +168,15 @@ def main(args):
         # baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #{'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=False), 'will_pretrain':False, 'will_downtrain':True},
-        # {'model':cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
-        # {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
-        # {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain':False, 'will_downtrain':True},
+        {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        {'model':cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True}
         #baseline_rnn.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
-        baseline_rnn_simplest.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
+        baseline_rnn_simplest_gru.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
     ]
 
 
@@ -222,7 +224,7 @@ def main(args):
         with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
             cfg.write(str(args))
         save_model_architecture(output_path, model, model_name)
-        save_model_variables(output_path, model)
+        save_model_variables_text_only(output_path, model)
         model.cuda()
         model.train()
         # init optimizer
@@ -290,7 +292,7 @@ def main(args):
         with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
             cfg.write(str(args))
         save_model_architecture(output_path, model, model_name)
-        save_model_variables(output_path, model)
+        save_model_variables_text_only(output_path, model)
         model.cuda()
         model.train()
         # init optimizer

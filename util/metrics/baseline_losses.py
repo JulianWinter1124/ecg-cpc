@@ -21,3 +21,6 @@ def multi_loss_function(loss_fns):
     def fn(pred, y):
         return sum([lfn(pred, y) for lfn in loss_fns]) / len(loss_fns)
     return fn
+
+def nllloss(pred, y):
+    F.nll_loss(pred, y)

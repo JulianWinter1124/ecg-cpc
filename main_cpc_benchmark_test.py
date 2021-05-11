@@ -13,6 +13,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 from torchviz import make_dot
 
+from util import store_models
 from util.metrics import training_metrics
 from external import helper_code
 from util.data import ecg_datasets2, ptbxl_data
@@ -68,7 +69,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/10_05_21-15'
+        'models/11_05_21-15'
 
     ]
     #infer class from model-arch file
@@ -98,13 +99,12 @@ def main(args):
         print("Evaluating {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
+        store_models.save_model_variables_text_only(output_path, model)
+        store_models.save_model_architecture_text_only(output_path, model)
         with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
             cfg.write(str(args))
-        with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
-            print(fullname(model), file=f)
-            print(model, file=f)
         model.cuda()
-        first = True
+        # first = True
         # init optimizer
         optimizer = Adam(model.parameters(), lr=3e-4)
         metrics = defaultdict(lambda: defaultdict(list))
