@@ -11,15 +11,10 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-import baseline_alex
-import baseline_alex_v2
-import baseline_rnn
 import baseline_rnn_simplest_gru
+import cpc_downstream_cnn
 import cpc_downstream_twolinear
 import cpc_encoder_as_strided
-from architectures_baseline_challenge import baseline_cnn_v9, baseline_cnn_v14, baseline_cnn_v15, baseline_cnn_v10,\
-    baseline_cnn_v11, baseline_cnn_v12, baseline_cnn_v13, baseline_cnn_v7, baseline_cnn_v8
-
 # import cpc_base
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, \
     cpc_predictor_v0
@@ -102,28 +97,28 @@ def main(args):
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
-        cpc_intersect.CPC(
-            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
-            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-                                                  args.window_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
-            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
-        ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #                                           args.window_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
+        # ),
         # cpc_intersect.CPC(
         #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
         #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
@@ -133,14 +128,18 @@ def main(args):
         # ),
     ]
     downstream_models = [
-        cpc_downstream_only.DownstreamLinearNet(
-            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-            use_latents=False, use_context=True, verbose=False
-        ),
-        # cpc_downstream_twolinear.DownstreamLinearNet(
+        # cpc_downstream_only.DownstreamLinearNet(
         #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-        #     use_latents=True, use_context=True, verbose=False
-        # )
+        #     use_latents=False, use_context=True, verbose=False
+        # ),
+        cpc_downstream_twolinear.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=True, verbose=False
+        ),
+        cpc_downstream_cnn.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=True, verbose=False
+        )
     ]
     trained_model_dicts = [ #continue training for these in some way
         # {'folder': 'models/18_03_21-18/architectures_cpc.cpc_combined.CPCCombined',
@@ -169,14 +168,14 @@ def main(args):
         # baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain':False, 'will_downtrain':True},
-        {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
-        {'model':cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
-        {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
-        {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
+        {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True}
         #baseline_rnn.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
-        baseline_rnn_simplest_gru.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
+        # baseline_rnn_simplest_gru.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
     ]
 
 
@@ -390,8 +389,6 @@ if __name__ == "__main__":
     parser.add_argument('--saved_model', type=str,
                         help='Model path to load weights from. Has to be given for downstream mode.')
 
-    parser.add_argument('--epochs', type=int, help='The number of Epochs to train', default=100)
-
     parser.add_argument('--pretrain_epochs', type=int, help='The number of Epochs to pretrain', default=100)
 
     parser.add_argument('--downstream_epochs', type=int, help='The number of Epochs to downtrain', default=100)
@@ -402,7 +399,7 @@ if __name__ == "__main__":
                         type=str)  # , choices=['context, latents, all']
 
     parser.add_argument('--out_path', help="The output directory for losses and models",
-                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
+                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")) + '-train', type=str)
 
     parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")

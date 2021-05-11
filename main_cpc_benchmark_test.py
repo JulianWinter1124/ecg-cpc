@@ -69,7 +69,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/11_05_21-15'
+        'models/04_05_21-14/architectures_cpc.cpc_combined.CPCCombined'
 
     ]
     #infer class from model-arch file
@@ -191,15 +191,13 @@ if __name__ == "__main__":
     parser.add_argument('--saved_model', type=str,
                         help='Model path to load weights from. Has to be given for downstream mode.')
 
-    parser.add_argument('--epochs', type=int, help='The number of Epochs to train', default=100)
-
     parser.add_argument('--seed', type=int, help='The seed used', default=0)
 
     parser.add_argument('--forward_mode', help="The forward mode to be used.", default='context',
                         type=str)  # , choices=['context, latents, all']
 
     parser.add_argument('--out_path', help="The output directory for losses and models",
-                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
+                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")) + '-test', type=str)
 
     parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")

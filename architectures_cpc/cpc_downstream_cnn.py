@@ -13,15 +13,13 @@ class DownstreamLinearNet(nn.Module):
         self.verbose = verbose
         if self.use_context and self.use_latents:
             self.classifier = nn.Sequential(
-                nn.Linear(context_size*2, context_size*2),
                 nn.ReLU(),
-                nn.Linear(context_size*2, out_classes)
+                nn.Conv1d(in_channels=context_size*2, out_channels=out_classes, kernel_size=1, stride=1),
             )
-        else: #if not both are getting used, normal classifier is enough for each
+        else: #if not both are getting used, normal classifier is enough for each (in_channels*1)
             self.classifier = nn.Sequential(
-                nn.Linear(context_size, context_size),
                 nn.ReLU(),
-                nn.Linear(context_size, out_classes)
+                nn.Conv1d(in_channels=context_size, out_channels=out_classes, kernel_size=1, stride=1),
             )
         if self.use_latents:
             self.rnn = nn.GRU(input_size=latent_size, hidden_size=context_size, num_layers=1, batch_first=False)
@@ -39,8 +37,8 @@ class DownstreamLinearNet(nn.Module):
         elif self.use_latents:
             x, c = self.rnn(latents)
             context = x[:, -1]
-        pred = self.classifier(context)
-        output = self.activation(pred)
+        pred = self.classifier(context.unsqueeze(-1))
+        output = self.activation(pred).squeeze()
         #print('pred shape', pred.shape)
         if y is None:  #
             return output

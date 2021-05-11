@@ -72,7 +72,7 @@ def save_csv(output_folder, filename, data, column_titles):
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/11_05_21-15/baseline_rnn_simplest_gru.BaselineNet0') #auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/11_05_21-18/architectures_cpc.cpc_combined.CPCCombined0') #auto_find_tested_models() #or manual list
     print(model_folders)
     for model_folder in model_folders:
         try:
