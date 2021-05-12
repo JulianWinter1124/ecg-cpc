@@ -37,8 +37,8 @@ def save_model_variables_text_only(output_path, model):
         print(fullname(model), file=f)
         print(json.dumps(extract_params_from_model(model), sort_keys=True, indent=2), file=f)
 
-def load_model_architecture(full_model_file): #
-    model = torch.load(full_model_file)
+def load_model_architecture(full_model_file, device_id='cuda:0'): #
+    model = torch.load(full_model_file, map_location=device_id)
     return model
 
 def load_model_checkpoint(model_checkpoint_file, model, optimizer=None, device_id='cuda:0'):

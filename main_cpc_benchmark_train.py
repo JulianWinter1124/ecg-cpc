@@ -142,9 +142,18 @@ def main(args):
         )
     ]
     trained_model_dicts = [ #continue training for these in some way
-        # {'folder': 'models/18_03_21-18/architectures_cpc.cpc_combined.CPCCombined',
-        #  'model': None #Model will be loaded by method below
-        #  },
+        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined0',
+         'model': None #Model will be loaded by method below
+         },
+        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined1',
+         'model': None #Model will be loaded by method below
+         },
+        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined2',
+         'model': None #Model will be loaded by method below
+         },
+        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined3',
+         'model': None #Model will be loaded by method below
+         },
     ]
     for model_i, trained_model_dict in enumerate(trained_model_dicts): #hack bad
         model_path = trained_model_dict['folder']
@@ -154,7 +163,7 @@ def main(args):
             fm_f = fm_fs[0]
             cp_f = sorted(cp_fs)[-1]
             model = store_models.load_model_architecture(fm_f)
-            model, _, epoch = store_models.load_model_checkpoint(cp_f, model, optimizer=None)
+            model, _, epoch = store_models.load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
             trained_model_dict['model'] = model #load model into dict
             break #only take first you find
     models = [
@@ -168,12 +177,19 @@ def main(args):
         # baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain':False, 'will_downtrain':True},
-        {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
-        {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
+        # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
         # {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True}
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
         #baseline_rnn.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
         # baseline_rnn_simplest_gru.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
     ]
