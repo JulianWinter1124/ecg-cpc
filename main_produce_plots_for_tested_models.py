@@ -60,6 +60,20 @@ def create_metric_plots_1(model_folder, labels, pred, classes):
     plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_folder_name)
     plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder, plot_name=model_folder_name)
 
+def create_metric_confusion_matrix(model_folder, binary_labels, pred, classes:list):
+    print("creating for:", model_folder)
+    model_folder_name = os.path.split(model_folder)[1]
+    n_classes = len(classes)
+    tpr, fpr, roc_auc, thresholds = m.ROC(binary_labels, pred)
+    tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
+    test_thresholds = {c:0.5 for c in classes}
+    binary_preds = m.convert_pred_to_binary(pred, test_thresholds)
+    print(binary_preds)
+    print(binary_labels)
+    cm = m.confusion_matrix(binary_labels, binary_preds)
+    print(cm)
+    plotm.plot_confusion_matrix(cm, classes)
+
 def create_csv_table(output_folder, filename, labels, pred, classes):
     n_classes = len(classes)
 
@@ -72,13 +86,14 @@ def save_csv(output_folder, filename, data, column_titles):
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/11_05_21-18/architectures_cpc.cpc_combined.CPCCombined0') #auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/14_05_21-14-test') #auto_find_tested_models() #or manual list
     print(model_folders)
     for model_folder in model_folders:
         try:
             labels, classes = m.read_binary_label_csv_from_model_folder(model_folder)
             print(len(classes), classes)
             pred, pred_classes = m.read_output_csv_from_model_folder(model_folder)
-            create_metric_plots_1(model_folder, labels, pred, classes)
+            #create_metric_plots_1(model_folder, labels, pred, classes)
+            create_metric_confusion_matrix(model_folder, labels, pred, classes)
         except FileNotFoundError as e: #folder with not the correct csv?
             print(e)

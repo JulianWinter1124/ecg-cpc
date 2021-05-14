@@ -69,7 +69,8 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/04_05_21-14/architectures_cpc.cpc_combined.CPCCombined'
+        'models/12_05_21-16-train',
+        'models/12_05_21-20-train'
 
     ]
     #infer class from model-arch file
@@ -126,7 +127,8 @@ def main(args):
                     #     first = False
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
-
+                    if len(pred.shape) == 1: #hack for squeezed batch dimension
+                        pred = pred.unsqueeze(0)
                     pred = pred.detach().cpu()
                     labels = labels.cpu()
                     labels_numpy = parse_tensor_to_numpy_or_scalar(labels)

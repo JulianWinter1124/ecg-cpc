@@ -83,7 +83,12 @@ def main(args):
 
     ecg_datasets2.filter_update_classes_by_count([nature, ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train, cpsc2_val, t4], 1)
     print('Classes after last update', len(ptbxl_train.classes), ptbxl_train.classes)
-
+    if args.use_class_weights:
+        counts, counted_classes = ecg_datasets2.count_merged_classes([nature, ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train, cpsc2_val, t4])
+        class_weights = torch.Tensor(max(counts)/counts).to(device=f'cuda:{args.gpu_device}')
+        print('Using the following class weights:', class_weights)
+    else:
+        class_weights = None
 
     pretrain_train_dataset = ChainDataset([nature, ptbxl_train, georgia_train, cpsc_train, cpsc2_train]) #CPC TRAIN
     pretrain_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val]) #CPC VAL
@@ -322,7 +327,7 @@ def main(args):
                     labels = labels.float().cuda()
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
-                    loss = bl.binary_cross_entropy(pred=pred, y=labels) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
+                    loss = bl.binary_cross_entropy(pred=pred, y=labels, weight=class_weights) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
                     loss.backward()
                     optimizer.step()
                     # saving metrics
@@ -345,7 +350,7 @@ def main(args):
                         data = data.float().cuda()
                         labels = labels.float().cuda()
                         pred = model(data, y=None)  # makes model return prediction instead of loss
-                        loss = bl.binary_cross_entropy(pred=pred, y=labels)
+                        loss = bl.binary_cross_entropy(pred=pred, y=labels, weight=class_weights)
                         # saving metrics
                         metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
                         for i, fn in enumerate(metric_functions):
@@ -448,6 +453,10 @@ if __name__ == "__main__":
     parser.add_argument('--dry_run', dest='dry_run', action='store_true',
                         help="Only run minimal samples to test all models functionality")
     parser.set_defaults(dry_run=False)
+
+    parser.add_argument('--use_class_weights', dest='use_class_weights', action='store_true',
+                        help="Use class weights determined by datasets class count")
+    parser.set_defaults(use_class_weights=False)
 
     parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
                         help="Redo splits. Warning! File will be overwritten!")

@@ -4,7 +4,7 @@ from itertools import cycle
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import interp
-from sklearn.metrics import auc
+from sklearn.metrics import auc, ConfusionMatrixDisplay
 
 
 def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i, savepath=None, plot_name=''):
@@ -21,6 +21,54 @@ def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i, savepath=None, 
     plt.legend(loc="lower right")
     if savepath:
         plt.savefig(os.path.join(savepath, f'roc-{class_name}.png'), bbox_inches='tight')
+    plt.show()
+
+def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepath=None, plot_name=''):
+    n_classes = len(classes)
+    selection = range(n_classes) if selection is None else selection
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in selection]))
+    lw = 1
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in selection:
+        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+
+    # Finally average it and compute AUC
+    mean_tpr /= n_classes
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+    # Plot all ROC curves
+    plt.figure()
+    plt.plot(fpr["micro"], tpr["micro"],
+             label='micro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["micro"]),
+             color='deeppink', linestyle=':', linewidth=4)
+
+    plt.plot(fpr["macro"], tpr["macro"],
+             label='macro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["macro"]),
+             color='navy', linestyle=':', linewidth=4)
+
+    cm = plt.get_cmap('gist_rainbow')
+    colors = cycle([cm(1.*i/n_classes) for i in selection])
+
+    for i, color in zip(selection, colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                 label='{0} (area = {1:0.2f})'
+                 ''.format(classes[i], roc_auc[i]))
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(plot_name+'\nReceiver operating characteristic for multi-class')
+    plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
+    if savepath:
+        plt.savefig(os.path.join(savepath, 'ROC-multiclass.png'), bbox_inches='tight')
     plt.show()
 
 def plot_precision_recall_microavg(recall, precision, average_precision, savepath=None):
@@ -80,50 +128,7 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, class
         plt.savefig(os.path.join(savepath, 'precision-recall-multiclass.png'), bbox_inches='tight')
     plt.show()
 
-def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepath=None, plot_name=''):
-    n_classes = len(classes)
-    selection = range(n_classes) if selection is None else selection
-    all_fpr = np.unique(np.concatenate([fpr[i] for i in selection]))
-    lw = 1
-    # Then interpolate all ROC curves at this points
-    mean_tpr = np.zeros_like(all_fpr)
-    for i in selection:
-        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+def plot_confusion_matrix(confusion_matrix:np.ndarray, classes):
+    disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=classes)
+    disp.plot()
 
-    # Finally average it and compute AUC
-    mean_tpr /= n_classes
-
-    fpr["macro"] = all_fpr
-    tpr["macro"] = mean_tpr
-    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
-
-    # Plot all ROC curves
-    plt.figure()
-    plt.plot(fpr["micro"], tpr["micro"],
-             label='micro-average ROC curve (area = {0:0.2f})'
-                   ''.format(roc_auc["micro"]),
-             color='deeppink', linestyle=':', linewidth=4)
-
-    plt.plot(fpr["macro"], tpr["macro"],
-             label='macro-average ROC curve (area = {0:0.2f})'
-                   ''.format(roc_auc["macro"]),
-             color='navy', linestyle=':', linewidth=4)
-
-    cm = plt.get_cmap('gist_rainbow')
-    colors = cycle([cm(1.*i/n_classes) for i in selection])
-
-    for i, color in zip(selection, colors):
-        plt.plot(fpr[i], tpr[i], color=color, lw=lw,
-                 label='{0} (area = {1:0.2f})'
-                 ''.format(classes[i], roc_auc[i]))
-
-    plt.plot([0, 1], [0, 1], 'k--', lw=lw)
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title(plot_name+'\nReceiver operating characteristic for multi-class')
-    plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
-    if savepath:
-        plt.savefig(os.path.join(savepath, 'ROC-multiclass.png'), bbox_inches='tight')
-    plt.show()
