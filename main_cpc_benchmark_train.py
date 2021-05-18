@@ -187,7 +187,8 @@ def main(args):
         # {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True, 'desc':
+         'blabla'},
         {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
         {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
         {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
@@ -383,6 +384,10 @@ def main(args):
     for model_i, model_dict in enumerate(models): #TODO: easily select what training is necessary!
         if type(model_dict) == dict:
             model = model_dict['model']
+            if 'desc' in model_dict:
+                model.description = model_dict['desc']
+            if 'name' in model_dict:
+                model.name = model_dict['name']
             if model_dict['will_pretrain']:
                 pretrain(model_i, model)
             if model_dict['will_downtrain']:
@@ -463,6 +468,8 @@ if __name__ == "__main__":
     parser.set_defaults(redo_splits=False)
 
     parser.add_argument("--gpu_device", type=int, default=0)
+
+    parser.add_argument("--comment", type=str, default=None)
 
     args = parser.parse_args()
     main(args)
