@@ -233,7 +233,7 @@ def main(args):
     ]
 
     def pretrain(model_i, model):
-        model_name = fullname(model)
+        model_name = model.name if hasattr(model, 'name') else fullname(model)
         pretrain_fun = getattr(model, 'pretrain', None)
         if not callable(pretrain_fun): #this is not a CPC model!
             print(f'{model_name} is not a CPC model (needs to implement pretrain)... Skipping pretrain call')
@@ -305,7 +305,7 @@ def main(args):
         torch.cuda.empty_cache()
 
     def downstream(model_i, model):
-        model_name = fullname(model)
+        model_name = model.name if hasattr(model, 'name') else fullname(model)
         output_path = os.path.join(args.out_path, model_name+str(model_i))
         print("Begin training of {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info

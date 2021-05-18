@@ -202,13 +202,17 @@ def convert_pred_to_binary(predictions, thresholds):
     return (predictions >= thresholds_np).astype(int)
 
 def read_output_csv_from_model_folder(model_folder, data_loader_index=0):
-    pred_path = glob.glob(os.path.join(model_folder, f"model-*-dataloader-{data_loader_index}-output.csv"))[0]
-    dfp = pd.read_csv(pred_path)
+    pred_path = glob.glob(os.path.join(model_folder, f"model-*-dataloader-{data_loader_index}-output.csv"))
+    if len(pred_path) == 0:
+        raise FileNotFoundError
+    dfp = pd.read_csv(pred_path[0])
     return dfp.values[:, 1:].astype(float), dfp.columns[1:].values #1 is file
 
 def read_label_csv_from_model_folder(model_folder, data_loader_index=0):
-    label_path = glob.glob(os.path.join(model_folder, f"labels-dataloader-{data_loader_index}.csv"))[0]
-    dfl = pd.read_csv(label_path)
+    label_path = glob.glob(os.path.join(model_folder, f"labels-dataloader-{data_loader_index}.csv"))
+    if len(label_path) == 0:
+        raise FileNotFoundError
+    dfl = pd.read_csv(label_path[0])
     labels = dfl.values[:, 1:].astype(float)
     return labels, dfl.columns[1:].values
 

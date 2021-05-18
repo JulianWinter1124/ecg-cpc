@@ -10,30 +10,28 @@ from util.full_class_name import fullname
 
 def save_model_checkpoint(output_path, epoch, model, optimizer=None, name=""):
     print("saving model at epoch:", epoch)
-    name += '_checkpoint_epoch_{}.pt'.format(epoch)
     checkpoint = {
         'epoch':epoch,
         'model_state_dict': model.state_dict()
     }
     if not optimizer is None:
         checkpoint['optimizer_state_dict'] = optimizer.state_dict()
-    torch.save(checkpoint, os.path.join(output_path, name))
+    torch.save(checkpoint, os.path.join(output_path, name+'_checkpoint_epoch_{}.pt'.format(epoch)))
 
 def save_model_architecture(output_path, model, name=""):
     print("Saving full model...")
-    name += '_full_model.pt'
-    torch.save(model, os.path.join(output_path, name))
-    with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
-        print(fullname(model), file=f)
-        print(model, file=f)
+    torch.save(model, os.path.join(output_path, name+'_full_model.pt'))
+    save_model_architecture_text_only(output_path, model, name)
 
 def save_model_architecture_text_only(output_path, model, name=""):
     with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
+        print(name, file=f)
         print(fullname(model), file=f)
         print(model, file=f)
 
-def save_model_variables_text_only(output_path, model):
+def save_model_variables_text_only(output_path, model, name=""):
     with open(os.path.join(output_path, 'model_variables.txt'), 'w') as f:
+        print(name, file=f)
         print(fullname(model), file=f)
         print(json.dumps(extract_params_from_model(model), sort_keys=True, indent=2), file=f)
 

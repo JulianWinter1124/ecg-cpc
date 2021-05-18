@@ -88,10 +88,10 @@ def main(args):
     loaders = [
         DataLoader(test_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn),
-        # DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
-        #            collate_fn=ecg_datasets2.collate_fn),
-        # DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
-        #            collate_fn=ecg_datasets2.collate_fn),
+        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+                   collate_fn=ecg_datasets2.collate_fn),
+        DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+                   collate_fn=ecg_datasets2.collate_fn),
 
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
