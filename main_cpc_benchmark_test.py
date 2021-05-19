@@ -71,36 +71,40 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/14_05_21-15-train'
-
+        'models/19_05_21-17-train'
     ]
     #infer class from model-arch file
-    models = []
-    for mfolder in model_folders:
-        model_files = extract_model_files_from_dir(mfolder)
+    model_dicts = []
+    for train_folder in model_folders:
+        model_files = extract_model_files_from_dir(train_folder)
         for mfile in model_files:
-            fm_fs, cp_fs = mfile
+            fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
             cp_f = sorted(cp_fs)[-1]
             model = load_model_architecture(fm_f)
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
-            models.append(model)
+            print(f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
+            model_dicts.append({'model':model, 'model_folder':root})
+    if len(model_dicts) == 0:
+        print(f"Could not find any models in {model_folders}.")
     loaders = [
         DataLoader(test_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn),
         DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn),
-        DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn),
+        # DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+        #            collate_fn=ecg_datasets2.collate_fn), #Train usually not required
 
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
         training_metrics.micro_avg_precision_score,
         training_metrics.micro_avg_recall_score,
     ]
-    for model_i, model in enumerate(models):
-        model_name = fullname(model)
-        output_path = os.path.join(args.out_path, model_name+str(model_i))
+    for model_i, model_dict in enumerate(model_dicts):
+        model = model_dict['model']
+        model_name = os.path.split(model_dict['model_folder'])[1]
+        train_folder = os.path.split(os.path.split(model_dict['model_folder'])[0])[1]
+        output_path = os.path.join(args.out_path, train_folder, model_name)
         print("Evaluating {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -166,7 +170,7 @@ def main(args):
         # Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
             pickle.dump(dict(metrics), pick_file)
-        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(models)))
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(model_dicts)))
         del model  # delete and free
         torch.cuda.empty_cache()
 

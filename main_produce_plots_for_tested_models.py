@@ -32,9 +32,29 @@ def auto_find_tested_models(path='models/'):
     csv_paths = list(reversed(list(set([os.path.abspath(os.path.split(csv)[0]) for csv in csvs]))))
     return csv_paths
 
+def create_model_plots(model_folders, data_loader_index=0):
+    TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
+
+    model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
+    for mi, model_folder in enumerate(model_folders):
+        try:
+            model_name = os.path.split(model_folder)[1] #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
+
+            n_classes = len(classes)
+            tpr, fpr, roc_auc, thresholds = m.ROC(binary_labels, predictions)
+            tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
+            normal_class = '426783006'
+            normal_class_idx = np.where(classes == normal_class)[0][0]
+            plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_folder)
+            plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_folder)
+        except FileNotFoundError:
+            print("File not found")
 
 
-def create_metric_plots_1(model_folder, binary_labels, pred, classes):
+def create_metric_plots(model_folder, binary_labels, pred, classes):
     print("creating for:", model_folder)
     model_folder_name = os.path.split(model_folder)[1]
     n_classes = len(classes)
@@ -47,6 +67,7 @@ def create_metric_plots_1(model_folder, binary_labels, pred, classes):
     class_fit = m.class_fit_score(binary_labels, pred, 'macro')
     print('class_fit, macro', class_fit)
     class_fit = m.class_fit_score(binary_labels, pred, 'micro')
+
     print('class_fit, micro', class_fit)
     binary_preds = m.convert_pred_to_binary(pred, best_thresholds)
 
@@ -122,6 +143,8 @@ def create_paper_metrics(model_folders, data_loader_index=0):
     f1_dff = DataFrameFactory()
     prec_dff = DataFrameFactory()
     rec_dff = DataFrameFactory()
+    classfit_dff = DataFrameFactory()
+    zerofit_dff = DataFrameFactory()
 
     for mi, model_folder in enumerate(model_folders):
         try:
@@ -130,10 +153,13 @@ def create_paper_metrics(model_folders, data_loader_index=0):
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
+            #scores with binary
             f1_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.f1_scores, model_name))
             prec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.precision_scores, model_name))
             rec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.recall_scores, model_name))
-            print(f1_dff)
+            #scores with probability
+            classfit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.class_fit_score, model_name))
+            zerofit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.zero_fit_score, model_name))
 
         except FileNotFoundError as e: #folder with not the correct csv?
             print(e)
@@ -144,18 +170,21 @@ def create_paper_metrics(model_folders, data_loader_index=0):
         """
         for p in ps:
             print(f"Saving metrics to: {p}")
-            f1_dff.to_csv(p, f'f1-score-dataloader{data_loader_index}.csv')
-            prec_dff.to_csv(p, f'precision-score-dataloader{data_loader_index}.csv')
-            rec_dff.to_csv(p, f'recall-score-dataloader{data_loader_index}.csv')
-            f1_dff.to_latex(p, f'f1-score-dataloader{data_loader_index}.tex', caption='F1 Scores')
-            prec_dff.to_latex(p, f'precision-score-dataloader{data_loader_index}.tex', caption='Precision Scores')
-            rec_dff.to_latex(p, f'recall-score-dataloader{data_loader_index}.tex', caption='Precision Scores')
-
+            #f1_dff.to_csv(p, f'f1-score-dataloader{data_loader_index}.csv')
+            #prec_dff.to_csv(p, f'precision-score-dataloader{data_loader_index}.csv')
+            #rec_dff.to_csv(p, f'recall-score-dataloader{data_loader_index}.csv')
+            f1_dff.to_latex(p, f'f1-score-dataloader{data_loader_index}.tex', caption='F1 Scores', label='tbl:f1scores')
+            prec_dff.to_latex(p, f'precision-score-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:precisionscores')
+            rec_dff.to_latex(p, f'recall-score-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:recallscores')
+            #cst_acc_dff.to_csv(p, f'Custom Accuracy{data_loader_index}.tex')
+            classfit_dff.to_latex(p, f'Custom Accuracy (Class Fit){data_loader_index}.tex', caption='Class Fit Scores', label='tbl:classfitscores')
+            zerofit_dff.to_latex(p, f'Custom Accuracy (Zero Fit){data_loader_index}.tex', caption='Zero Fit Scores', label='tbl:zerofitscores')
     return model_thresholds
 
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/18_05_21-17-test') #auto_find_tested_models() #or manual list
-    create_paper_metrics(model_folders, data_loader_index=0) #On Testset
-    # prin
+    model_folders = auto_find_tested_models_recursive('models/19_05_21-16-test') #auto_find_tested_models() #or manual list
+    TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
+    create_paper_metrics(model_folders, data_loader_index=TEST_SET) #On Testset
+    create_model_plots(model_folders, data_loader_index=TEST_SET)

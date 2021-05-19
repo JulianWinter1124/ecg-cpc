@@ -64,7 +64,7 @@ def extract_model_files_from_dir(directory):
             elif 'checkpoint' in file and file.endswith('.pt'):
                 ch_temp.append(os.path.join(root, file))
         if len(fm_temp) > 0 and len(ch_temp) > 0:
-            files.append((fm_temp, ch_temp))
+            files.append((fm_temp, ch_temp, root))
     return files
 
 def extract_params_from_model(obj, prefix=''):

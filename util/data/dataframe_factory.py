@@ -30,6 +30,6 @@ class DataFrameFactory():
 
     def to_latex(self, output_folder, filename, caption="", label=""):
         p = os.path.join(output_folder, filename)
-        latex_string = self.dataframe.to_latex(label=label, caption=caption)
-        with open(os.path.join(output_folder, filename), 'w') as f:
+        latex_string = self.dataframe.to_latex(label=label, caption=caption, na_rep='-', float_format="%.3f", bold_rows=True)
+        with open(p, 'w') as f:
             f.write(latex_string)
