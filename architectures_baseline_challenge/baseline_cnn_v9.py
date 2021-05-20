@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-
+#good
 class BaselineNet(nn.Module):
 
     def __init__(self, in_channels, out_channels, out_classes, verbose):

@@ -12,3 +12,4 @@ def fullname(o):
     return o.__class__.__name__  # Avoid reporting __builtin__
   else:
     return module + '.' + o.__class__.__name__
+

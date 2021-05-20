@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix
 import pandas as pd
 import glob
 import os
@@ -52,6 +52,10 @@ def top1_score(labels, predictions):
         total += total_local
     return 1.0*correct/total
 
+def confusion_matrix(binary_labels, binary_predictions):
+    return np.array(multilabel_confusion_matrix(binary_labels, binary_predictions), dtype=int)
+
+
 def ROC(labels:np.ndarray, predictions:np.ndarray): #see scikit learn doc
     n_classes = labels.shape[1]
     fpr = dict()
@@ -88,14 +92,74 @@ def precision_recall(labels:np.ndarray, predictions:np.ndarray, n_classes): #see
           .format(average_precision["macro"]))
     return precision, recall, average_precision
 
-def f1_scores_with_class_counts(counts):
-    f_score = dict()
-    for i in range(len(counts)):
-        Nii = counts[i, i]
-        NiX = np.sum(counts[i, :])
-        NXi = np.sum(counts[:, i])
-        f_score[i] = 2*Nii/(NiX+NXi) if (NiX+NXi)!=0 else 0
-    return f_score
+def precision_scores(binary_labels, binary_predictions, average=None):
+    cm = confusion_matrix(binary_labels, binary_predictions) # n_classes x 2 x 2
+    tn = cm[:, 0, 0] #TN
+    fn = cm[:, 1, 0] #FN
+    fp = cm[:, 0, 1] #FP
+    tp = cm[:, 1, 1] #TP
+    if average == 'macro':
+        return np.mean(tp/(tp+fp))
+    elif average == 'micro':
+        return np.sum(tp)/(np.sum(tp)+np.sum(fp)) #Micro
+    else:
+        return tp/(tp+fp)
+
+def recall_scores(binary_labels, binary_predictions, average=None):
+    cm = confusion_matrix(binary_labels, binary_predictions) # n_classes x 2 x 2
+    tn = cm[:, 0, 0] #TN
+    fn = cm[:, 1, 0] #FN
+    fp = cm[:, 0, 1] #FP
+    tp = cm[:, 1, 1] #TP
+    if average == 'macro':
+        return np.mean(tp/(tp+fn))
+    elif average == 'micro':
+        return np.sum(tp)/(np.sum(tp)+np.sum(fn)) #Micro
+    else:
+        return tp/(tp+fn)
+
+def accuracy_scores(binary_labels, binary_predictions, average=None):
+    cm = confusion_matrix(binary_labels, binary_predictions) # n_classes x 2 x 2
+    tn = cm[:, 0, 0] #TN
+    fn = cm[:, 1, 0] #FN
+    fp = cm[:, 0, 1] #FP
+    tp = cm[:, 1, 1] #TP
+    if average == 'macro':
+        return np.mean((tp+tn)/(tp+tn+fp+fn))
+    elif average == 'micro':
+        return (np.sum(tp)+np.sum(tn))/(np.sum(tp)+np.sum(fp)+np.sum(tn)+np.sum(fn)) #Micro
+    else:
+        return (tp+tn)/(tp+tn+fp+fn)
+
+def balanced_accuracy_scores(binary_labels, binary_predictions, average=None):
+    cm = confusion_matrix(binary_labels, binary_predictions) # n_classes x 2 x 2
+    tn = cm[:, 0, 0] #TN
+    fn = cm[:, 1, 0] #FN
+    fp = cm[:, 0, 1] #FP
+    tp = cm[:, 1, 1] #TP
+    #TPR = (tp/(tp+fn))
+    #TNR = (tn/(tn+fp))
+    if average == 'macro':
+        return np.mean(((tp/(tp+fn))+(tn/(tn+fp)))/2)
+    elif average == 'micro':
+        return ((np.sum(tp)/(np.sum(tp)+np.sum(fn)))+(np.sum(tn)/(np.sum(tn)+np.sum(fp))))/2
+    else:
+        return ((tp/(tp+fn))+(tn/(tn+fp)))/2
+
+def f1_scores(binary_labels, binary_predictions, average=None):
+    cm = confusion_matrix(binary_labels, binary_predictions) # n_classes x 2 x 2
+    tn = cm[:, 0, 0] #TN
+    fn = cm[:, 1, 0] #FN
+    fp = cm[:, 0, 1] #FP
+    tp = cm[:, 1, 1] #TP
+    if average == 'macro':
+        return np.mean(tp/(tp+(fp+fn)/2.0))
+    elif average == 'micro':
+        return np.sum(tp)/(np.sum(tp)+(np.sum(fp)+np.sum(fn))/2.0) #Micro
+    else:
+        return tp/(tp+(fp+fn)/2.0)
+
+
 
 def brier_score(labels, predictions, average=None):
     print(labels.shape)
@@ -135,37 +199,30 @@ def class_count_table(labels:np.ndarray, binary_predictions:np.ndarray, n_classe
 
 def convert_pred_to_binary(predictions, thresholds):
     thresholds_np = np.array([t for t in thresholds.values()])
-    return predictions >= thresholds_np
+    return (predictions >= thresholds_np).astype(int)
 
-def read_output_csv_from_model_folder(model_folder = 'models/10_03_21-18/architectures_cpc.cpc_combined.CPCCombined1'):
-    pred_path = glob.glob(os.path.join(model_folder, '*output.csv'))[0]
-    dfp = pd.read_csv(pred_path)
+def read_output_csv_from_model_folder(model_folder, data_loader_index=0):
+    pred_path = glob.glob(os.path.join(model_folder, f"model-*-dataloader-{data_loader_index}-output.csv"))
+    if len(pred_path) == 0:
+        raise FileNotFoundError
+    dfp = pd.read_csv(pred_path[0])
     return dfp.values[:, 1:].astype(float), dfp.columns[1:].values #1 is file
 
-def read_label_csv_from_model_folder(model_folder):
-    label_path = glob.glob(os.path.join(model_folder, '*labels*.csv'))[0]
-    dfl = pd.read_csv(label_path)
+def read_label_csv_from_model_folder(model_folder, data_loader_index=0):
+    label_path = glob.glob(os.path.join(model_folder, f"labels-dataloader-{data_loader_index}.csv"))
+    if len(label_path) == 0:
+        raise FileNotFoundError
+    dfl = pd.read_csv(label_path[0])
     labels = dfl.values[:, 1:].astype(float)
     return labels, dfl.columns[1:].values
 
-def read_binary_label_csv_from_model_folder(model_folder):
-    label_path = glob.glob(os.path.join(model_folder, '*labels*.csv'))[0]
-    dfl = pd.read_csv(label_path)
-    labels = dfl.values[:, 1:].astype(int) #convert to int for binary pred
-    return labels, dfl.columns[1:].values
+def read_binary_label_csv_from_model_folder(model_folder, data_loader_index=0):
+    l, c = read_label_csv_from_model_folder(model_folder, data_loader_index)
+    l = (l > 0).astype(int)
+    return l, c
 
 if __name__ == '__main__': #usage example
     model_folder = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_04_21-17/architectures_cpc.cpc_combined.CPCCombined0'
     labels, _= read_binary_label_csv_from_model_folder(model_folder)
+    print(labels[0])
     pred, _ = read_output_csv_from_model_folder(model_folder)
-    n_classes = pred.shape[1]
-    tpr, fpr, roc_auc, thresholds = ROC(labels, pred)
-    tps, fps, best_thresholds = select_best_thresholds(tpr, fpr, thresholds, n_classes)
-    binary_preds = convert_pred_to_binary(pred, best_thresholds)
-    precision, recall, avg_precision = precision_recall(labels, pred, n_classes)
-    counts = class_count_table(labels, binary_preds)
-    scores = f1_scores_with_class_counts(counts)
-    import util.visualize.plot_metrics as plotm
-    plotm.plot_roc_multiclass(tpr, fpr, roc_auc, n_classes)
-    plotm.plot_roc_singleclass(tpr, fpr, roc_auc, 59)
-    plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, n_classes)

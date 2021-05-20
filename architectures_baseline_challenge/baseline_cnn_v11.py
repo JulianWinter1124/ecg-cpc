@@ -5,7 +5,7 @@ from external.tcn.TCN.tcn import TemporalConvNet
 
 
 class BaselineNet(nn.Module):
-
+#Bad
     def __init__(self, in_channels, out_channels, out_classes, verbose):
         super().__init__()
         self.n_out_classes = out_classes

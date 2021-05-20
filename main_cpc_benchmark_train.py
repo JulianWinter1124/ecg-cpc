@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, ChainDataset
 
 import baseline_rnn_simplest_gru
 import cpc_downstream_cnn
+import cpc_downstream_latent_maximum
 import cpc_downstream_twolinear
 import cpc_encoder_as_strided
 # import cpc_base
@@ -83,7 +84,12 @@ def main(args):
 
     ecg_datasets2.filter_update_classes_by_count([nature, ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train, cpsc2_val, t4], 1)
     print('Classes after last update', len(ptbxl_train.classes), ptbxl_train.classes)
-
+    if args.use_class_weights:
+        counts, counted_classes = ecg_datasets2.count_merged_classes([nature, ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train, cpsc2_val, t4])
+        class_weights = torch.Tensor(max(counts)/counts).to(device=f'cuda:{args.gpu_device}')
+        print('Using the following class weights:', class_weights)
+    else:
+        class_weights = None
 
     pretrain_train_dataset = ChainDataset([nature, ptbxl_train, georgia_train, cpsc_train, cpsc2_train]) #CPC TRAIN
     pretrain_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val]) #CPC VAL
@@ -139,7 +145,11 @@ def main(args):
         cpc_downstream_cnn.DownstreamLinearNet(
             latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
             use_latents=True, use_context=True, verbose=False
-        )
+        ),
+        cpc_downstream_latent_maximum.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=True, verbose=False
+        ),
     ]
     trained_model_dicts = [ #continue training for these in some way
         {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined0',
@@ -159,7 +169,7 @@ def main(args):
         model_path = trained_model_dict['folder']
         model_files = store_models.extract_model_files_from_dir(model_path)
         for mfile in model_files:
-            fm_fs, cp_fs = mfile
+            fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
             cp_f = sorted(cp_fs)[-1]
             model = store_models.load_model_architecture(fm_f)
@@ -182,14 +192,16 @@ def main(args):
         # {'model':cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model':cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True), 'will_pretrain':True, 'will_downtrain':False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True, 'desc':
+        #  'blabla'},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         #baseline_rnn.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
         # baseline_rnn_simplest_gru.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
     ]
@@ -227,7 +239,7 @@ def main(args):
     ]
 
     def pretrain(model_i, model):
-        model_name = fullname(model)
+        model_name = model.name if hasattr(model, 'name') else fullname(model)
         pretrain_fun = getattr(model, 'pretrain', None)
         if not callable(pretrain_fun): #this is not a CPC model!
             print(f'{model_name} is not a CPC model (needs to implement pretrain)... Skipping pretrain call')
@@ -299,7 +311,7 @@ def main(args):
         torch.cuda.empty_cache()
 
     def downstream(model_i, model):
-        model_name = fullname(model)
+        model_name = model.name if hasattr(model, 'name') else fullname(model)
         output_path = os.path.join(args.out_path, model_name+str(model_i))
         print("Begin training of {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
@@ -322,7 +334,7 @@ def main(args):
                     labels = labels.float().cuda()
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
-                    loss = bl.binary_cross_entropy(pred=pred, y=labels) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
+                    loss = bl.binary_cross_entropy(pred=pred, y=labels, weight=class_weights) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
                     loss.backward()
                     optimizer.step()
                     # saving metrics
@@ -345,7 +357,7 @@ def main(args):
                         data = data.float().cuda()
                         labels = labels.float().cuda()
                         pred = model(data, y=None)  # makes model return prediction instead of loss
-                        loss = bl.binary_cross_entropy(pred=pred, y=labels)
+                        loss = bl.binary_cross_entropy(pred=pred, y=labels, weight=class_weights)
                         # saving metrics
                         metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
                         for i, fn in enumerate(metric_functions):
@@ -378,6 +390,10 @@ def main(args):
     for model_i, model_dict in enumerate(models): #TODO: easily select what training is necessary!
         if type(model_dict) == dict:
             model = model_dict['model']
+            if 'desc' in model_dict:
+                model.description = model_dict['desc']
+            if 'name' in model_dict:
+                model.name = model_dict['name']
             if model_dict['will_pretrain']:
                 pretrain(model_i, model)
             if model_dict['will_downtrain']:
@@ -449,11 +465,17 @@ if __name__ == "__main__":
                         help="Only run minimal samples to test all models functionality")
     parser.set_defaults(dry_run=False)
 
+    parser.add_argument('--use_class_weights', dest='use_class_weights', action='store_true',
+                        help="Use class weights determined by datasets class count")
+    parser.set_defaults(use_class_weights=False)
+
     parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
                         help="Redo splits. Warning! File will be overwritten!")
     parser.set_defaults(redo_splits=False)
 
     parser.add_argument("--gpu_device", type=int, default=0)
+
+    parser.add_argument("--comment", type=str, default=None)
 
     args = parser.parse_args()
     main(args)

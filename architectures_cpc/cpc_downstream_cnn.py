@@ -33,12 +33,11 @@ class DownstreamLinearNet(nn.Module):
         if self.use_context and self.use_latents:
             x, c = self.rnn(latents)
             context = torch.cat([context, x[-1, :]], dim=-1)
-            print(context.shape)
         elif self.use_latents:
             x, c = self.rnn(latents)
-            context = x[:, -1]
+            context = x[-1, :]
         pred = self.classifier(context.unsqueeze(-1))
-        output = self.activation(pred).squeeze()
+        output = self.activation(pred).squeeze(-1) #do not squeeze on batch?
         #print('pred shape', pred.shape)
         if y is None:  #
             return output

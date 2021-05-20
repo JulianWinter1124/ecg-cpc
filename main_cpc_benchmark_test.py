@@ -64,38 +64,47 @@ def main(args):
     print(classes)
     print(classes=={'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164867002': 5, '164873001': 6, '164884008': 7, '164889003': 8, '164890007': 9, '164909002': 10, '164917005': 11, '164930006': 12, '164931005': 13, '164934002': 14, '164947007': 15, '164951009': 16, '17338001': 17, '195042002': 18, '195080001': 19, '195126007': 20, '233917008': 21, '251120003': 22, '251146004': 23, '251180001': 24, '251200008': 25, '251266004': 26, '251268003': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31, '284470004': 32, '39732003': 33, '413844008': 34, '425419005': 35, '425623009': 36, '426177001': 37, '426434006': 38, '426627000': 39, '426761007': 40, '426783006': 41, '427084000': 42, '427172004': 43, '427393009': 44, '428417006': 45, '428750005': 46, '429622005': 47, '445118002': 48, '445211001': 49, '446358003': 50, '446813000': 51, '47665007': 52, '54329005': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57, '6374002': 58, '67198005': 59, '67741000119109': 60, '698252002': 61, '713422000': 62, '713426002': 63, '713427006': 64, '74390002': 65, '89792004': 66}
 )
+    train_dataset_challenge = ChainDataset([a1,a2,a3,a4])
+    val_dataset_challenge = ChainDataset([b1,b2,b3,b4])
     test_dataset_challenge = ChainDataset([ptbxl_test, georgia_test, cpsc_test, cpsc2_test])
     #all_dataset_challenge = ChainDataset[ptbxl_challenge, georgia_challenge, cpsc_challenge, cpsc2_challenge]
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/04_05_21-14/architectures_cpc.cpc_combined.CPCCombined'
-
+        'models/06_05_21-18'
     ]
     #infer class from model-arch file
-    models = []
-    for mfolder in model_folders:
-        model_files = extract_model_files_from_dir(mfolder)
+    model_dicts = []
+    for train_folder in model_folders:
+        model_files = extract_model_files_from_dir(train_folder)
         for mfile in model_files:
-            fm_fs, cp_fs = mfile
+            fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
             cp_f = sorted(cp_fs)[-1]
             model = load_model_architecture(fm_f)
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
-            models.append(model)
+            print(f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
+            model_dicts.append({'model':model, 'model_folder':root})
+    if len(model_dicts) == 0:
+        print(f"Could not find any models in {model_folders}.")
     loaders = [
         DataLoader(test_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
                    collate_fn=ecg_datasets2.collate_fn),
-        # DataLoader(all_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
-        #            collate_fn=ecg_datasets2.collate_fn)
+        DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+                   collate_fn=ecg_datasets2.collate_fn),
+        # DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
+        #            collate_fn=ecg_datasets2.collate_fn), #Train usually not required
+
     ]
     metric_functions = [ #Functions that take two tensors as argument and give score or list of score
         training_metrics.micro_avg_precision_score,
         training_metrics.micro_avg_recall_score,
     ]
-    for model_i, model in enumerate(models):
-        model_name = fullname(model)
-        output_path = os.path.join(args.out_path, model_name+str(model_i))
+    for model_i, model_dict in enumerate(model_dicts):
+        model = model_dict['model']
+        model_name = os.path.split(model_dict['model_folder'])[1]
+        train_folder = os.path.split(os.path.split(model_dict['model_folder'])[0])[1]
+        output_path = os.path.join(args.out_path, train_folder, model_name)
         print("Evaluating {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -108,13 +117,13 @@ def main(args):
         # init optimizer
         optimizer = Adam(model.parameters(), lr=3e-4)
         metrics = defaultdict(lambda: defaultdict(list))
-        pred_dataframe = pd.DataFrame(columns=classes)
-        pred_dataframe.index.name = 'filename'
-        label_dataframe = pd.DataFrame(columns=classes)
-        label_dataframe.index.name = 'filename'
         for epoch in range(1, 2):
-            starttime = time.time()  # train
+            starttime = time.time()
             for loader_i, loader in enumerate(loaders):
+                pred_dataframe = pd.DataFrame(columns=classes)
+                pred_dataframe.index.name = 'filename'
+                label_dataframe = pd.DataFrame(columns=classes)
+                label_dataframe.index.name = 'filename'
                 for dataset_tuple in loader:
                     data, labels, filenames = dataset_tuple
                     data = data.float().cuda()
@@ -126,7 +135,8 @@ def main(args):
                     #     first = False
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
-
+                    if len(pred.shape) == 1: #hack for squeezed batch dimension
+                        pred = pred.unsqueeze(0)
                     pred = pred.detach().cpu()
                     labels = labels.cpu()
                     labels_numpy = parse_tensor_to_numpy_or_scalar(labels)
@@ -160,7 +170,7 @@ def main(args):
         # Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
             pickle.dump(dict(metrics), pick_file)
-        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(models)))
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(model_dicts)))
         del model  # delete and free
         torch.cuda.empty_cache()
 

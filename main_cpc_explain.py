@@ -60,7 +60,7 @@ def main(args):
     for mfolder in model_folders:
         model_files = extract_model_files_from_dir(mfolder)
         for mfile in model_files:
-            fm_fs, cp_fs = mfile
+            fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
             cp_f = sorted(cp_fs)[-1]
             model = load_model_architecture(fm_f)
