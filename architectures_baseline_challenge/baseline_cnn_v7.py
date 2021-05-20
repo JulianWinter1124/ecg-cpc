@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+#BAD (hot garbage)
 
 class BaselineNet(nn.Module):
 

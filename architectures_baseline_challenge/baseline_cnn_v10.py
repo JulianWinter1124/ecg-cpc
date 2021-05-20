@@ -3,6 +3,7 @@ from torch import nn
 
 from external.tcn.TCN.tcn import TemporalConvNet
 
+#okay/bad
 
 class BaselineNet(nn.Module):
 

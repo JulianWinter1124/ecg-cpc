@@ -38,7 +38,7 @@ def create_model_plots(model_folders, data_loader_index=0):
     model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
     for mi, model_folder in enumerate(model_folders):
         try:
-            model_name = os.path.split(model_folder)[1] #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            model_name = '.'.join(os.path.split(model_folder)[1].split('.')[-2:]) #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
@@ -48,8 +48,8 @@ def create_model_plots(model_folders, data_loader_index=0):
             tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
             normal_class = '426783006'
             normal_class_idx = np.where(classes == normal_class)[0][0]
-            plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_folder)
-            plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_folder)
+            plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_name)
+            plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_name)
         except FileNotFoundError:
             print("File not found")
 
@@ -148,7 +148,7 @@ def create_paper_metrics(model_folders, data_loader_index=0):
 
     for mi, model_folder in enumerate(model_folders):
         try:
-            model_name = os.path.split(model_folder)[1] #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            model_name = '.'.join(os.path.split(model_folder)[1].split('.')[-2:]) #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
             print(model_name)
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
@@ -184,7 +184,7 @@ def create_paper_metrics(model_folders, data_loader_index=0):
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/19_05_21-16-test') #auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/20_05_21-16-test') #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
     create_paper_metrics(model_folders, data_loader_index=TEST_SET) #On Testset
     create_model_plots(model_folders, data_loader_index=TEST_SET)
