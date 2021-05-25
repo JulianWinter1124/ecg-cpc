@@ -32,62 +32,42 @@ def auto_find_tested_models(path='models/'):
     csv_paths = list(reversed(list(set([os.path.abspath(os.path.split(csv)[0]) for csv in csvs]))))
     return csv_paths
 
-def create_model_plots(model_folders, data_loader_index=0):
-    TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
-
-    model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
-    for mi, model_folder in enumerate(model_folders):
-        try:
-            model_name = '.'.join(os.path.split(model_folder)[1].split('.')[-2:]) #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
-            binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
-            predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
-            binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
-
-            n_classes = len(classes)
-            tpr, fpr, roc_auc, thresholds = m.ROC(binary_labels, predictions)
-            tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
-            normal_class = '426783006'
-            normal_class_idx = np.where(classes == normal_class)[0][0]
-            plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_name)
-            plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_name)
-        except FileNotFoundError:
-            print("File not found")
 
 
-def create_metric_plots(model_folder, binary_labels, pred, classes):
-    print("creating for:", model_folder)
-    model_folder_name = os.path.split(model_folder)[1]
-    n_classes = len(classes)
-    tpr, fpr, roc_auc, thresholds = m.ROC(binary_labels, pred)
-    tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
-    zero_fit = m.zero_fit_score(binary_labels, pred, 'macro')
-    print('zero_fit, macro', zero_fit)
-    zero_fit = m.zero_fit_score(binary_labels, pred, 'micro')
-    print('zero_fit, micro', zero_fit)
-    class_fit = m.class_fit_score(binary_labels, pred, 'macro')
-    print('class_fit, macro', class_fit)
-    class_fit = m.class_fit_score(binary_labels, pred, 'micro')
-
-    print('class_fit, micro', class_fit)
-    binary_preds = m.convert_pred_to_binary(pred, best_thresholds)
-
-    df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.f1_scores)
-    print(df)
-    df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.recall_scores)
-    print(df)
-    df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.precision_scores)
-    print(df)
-    df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.accuracy_scores)
-    print(df)
-    df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.balanced_accuracy_scores)
-    print(df)
-    #print(df.to_latex(index=False, label='', caption='LUL'))
-
-    normal_class = '426783006'
-    normal_class_idx = np.where(classes == normal_class)[0][0]
-    plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_folder_name)
-    plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_folder_name)
-    #plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder, plot_name=model_folder_name)
+# def create_metric_plots(model_folder, binary_labels, pred, classes):
+#     print("creating for:", model_folder)
+#     model_folder_name = os.path.split(model_folder)[1]
+#     n_classes = len(classes)
+#     tpr, fpr, roc_auc, thresholds = m.ROC(binary_labels, pred)
+#     tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
+#     zero_fit = m.zero_fit_score(binary_labels, pred, 'macro')
+#     print('zero_fit, macro', zero_fit)
+#     zero_fit = m.zero_fit_score(binary_labels, pred, 'micro')
+#     print('zero_fit, micro', zero_fit)
+#     class_fit = m.class_fit_score(binary_labels, pred, 'macro')
+#     print('class_fit, macro', class_fit)
+#     class_fit = m.class_fit_score(binary_labels, pred, 'micro')
+#
+#     print('class_fit, micro', class_fit)
+#     binary_preds = m.convert_pred_to_binary(pred, best_thresholds)
+#
+#     df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.f1_scores)
+#     print(df)
+#     df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.recall_scores)
+#     print(df)
+#     df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.precision_scores)
+#     print(df)
+#     df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.accuracy_scores)
+#     print(df)
+#     df = create_metric_score_dataframe(binary_labels, binary_preds, classes, m.balanced_accuracy_scores)
+#     print(df)
+#     #print(df.to_latex(index=False, label='', caption='LUL'))
+#
+#     normal_class = '426783006'
+#     normal_class_idx = np.where(classes == normal_class)[0][0]
+#     plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_folder_name)
+#     plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_folder_name)
+#     #plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder, plot_name=model_folder_name)
 
 def create_metric_score_dataframe(binary_labels, binary_preds, classes, metric_function, model_name=None, average_only=False):
     if not average_only:
@@ -115,10 +95,10 @@ def create_metric_confusion_matrix(model_folder, binary_labels, pred, classes:li
     print(cm)
     plotm.plot_confusion_matrix(cm, classes)
 
-def create_latex_table(dataframe:pd.DataFrame, output_folder, latex_label='', caption='', filename='table.tex'):
-    latex_string = dataframe.to_latex(index=False, label=latex_label, caption=caption)
-    with open(os.path.join(output_folder, filename), 'w') as f:
-        f.write(latex_string)
+# def create_latex_table(dataframe:pd.DataFrame, output_folder, latex_label='', caption='', filename='table.tex'):
+#     latex_string = dataframe.to_latex(index=False, label=latex_label, caption=caption)
+#     with open(os.path.join(output_folder, filename), 'w') as f:
+#         f.write(latex_string)
 
 
 def calculate_best_thresholds(model_folders, data_loader_index = 1): #0 = test, 1 = val, 2 = train
@@ -134,6 +114,28 @@ def calculate_best_thresholds(model_folders, data_loader_index = 1): #0 = test, 
             print(e)
         model_thresholds.append(best_thresholds)
     return model_thresholds
+
+def create_paper_plots(model_folders, data_loader_index=0):
+    TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
+
+    model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
+    for mi, model_folder in enumerate(model_folders):
+        try:
+            model_name = '.'.join(os.path.split(model_folder)[1].split('.')[-2:]) #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
+
+            n_classes = len(classes)
+            tpr, fpr, roc_auc, thresholds = m.ROC(binary_labels, predictions)
+            tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
+            normal_class = '426783006'
+            normal_class_idx = np.where(classes == normal_class)[0][0]
+            plotm.plot_roc_multiclass(tpr, fpr, roc_auc, classes, savepath=model_folder, plot_name=model_name, plot_legends=False)
+            plotm.plot_roc_singleclass(tpr, fpr, roc_auc, class_name=normal_class, class_i=normal_class_idx, savepath=model_folder, plot_name=model_name)
+        except FileNotFoundError:
+            print("File not found")
+
 
 def create_paper_metrics(model_folders, data_loader_index=0):
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
@@ -184,7 +186,7 @@ def create_paper_metrics(model_folders, data_loader_index=0):
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/20_05_21-16-test') #auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/25_05_21-11-test/') #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
     create_paper_metrics(model_folders, data_loader_index=TEST_SET) #On Testset
-    create_model_plots(model_folders, data_loader_index=TEST_SET)
+    create_paper_plots(model_folders, data_loader_index=TEST_SET)
