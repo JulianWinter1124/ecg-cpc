@@ -14,8 +14,6 @@ def bidirectional_cross_entropy(pred, y, weight=None): #same as BCELoss
     return -(torch.nansum(y*torch.log(pred)) + torch.nansum(y_inv*torch.log(pred_inv)))/(np.prod(y.shape))
 
 def binary_cross_entropy(pred, y, weight=None):
-    y.size()
-    weight.size()
     return F.binary_cross_entropy(pred, y, weight=weight)
 
 def multi_loss_function(loss_fns):

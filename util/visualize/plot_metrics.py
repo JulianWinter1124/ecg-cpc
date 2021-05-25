@@ -7,7 +7,7 @@ from numpy import interp
 from sklearn.metrics import auc, ConfusionMatrixDisplay
 
 
-def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i, savepath=None, plot_name=''):
+def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i, savepath=None, plot_name='', plot_legends=True):
     plt.figure()
     lw = 2
     plt.plot(fpr[class_i], tpr[class_i], color='darkorange',
@@ -18,12 +18,13 @@ def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i, savepath=None, 
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title(plot_name+'\nReceiver operating characteristic for single class: ' + class_name)
-    plt.legend(loc="lower right")
+    if plot_legends:
+        plt.legend(loc="lower right")
     if savepath:
         plt.savefig(os.path.join(savepath, f'roc-{class_name}.png'), bbox_inches='tight')
     plt.show()
 
-def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepath=None, plot_name=''):
+def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepath=None, plot_name='', plot_legends=True):
     n_classes = len(classes)
     selection = range(n_classes) if selection is None else selection
     all_fpr = np.unique(np.concatenate([fpr[i] for i in selection]))
@@ -66,7 +67,8 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepat
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title(plot_name+'\nReceiver operating characteristic for multi-class')
-    plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
+    if plot_legends:
+        plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
     if savepath:
         plt.savefig(os.path.join(savepath, 'ROC-multiclass.png'), bbox_inches='tight')
     plt.show()
@@ -86,7 +88,7 @@ def plot_precision_recall_microavg(recall, precision, average_precision, savepat
         plt.savefig(os.path.join(savepath, 'precision-recall-microavg.png'))
 
 
-def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None, savepath=None, plot_name=''):
+def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None, savepath=None, plot_name='', plot_legends=True):
     n_classes = len(classes)
     if selection is None:
         selection = range(n_classes)
@@ -123,7 +125,9 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, class
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title(plot_name+'\nExtension of Precision-Recall curve to multi-class')
-    plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=6)
+
+    if plot_legends:
+        plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=6)
     if savepath:
         plt.savefig(os.path.join(savepath, 'precision-recall-multiclass.png'), bbox_inches='tight')
     plt.show()
