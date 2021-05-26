@@ -1,0 +1,846 @@
+['main_cpc_benchmark_train.py', '--pretrain_epochs', '0', '--downstream_epochs', '20', '--forward_classes', '67', '--batch_size', '128', '--latent_size', '128', '--hidden_size', '256', '--window_size', '465', '--timesteps_in', '12', '--timesteps_out', '12', '--crop_size', '4500', '--gpu_device', '1']
+Device set to : 1. Selected was 1
+Seed set to : 0.
+Model outputpath: models/12_05_21-13-train
+10344 record files found in  /home/juwin106/data/georgia/WFDB
+Information for file /home/juwin106/data/georgia/WFDB/E02420
+Data has shape: (5000, 12)
+Header is: E02420.mat 12 500 5000 05-May-2020 09:49:17
+E02420.mat 16+24 1000/mV 16 0 -39 28538 0 I
+E02420.mat 16+24 1000/mV 16 0 -195 18526 0 II
+E02420.mat 16+24 1000/mV 16 0 -156 -9352 0 III
+E02420.mat 16+24 1000/mV 16 0 117 -23533 0 aVR
+E02420.mat 16+24 1000/mV 16 0 58 -13988 0 aVL
+E02420.mat 16+24 1000/mV 16 0 -175 -28262 0 aVF
+E02420.mat 16+24 1000/mV 16 0 87 -16919 0 V1
+E02420.mat 16+24 1000/mV 16 0 -39 14402 0 V2
+E02420.mat 16+24 1000/mV 16 0 -58 1325 0 V3
+E02420.mat 16+24 1000/mV 16 0 -68 9466 0 V4
+E02420.mat 16+24 1000/mV 16 0 -58 -23558 0 V5
+E02420.mat 16+24 1000/mV 16 0 -68 15923 0 V6
+#Age: 63
+#Sex: Male
+#Dx: 59118001,428750005,164890007
+#Rx: Unknown
+#Hx: Unknown
+###############
+Classes found in data folder: {'11157007': 0, '111975006': 1, '164865005': 2, '164873001': 3, '164884008': 4, '164889003': 5, '164890007': 6, '164896001': 7, '164909002': 8, '164917005': 9, '164921003': 10, '164930006': 11, '164931005': 12, '164934002': 13, '17338001': 14, '195042002': 15, '195060002': 16, '195080001': 17, '195101003': 18, '195126007': 19, '233917008': 20, '251120003': 21, '251139008': 22, '251146004': 23, '251180001': 24, '251266004': 25, '251268003': 26, '253339007': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31, '284470004': 32, '39732003': 33, '413444003': 34, '425419005': 35, '425623009': 36, '426177001': 37, '426434006': 38, '426627000': 39, '426648003': 40, '426664006': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427393009': 46, '428417006': 47, '428750005': 48, '429622005': 49, '445118002': 50, '445211001': 51, '47665007': 52, '49578007': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57, '6374002': 58, '67741000119109': 59, '698252002': 60, '713422000': 61, '713426002': 62, '713427006': 63, '74390002': 64, '81898007': 65, '89792004': 66}
+Labels have shape (67,)
+6877 record files found in  /home/juwin106/data/cpsc_train/
+Information for file /home/juwin106/data/cpsc_train/A6624
+Data has shape: (6500, 12)
+Header is: A6624 12 500 6500 12-May-2020 12:33:59
+A6624.mat 16+24 1000/mV 16 0 58 -1877 0 I
+A6624.mat 16+24 1000/mV 16 0 82 -1104 0 II
+A6624.mat 16+24 1000/mV 16 0 24 773 0 III
+A6624.mat 16+24 1000/mV 16 0 -70 1160 0 aVR
+A6624.mat 16+24 1000/mV 16 0 17 -1038 0 aVL
+A6624.mat 16+24 1000/mV 16 0 53 100 0 aVF
+A6624.mat 16+24 1000/mV 16 0 -104 3238 0 V1
+A6624.mat 16+24 1000/mV 16 0 -101 2638 0 V2
+A6624.mat 16+24 1000/mV 16 0 -141 2446 0 V3
+A6624.mat 16+24 1000/mV 16 0 -221 709 0 V4
+A6624.mat 16+24 1000/mV 16 0 -192 1652 0 V5
+A6624.mat 16+24 1000/mV 16 0 -204 2711 0 V6
+#Age: 25
+#Sex: Female
+#Dx: 426783006
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'164884008': 0, '164889003': 1, '164909002': 2, '164931005': 3, '270492004': 4, '284470004': 5, '426783006': 6, '429622005': 7, '59118001': 8}
+Labels have shape (9,)
+3453 record files found in  /home/juwin106/data/cpsc
+Information for file /home/juwin106/data/cpsc/Q0925
+Data has shape: (6000, 12)
+Header is: Q0925 12 500 6000 15-May-2020 15:35:30
+Q0925.mat 16+24 1000/mV 16 0 -34 -294 0 I
+Q0925.mat 16+24 1000/mV 16 0 -62 1249 0 II
+Q0925.mat 16+24 1000/mV 16 0 -28 1543 0 III
+Q0925.mat 16+24 1000/mV 16 0 48 -602 0 aVR
+Q0925.mat 16+24 1000/mV 16 0 -2 -607 0 aVL
+Q0925.mat 16+24 1000/mV 16 0 -44 1648 0 aVF
+Q0925.mat 16+24 1000/mV 16 0 -13 -341 0 V1
+Q0925.mat 16+24 1000/mV 16 0 28 -511 0 V2
+Q0925.mat 16+24 1000/mV 16 0 38 -1989 0 V3
+Q0925.mat 16+24 1000/mV 16 0 -2 55 0 V4
+Q0925.mat 16+24 1000/mV 16 0 -36 -1322 0 V5
+Q0925.mat 16+24 1000/mV 16 0 -44 1750 0 V6
+#Age: 63
+#Sex: Female
+#Dx: 428750005,427084000
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '111288001': 1, '11157007': 2, '111975006': 3, '164861001': 4, '164865005': 5, '164867002': 6, '164873001': 7, '164889003': 8, '164890007': 9, '164895002': 10, '164896001': 11, '164909002': 12, '164917005': 13, '164921003': 14, '164930006': 15, '164931005': 16, '164934002': 17, '164937009': 18, '17338001': 19, '195042002': 20, '195060002': 21, '195080001': 22, '195126007': 23, '233917008': 24, '251120003': 25, '251164006': 26, '251170000': 27, '251180001': 28, '251259000': 29, '266249003': 30, '270492004': 31, '27885002': 32, '284470004': 33, '29320008': 34, '370365005': 35, '413444003': 36, '413844008': 37, '426177001': 38, '426627000': 39, '426648003': 40, '426749004': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427172004': 46, '427393009': 47, '428750005': 48, '429622005': 49, '446358003': 50, '446813000': 51, '47665007': 52, '49578007': 53, '54329005': 54, '55930002': 55, '59118001': 56, '59931005': 57, '63593006': 58, '65778007': 59, '67741000119109': 60, '698252002': 61, '704997005': 62, '713422000': 63, '713426002': 64, '713427006': 65, '74615001': 66, '75532003': 67, '77867006': 68, '81898007': 69, '82226007': 70, '89792004': 71}
+Labels have shape (72,)
+21837 record files found in  /home/juwin106/data/ptbxl/WFDB
+Information for file /home/juwin106/data/ptbxl/WFDB/HR07306
+Data has shape: (5000, 12)
+Header is: HR07306 12 500 5000 04-Jun-2020 15:11:55
+HR07306.mat 16+24 1000/mv 16 0 -25 -11703 0 I
+HR07306.mat 16+24 1000/mv 16 0 -40 -22228 0 II
+HR07306.mat 16+24 1000/mv 16 0 -15 -10540 0 III
+HR07306.mat 16+24 1000/mv 16 0 33 17040 0 aVR
+HR07306.mat 16+24 1000/mv 16 0 -5 -420 0 aVL
+HR07306.mat 16+24 1000/mv 16 0 -27 -16289 0 aVF
+HR07306.mat 16+24 1000/mv 16 0 35 -6742 0 V1
+HR07306.mat 16+24 1000/mv 16 0 40 -10676 0 V2
+HR07306.mat 16+24 1000/mv 16 0 -50 -12847 0 V3
+HR07306.mat 16+24 1000/mv 16 0 -40 -13837 0 V4
+HR07306.mat 16+24 1000/mv 16 0 -75 -12921 0 V5
+HR07306.mat 16+24 1000/mv 16 0 -65 -16139 0 V6
+#Age: 69
+#Sex: Female
+#Dx: 164865005,164951009,39732003,427084000,54329005
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164873001': 5, '164884008': 6, '164889003': 7, '164890007': 8, '164909002': 9, '164917005': 10, '164931005': 11, '164934002': 12, '164947007': 13, '164951009': 14, '195042002': 15, '251120003': 16, '251146004': 17, '251180001': 18, '251200008': 19, '266249003': 20, '270492004': 21, '27885002': 22, '284470004': 23, '39732003': 24, '425419005': 25, '425623009': 26, '426177001': 27, '426434006': 28, '426761007': 29, '426783006': 30, '427084000': 31, '427393009': 32, '428750005': 33, '429622005': 34, '445118002': 35, '445211001': 36, '446358003': 37, '47665007': 38, '54329005': 39, '55930002': 40, '59931005': 41, '63593006': 42, '67198005': 43, '67741000119109': 44, '698252002': 45, '713426002': 46, '713427006': 47, '74390002': 48, '89792004': 49}
+Labels have shape (50,)
+10646 record files found in  /home/juwin106/data/nature
+Information for file /home/juwin106/data/nature/MUSE_20180114_124313_90000
+Data has shape: (5000, 12)
+Header is: ###############
+Classes found in data folder: {}
+Labels have shape (0,)
+Information for file /home/juwin106/data/ptbxl/WFDB/HR04548
+Data has shape: (5000, 12)
+Header is: HR04548 12 500 5000 04-Jun-2020 15:11:55
+HR04548.mat 16+24 1000/mv 16 0 70 -24975 0 I
+HR04548.mat 16+24 1000/mv 16 0 -825 -27096 0 II
+HR04548.mat 16+24 1000/mv 16 0 -895 -2108 0 III
+HR04548.mat 16+24 1000/mv 16 0 378 26034 0 aVR
+HR04548.mat 16+24 1000/mv 16 0 483 -11372 0 aVL
+HR04548.mat 16+24 1000/mv 16 0 -860 -14688 0 aVF
+HR04548.mat 16+24 1000/mv 16 0 140 -116 0 V1
+HR04548.mat 16+24 1000/mv 16 0 220 -1735 0 V2
+HR04548.mat 16+24 1000/mv 16 0 -220 -13029 0 V3
+HR04548.mat 16+24 1000/mv 16 0 -320 31591 0 V4
+HR04548.mat 16+24 1000/mv 16 0 -110 -32581 0 V5
+HR04548.mat 16+24 1000/mv 16 0 40 3286 0 V6
+#Age: 62
+#Sex: Female
+#Dx: 164884008,284470004,39732003,426783006,445118002,713426002
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164873001': 5, '164884008': 6, '164889003': 7, '164890007': 8, '164909002': 9, '164917005': 10, '164931005': 11, '164934002': 12, '164947007': 13, '164951009': 14, '195042002': 15, '251120003': 16, '251146004': 17, '251180001': 18, '251200008': 19, '266249003': 20, '270492004': 21, '27885002': 22, '284470004': 23, '39732003': 24, '425419005': 25, '425623009': 26, '426177001': 27, '426434006': 28, '426761007': 29, '426783006': 30, '427084000': 31, '427393009': 32, '428750005': 33, '429622005': 34, '445118002': 35, '445211001': 36, '446358003': 37, '47665007': 38, '54329005': 39, '55930002': 40, '59931005': 41, '63593006': 42, '67198005': 43, '67741000119109': 44, '698252002': 45, '713426002': 46, '713427006': 47, '74390002': 48, '89792004': 49}
+Labels have shape (50,)
+Information for file /home/juwin106/data/ptbxl/WFDB/HR12744
+Data has shape: (5000, 12)
+Header is: HR12744 12 500 5000 04-Jun-2020 21:57:08
+HR12744.mat 16+24 1000/mv 16 0 -35 5861 0 I
+HR12744.mat 16+24 1000/mv 16 0 20 1715 0 II
+HR12744.mat 16+24 1000/mv 16 0 55 -4185 0 III
+HR12744.mat 16+24 1000/mv 16 0 7 -4535 0 aVR
+HR12744.mat 16+24 1000/mv 16 0 -45 4925 0 aVL
+HR12744.mat 16+24 1000/mv 16 0 37 -1405 0 aVF
+HR12744.mat 16+24 1000/mv 16 0 485 -17566 0 V1
+HR12744.mat 16+24 1000/mv 16 0 -135 30912 0 V2
+HR12744.mat 16+24 1000/mv 16 0 70 2750 0 V3
+HR12744.mat 16+24 1000/mv 16 0 90 -8794 0 V4
+HR12744.mat 16+24 1000/mv 16 0 0 -28933 0 V5
+HR12744.mat 16+24 1000/mv 16 0 -150 -24179 0 V6
+#Age: 58
+#Sex: Male
+#Dx: 426783006
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164873001': 5, '164884008': 6, '164889003': 7, '164890007': 8, '164909002': 9, '164917005': 10, '164931005': 11, '164934002': 12, '164947007': 13, '164951009': 14, '195042002': 15, '251120003': 16, '251146004': 17, '251180001': 18, '251200008': 19, '266249003': 20, '270492004': 21, '27885002': 22, '284470004': 23, '39732003': 24, '425419005': 25, '425623009': 26, '426177001': 27, '426434006': 28, '426761007': 29, '426783006': 30, '427084000': 31, '427393009': 32, '428750005': 33, '429622005': 34, '445118002': 35, '445211001': 36, '446358003': 37, '47665007': 38, '54329005': 39, '55930002': 40, '59931005': 41, '63593006': 42, '67198005': 43, '67741000119109': 44, '698252002': 45, '713426002': 46, '713427006': 47, '74390002': 48, '89792004': 49}
+Labels have shape (50,)
+Information for file /home/juwin106/data/ptbxl/WFDB/HR05915
+Data has shape: (5000, 12)
+Header is: HR05915 12 500 5000 04-Jun-2020 15:11:55
+HR05915.mat 16+24 1000/mv 16 0 -35 -21899 0 I
+HR05915.mat 16+24 1000/mv 16 0 -60 -18676 0 II
+HR05915.mat 16+24 1000/mv 16 0 -25 3220 0 III
+HR05915.mat 16+24 1000/mv 16 0 48 20473 0 aVR
+HR05915.mat 16+24 1000/mv 16 0 -5 20646 0 aVL
+HR05915.mat 16+24 1000/mv 16 0 -42 25254 0 aVF
+HR05915.mat 16+24 1000/mv 16 0 90 22474 0 V1
+HR05915.mat 16+24 1000/mv 16 0 210 20559 0 V2
+HR05915.mat 16+24 1000/mv 16 0 245 -6042 0 V3
+HR05915.mat 16+24 1000/mv 16 0 90 -1499 0 V4
+HR05915.mat 16+24 1000/mv 16 0 -30 -1751 0 V5
+HR05915.mat 16+24 1000/mv 16 0 -35 -27267 0 V6
+#Age: 52
+#Sex: Male
+#Dx: 426177001,426783006
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164873001': 5, '164884008': 6, '164889003': 7, '164890007': 8, '164909002': 9, '164917005': 10, '164931005': 11, '164934002': 12, '164947007': 13, '164951009': 14, '195042002': 15, '251120003': 16, '251146004': 17, '251180001': 18, '251200008': 19, '266249003': 20, '270492004': 21, '27885002': 22, '284470004': 23, '39732003': 24, '425419005': 25, '425623009': 26, '426177001': 27, '426434006': 28, '426761007': 29, '426783006': 30, '427084000': 31, '427393009': 32, '428750005': 33, '429622005': 34, '445118002': 35, '445211001': 36, '446358003': 37, '47665007': 38, '54329005': 39, '55930002': 40, '59931005': 41, '63593006': 42, '67198005': 43, '67741000119109': 44, '698252002': 45, '713426002': 46, '713427006': 47, '74390002': 48, '89792004': 49}
+Labels have shape (50,)
+Information for file /home/juwin106/data/georgia/WFDB/E09303
+Data has shape: (5000, 12)
+Header is: E09303.mat 12 500 5000 18-May-2020 12:20:18
+E09303.mat 16+24 1000/mV 16 0 -39 -349 0 I
+E09303.mat 16+24 1000/mV 16 0 9 11987 0 II
+E09303.mat 16+24 1000/mV 16 0 48 11760 0 III
+E09303.mat 16+24 1000/mV 16 0 14 -6043 0 aVR
+E09303.mat 16+24 1000/mV 16 0 -43 -5756 0 aVL
+E09303.mat 16+24 1000/mV 16 0 29 12258 0 aVF
+E09303.mat 16+24 1000/mV 16 0 29 -25463 0 V1
+E09303.mat 16+24 1000/mV 16 0 29 11844 0 V2
+E09303.mat 16+24 1000/mV 16 0 -19 12282 0 V3
+E09303.mat 16+24 1000/mV 16 0 -78 -18757 0 V4
+E09303.mat 16+24 1000/mV 16 0 -29 11650 0 V5
+E09303.mat 16+24 1000/mV 16 0 39 18700 0 V6
+#Age: 80
+#Sex: Female
+#Dx: 164889003,164934002
+#Rx: Unknown
+#Hx: Unknown
+###############
+Classes found in data folder: {'11157007': 0, '111975006': 1, '164865005': 2, '164873001': 3, '164884008': 4, '164889003': 5, '164890007': 6, '164896001': 7, '164909002': 8, '164917005': 9, '164921003': 10, '164930006': 11, '164931005': 12, '164934002': 13, '17338001': 14, '195042002': 15, '195060002': 16, '195080001': 17, '195101003': 18, '195126007': 19, '233917008': 20, '251120003': 21, '251139008': 22, '251146004': 23, '251180001': 24, '251266004': 25, '251268003': 26, '253339007': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31, '284470004': 32, '39732003': 33, '413444003': 34, '425419005': 35, '425623009': 36, '426177001': 37, '426434006': 38, '426627000': 39, '426648003': 40, '426664006': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427393009': 46, '428417006': 47, '428750005': 48, '429622005': 49, '445118002': 50, '445211001': 51, '47665007': 52, '49578007': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57, '6374002': 58, '67741000119109': 59, '698252002': 60, '713422000': 61, '713426002': 62, '713427006': 63, '74390002': 64, '81898007': 65, '89792004': 66}
+Labels have shape (67,)
+Information for file /home/juwin106/data/georgia/WFDB/E04004
+Data has shape: (5000, 12)
+Header is: E04004.mat 12 500 5000 05-May-2020 09:49:17
+E04004.mat 16+24 1000/mV 16 0 -87 -26670 0 I
+E04004.mat 16+24 1000/mV 16 0 -68 6141 0 II
+E04004.mat 16+24 1000/mV 16 0 19 -32200 0 III
+E04004.mat 16+24 1000/mV 16 0 78 9896 0 aVR
+E04004.mat 16+24 1000/mV 16 0 -53 -29761 0 aVL
+E04004.mat 16+24 1000/mV 16 0 -24 19596 0 aVF
+E04004.mat 16+24 1000/mV 16 0 -19 1572 0 V1
+E04004.mat 16+24 1000/mV 16 0 -234 26618 0 V2
+E04004.mat 16+24 1000/mV 16 0 -87 -2970 0 V3
+E04004.mat 16+24 1000/mV 16 0 -302 25185 0 V4
+E04004.mat 16+24 1000/mV 16 0 -409 2737 0 V5
+E04004.mat 16+24 1000/mV 16 0 -87 -18204 0 V6
+#Age: 75
+#Sex: Male
+#Dx: 164909002,426177001
+#Rx: Unknown
+#Hx: Unknown
+###############
+Classes found in data folder: {'11157007': 0, '111975006': 1, '164865005': 2, '164873001': 3, '164884008': 4, '164889003': 5, '164890007': 6, '164896001': 7, '164909002': 8, '164917005': 9, '164921003': 10, '164930006': 11, '164931005': 12, '164934002': 13, '17338001': 14, '195042002': 15, '195060002': 16, '195080001': 17, '195101003': 18, '195126007': 19, '233917008': 20, '251120003': 21, '251139008': 22, '251146004': 23, '251180001': 24, '251266004': 25, '251268003': 26, '253339007': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31, '284470004': 32, '39732003': 33, '413444003': 34, '425419005': 35, '425623009': 36, '426177001': 37, '426434006': 38, '426627000': 39, '426648003': 40, '426664006': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427393009': 46, '428417006': 47, '428750005': 48, '429622005': 49, '445118002': 50, '445211001': 51, '47665007': 52, '49578007': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57, '6374002': 58, '67741000119109': 59, '698252002': 60, '713422000': 61, '713426002': 62, '713427006': 63, '74390002': 64, '81898007': 65, '89792004': 66}
+Labels have shape (67,)
+Information for file /home/juwin106/data/georgia/WFDB/E03977
+Data has shape: (5000, 12)
+Header is: E03977.mat 12 500 5000 05-May-2020 09:49:17
+E03977.mat 16+24 1000/mV 16 0 -29 -1564 0 I
+E03977.mat 16+24 1000/mV 16 0 -78 -20383 0 II
+E03977.mat 16+24 1000/mV 16 0 -48 -18893 0 III
+E03977.mat 16+24 1000/mV 16 0 53 11010 0 aVR
+E03977.mat 16+24 1000/mV 16 0 9 8844 0 aVL
+E03977.mat 16+24 1000/mV 16 0 -63 -19075 0 aVF
+E03977.mat 16+24 1000/mV 16 0 9 23775 0 V1
+E03977.mat 16+24 1000/mV 16 0 -39 14254 0 V2
+E03977.mat 16+24 1000/mV 16 0 -48 -22285 0 V3
+E03977.mat 16+24 1000/mV 16 0 -78 -24564 0 V4
+E03977.mat 16+24 1000/mV 16 0 -48 -30161 0 V5
+E03977.mat 16+24 1000/mV 16 0 -48 -19389 0 V6
+#Age: 47
+#Sex: Male
+#Dx: 428750005,426177001
+#Rx: Unknown
+#Hx: Unknown
+###############
+Classes found in data folder: {'11157007': 0, '111975006': 1, '164865005': 2, '164873001': 3, '164884008': 4, '164889003': 5, '164890007': 6, '164896001': 7, '164909002': 8, '164917005': 9, '164921003': 10, '164930006': 11, '164931005': 12, '164934002': 13, '17338001': 14, '195042002': 15, '195060002': 16, '195080001': 17, '195101003': 18, '195126007': 19, '233917008': 20, '251120003': 21, '251139008': 22, '251146004': 23, '251180001': 24, '251266004': 25, '251268003': 26, '253339007': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31, '284470004': 32, '39732003': 33, '413444003': 34, '425419005': 35, '425623009': 36, '426177001': 37, '426434006': 38, '426627000': 39, '426648003': 40, '426664006': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427393009': 46, '428417006': 47, '428750005': 48, '429622005': 49, '445118002': 50, '445211001': 51, '47665007': 52, '49578007': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57, '6374002': 58, '67741000119109': 59, '698252002': 60, '713422000': 61, '713426002': 62, '713427006': 63, '74390002': 64, '81898007': 65, '89792004': 66}
+Labels have shape (67,)
+Information for file /home/juwin106/data/cpsc_train/A1077
+Data has shape: (6500, 12)
+Header is: A1077 12 500 6500 12-May-2020 12:33:59
+A1077.mat 16+24 1000/mV 16 0 -79 -3159 0 I
+A1077.mat 16+24 1000/mV 16 0 -82 322 0 II
+A1077.mat 16+24 1000/mV 16 0 -4 -3019 0 III
+A1077.mat 16+24 1000/mV 16 0 80 -2174 0 aVR
+A1077.mat 16+24 1000/mV 16 0 -38 -2141 0 aVL
+A1077.mat 16+24 1000/mV 16 0 -43 -370 0 aVF
+A1077.mat 16+24 1000/mV 16 0 15 -2341 0 V1
+A1077.mat 16+24 1000/mV 16 0 -32 -1178 0 V2
+A1077.mat 16+24 1000/mV 16 0 -58 -2139 0 V3
+A1077.mat 16+24 1000/mV 16 0 -60 -2944 0 V4
+A1077.mat 16+24 1000/mV 16 0 -43 1510 0 V5
+A1077.mat 16+24 1000/mV 16 0 -41 -552 0 V6
+#Age: 13
+#Sex: Female
+#Dx: 426783006
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'164884008': 0, '164889003': 1, '164909002': 2, '164931005': 3, '270492004': 4, '284470004': 5, '426783006': 6, '429622005': 7, '59118001': 8}
+Labels have shape (9,)
+Information for file /home/juwin106/data/cpsc_train/A1492
+Data has shape: (6185, 12)
+Header is: A1492 12 500 6185 12-May-2020 12:33:59
+A1492.mat 16+24 1000/mV 16 0 -22 -33 0 I
+A1492.mat 16+24 1000/mV 16 0 -36 -1 0 II
+A1492.mat 16+24 1000/mV 16 0 -14 -44 0 III
+A1492.mat 16+24 1000/mV 16 0 29 35 0 aVR
+A1492.mat 16+24 1000/mV 16 0 -4 -1 0 aVL
+A1492.mat 16+24 1000/mV 16 0 -25 13 0 aVF
+A1492.mat 16+24 1000/mV 16 0 -46 42 0 V1
+A1492.mat 16+24 1000/mV 16 0 -88 -1 0 V2
+A1492.mat 16+24 1000/mV 16 0 -97 -41 0 V3
+A1492.mat 16+24 1000/mV 16 0 -80 20 0 V4
+A1492.mat 16+24 1000/mV 16 0 -66 16 0 V5
+A1492.mat 16+24 1000/mV 16 0 -58 -19 0 V6
+#Age: 64
+#Sex: Female
+#Dx: 429622005
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'164884008': 0, '164889003': 1, '164909002': 2, '164931005': 3, '270492004': 4, '284470004': 5, '426783006': 6, '429622005': 7, '59118001': 8}
+Labels have shape (9,)
+Information for file /home/juwin106/data/cpsc_train/A2220
+Data has shape: (5724, 12)
+Header is: A2220 12 500 5724 12-May-2020 12:33:59
+A2220.mat 16+24 1000/mV 16 0 -97 -3 0 I
+A2220.mat 16+24 1000/mV 16 0 -75 4 0 II
+A2220.mat 16+24 1000/mV 16 0 22 -30 0 III
+A2220.mat 16+24 1000/mV 16 0 86 27 0 aVR
+A2220.mat 16+24 1000/mV 16 0 -60 -15 0 aVL
+A2220.mat 16+24 1000/mV 16 0 -26 28 0 aVF
+A2220.mat 16+24 1000/mV 16 0 -131 -12 0 V1
+A2220.mat 16+24 1000/mV 16 0 -270 7 0 V2
+A2220.mat 16+24 1000/mV 16 0 -249 -24 0 V3
+A2220.mat 16+24 1000/mV 16 0 -194 -29 0 V4
+A2220.mat 16+24 1000/mV 16 0 -178 -32 0 V5
+A2220.mat 16+24 1000/mV 16 0 -337 46 0 V6
+#Age: 78
+#Sex: Male
+#Dx: 270492004
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'164884008': 0, '164889003': 1, '164909002': 2, '164931005': 3, '270492004': 4, '284470004': 5, '426783006': 6, '429622005': 7, '59118001': 8}
+Labels have shape (9,)
+Information for file /home/juwin106/data/cpsc/Q2429
+Data has shape: (12500, 12)
+Header is: Q2429 12 500 12500 15-May-2020 15:35:30
+Q2429.mat 16+24 1000/mV 16 0 -27 -363 0 I
+Q2429.mat 16+24 1000/mV 16 0 -3 2776 0 II
+Q2429.mat 16+24 1000/mV 16 0 24 3139 0 III
+Q2429.mat 16+24 1000/mV 16 0 14 -1850 0 aVR
+Q2429.mat 16+24 1000/mV 16 0 -26 363 0 aVL
+Q2429.mat 16+24 1000/mV 16 0 10 2118 0 aVF
+Q2429.mat 16+24 1000/mV 16 0 81 4676 0 V1
+Q2429.mat 16+24 1000/mV 16 0 72 -1585 0 V2
+Q2429.mat 16+24 1000/mV 16 0 87 -3214 0 V3
+Q2429.mat 16+24 1000/mV 16 0 -164 1165 0 V4
+Q2429.mat 16+24 1000/mV 16 0 -55 -4726 0 V5
+Q2429.mat 16+24 1000/mV 16 0 -61 -3542 0 V6
+#Age: 74
+#Sex: Male
+#Dx: 63593006,427172004,251120003,428750005
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '111288001': 1, '11157007': 2, '111975006': 3, '164861001': 4, '164865005': 5, '164867002': 6, '164873001': 7, '164889003': 8, '164890007': 9, '164895002': 10, '164896001': 11, '164909002': 12, '164917005': 13, '164921003': 14, '164930006': 15, '164931005': 16, '164934002': 17, '164937009': 18, '17338001': 19, '195042002': 20, '195060002': 21, '195080001': 22, '195126007': 23, '233917008': 24, '251120003': 25, '251164006': 26, '251170000': 27, '251180001': 28, '251259000': 29, '266249003': 30, '270492004': 31, '27885002': 32, '284470004': 33, '29320008': 34, '370365005': 35, '413444003': 36, '413844008': 37, '426177001': 38, '426627000': 39, '426648003': 40, '426749004': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427172004': 46, '427393009': 47, '428750005': 48, '429622005': 49, '446358003': 50, '446813000': 51, '47665007': 52, '49578007': 53, '54329005': 54, '55930002': 55, '59118001': 56, '59931005': 57, '63593006': 58, '65778007': 59, '67741000119109': 60, '698252002': 61, '704997005': 62, '713422000': 63, '713426002': 64, '713427006': 65, '74615001': 66, '75532003': 67, '77867006': 68, '81898007': 69, '82226007': 70, '89792004': 71}
+Labels have shape (72,)
+Information for file /home/juwin106/data/cpsc/Q0382
+Data has shape: (8021, 12)
+Header is: Q0382 12 500 8021 15-May-2020 15:35:30
+Q0382.mat 16+24 1000/mV 16 0 -12 17 0 I
+Q0382.mat 16+24 1000/mV 16 0 -12 -19 0 II
+Q0382.mat 16+24 1000/mV 16 0 0 -2 0 III
+Q0382.mat 16+24 1000/mV 16 0 12 47 0 aVR
+Q0382.mat 16+24 1000/mV 16 0 -6 7 0 aVL
+Q0382.mat 16+24 1000/mV 16 0 -7 -19 0 aVF
+Q0382.mat 16+24 1000/mV 16 0 2 133 0 V1
+Q0382.mat 16+24 1000/mV 16 0 0 -14 0 V2
+Q0382.mat 16+24 1000/mV 16 0 -1 42 0 V3
+Q0382.mat 16+24 1000/mV 16 0 -2 22 0 V4
+Q0382.mat 16+24 1000/mV 16 0 -6 -24 0 V5
+Q0382.mat 16+24 1000/mV 16 0 -2 41 0 V6
+#Age: 54
+#Sex: Female
+#Dx: 284470004,428750005,426627000
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '111288001': 1, '11157007': 2, '111975006': 3, '164861001': 4, '164865005': 5, '164867002': 6, '164873001': 7, '164889003': 8, '164890007': 9, '164895002': 10, '164896001': 11, '164909002': 12, '164917005': 13, '164921003': 14, '164930006': 15, '164931005': 16, '164934002': 17, '164937009': 18, '17338001': 19, '195042002': 20, '195060002': 21, '195080001': 22, '195126007': 23, '233917008': 24, '251120003': 25, '251164006': 26, '251170000': 27, '251180001': 28, '251259000': 29, '266249003': 30, '270492004': 31, '27885002': 32, '284470004': 33, '29320008': 34, '370365005': 35, '413444003': 36, '413844008': 37, '426177001': 38, '426627000': 39, '426648003': 40, '426749004': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427172004': 46, '427393009': 47, '428750005': 48, '429622005': 49, '446358003': 50, '446813000': 51, '47665007': 52, '49578007': 53, '54329005': 54, '55930002': 55, '59118001': 56, '59931005': 57, '63593006': 58, '65778007': 59, '67741000119109': 60, '698252002': 61, '704997005': 62, '713422000': 63, '713426002': 64, '713427006': 65, '74615001': 66, '75532003': 67, '77867006': 68, '81898007': 69, '82226007': 70, '89792004': 71}
+Labels have shape (72,)
+Information for file /home/juwin106/data/cpsc/Q1948
+Data has shape: (7500, 12)
+Header is: Q1948 12 500 7500 15-May-2020 15:35:30
+Q1948.mat 16+24 1000/mV 16 0 29 -34 0 I
+Q1948.mat 16+24 1000/mV 16 0 -17 -3 0 II
+Q1948.mat 16+24 1000/mV 16 0 -46 25 0 III
+Q1948.mat 16+24 1000/mV 16 0 -7 -9 0 aVR
+Q1948.mat 16+24 1000/mV 16 0 37 32 0 aVL
+Q1948.mat 16+24 1000/mV 16 0 -31 19 0 aVF
+Q1948.mat 16+24 1000/mV 16 0 200 5 0 V1
+Q1948.mat 16+24 1000/mV 16 0 365 62 0 V2
+Q1948.mat 16+24 1000/mV 16 0 214 21 0 V3
+Q1948.mat 16+24 1000/mV 16 0 154 7 0 V4
+Q1948.mat 16+24 1000/mV 16 0 203 29 0 V5
+Q1948.mat 16+24 1000/mV 16 0 101 -17 0 V6
+#Age: 81
+#Sex: Male
+#Dx: 428750005
+#Rx: Unknown
+#Hx: Unknown
+#Sx: Unknown
+###############
+Classes found in data folder: {'10370003': 0, '111288001': 1, '11157007': 2, '111975006': 3, '164861001': 4, '164865005': 5, '164867002': 6, '164873001': 7, '164889003': 8, '164890007': 9, '164895002': 10, '164896001': 11, '164909002': 12, '164917005': 13, '164921003': 14, '164930006': 15, '164931005': 16, '164934002': 17, '164937009': 18, '17338001': 19, '195042002': 20, '195060002': 21, '195080001': 22, '195126007': 23, '233917008': 24, '251120003': 25, '251164006': 26, '251170000': 27, '251180001': 28, '251259000': 29, '266249003': 30, '270492004': 31, '27885002': 32, '284470004': 33, '29320008': 34, '370365005': 35, '413444003': 36, '413844008': 37, '426177001': 38, '426627000': 39, '426648003': 40, '426749004': 41, '426761007': 42, '426783006': 43, '426995002': 44, '427084000': 45, '427172004': 46, '427393009': 47, '428750005': 48, '429622005': 49, '446358003': 50, '446813000': 51, '47665007': 52, '49578007': 53, '54329005': 54, '55930002': 55, '59118001': 56, '59931005': 57, '63593006': 58, '65778007': 59, '67741000119109': 60, '698252002': 61, '704997005': 62, '713422000': 63, '713426002': 64, '713427006': 65, '74615001': 66, '75532003': 67, '77867006': 68, '81898007': 69, '82226007': 70, '89792004': 71}
+Labels have shape (72,)
+Classes after last update 67 {'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164867002': 5, '164873001': 6, '164884008': 7, '164889003': 8, '164890007': 9, '164909002': 10, '164917005': 11, '164930006': 12, '164931005': 13, '164934002': 14, '164947007': 15, '164951009': 16, '17338001': 17, '195042002': 18, '195080001': 19, '195126007': 20, '233917008': 21, '251120003': 22, '251146004': 23, '251180001': 24, '251200008': 25, '251266004': 26, '251268003': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31, '284470004': 32, '39732003': 33, '413844008': 34, '425419005': 35, '425623009': 36, '426177001': 37, '426434006': 38, '426627000': 39, '426761007': 40, '426783006': 41, '427084000': 42, '427172004': 43, '427393009': 44, '428417006': 45, '428750005': 46, '429622005': 47, '445118002': 48, '445211001': 49, '446358003': 50, '446813000': 51, '47665007': 52, '54329005': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57, '6374002': 58, '67198005': 59, '67741000119109': 60, '698252002': 61, '713422000': 62, '713426002': 63, '713427006': 64, '74390002': 65, '89792004': 66}
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined0
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 1/20 done. Avg train loss: 0.1267. Avg val loss: 0.1611 Elapsed time: 0:00:52.121675
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 2/20 done. Avg train loss: 0.0901. Avg val loss: 0.1309 Elapsed time: 0:00:52.464536
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 3/20 done. Avg train loss: 0.0875. Avg val loss: 0.1195 Elapsed time: 0:00:52.226552
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 4/20 done. Avg train loss: 0.0860. Avg val loss: 0.1163 Elapsed time: 0:00:52.364355
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 5/20 done. Avg train loss: 0.0845. Avg val loss: 0.1139 Elapsed time: 0:00:53.239522
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 6/20 done. Avg train loss: 0.0816. Avg val loss: 0.1210 Elapsed time: 0:00:52.913008
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 7/20 done. Avg train loss: 0.0799. Avg val loss: 0.1248 Elapsed time: 0:00:52.019367
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 8/20 done. Avg train loss: 0.0799. Avg val loss: 0.1184 Elapsed time: 0:00:53.506816
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 9/20 done. Avg train loss: 0.0782. Avg val loss: 0.1371 Elapsed time: 0:00:52.853935
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 10/20 done. Avg train loss: 0.0794. Avg val loss: 0.1147 Elapsed time: 0:00:52.157265
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 11/20 done. Avg train loss: 0.0792. Avg val loss: 0.1241 Elapsed time: 0:00:52.231548
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 12/20 done. Avg train loss: 0.0781. Avg val loss: 0.1185 Elapsed time: 0:00:52.196323
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 13/20 done. Avg train loss: 0.0772. Avg val loss: 0.1287 Elapsed time: 0:00:52.450037
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 14/20 done. Avg train loss: 0.0770. Avg val loss: 0.1130 Elapsed time: 0:00:53.596614
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 15/20 done. Avg train loss: 0.0755. Avg val loss: 0.1341 Elapsed time: 0:00:52.666961
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 16/20 done. Avg train loss: 0.0760. Avg val loss: 0.1339 Elapsed time: 0:00:52.002630
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 17/20 done. Avg train loss: 0.0751. Avg val loss: 0.1381 Elapsed time: 0:00:52.326070
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 18/20 done. Avg train loss: 0.0749. Avg val loss: 0.1209 Elapsed time: 0:00:52.215610
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 19/20 done. Avg train loss: 0.0760. Avg val loss: 0.1300 Elapsed time: 0:00:51.895377
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 20/20 done. Avg train loss: 0.0768. Avg val loss: 0.1351 Elapsed time: 0:00:52.106943
+saving model at epoch: 20
+Finished model architectures_cpc.cpc_combined.CPCCombined. Output saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined0 Progress: 1/8
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined1
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 1/20 done. Avg train loss: 0.1553. Avg val loss: 0.1307 Elapsed time: 0:00:53.015831
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 2/20 done. Avg train loss: 0.1045. Avg val loss: 0.1256 Elapsed time: 0:00:52.080735
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 3/20 done. Avg train loss: 0.1013. Avg val loss: 0.1195 Elapsed time: 0:00:52.375204
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 4/20 done. Avg train loss: 0.0987. Avg val loss: 0.1183 Elapsed time: 0:00:52.302924
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 5/20 done. Avg train loss: 0.0968. Avg val loss: 0.1162 Elapsed time: 0:00:52.149518
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 6/20 done. Avg train loss: 0.0955. Avg val loss: 0.1157 Elapsed time: 0:00:52.101601
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 7/20 done. Avg train loss: 0.0944. Avg val loss: 0.1149 Elapsed time: 0:00:52.269963
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 8/20 done. Avg train loss: 0.0936. Avg val loss: 0.1125 Elapsed time: 0:00:52.358922
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 9/20 done. Avg train loss: 0.0931. Avg val loss: 0.1106 Elapsed time: 0:00:52.414521
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 10/20 done. Avg train loss: 0.0922. Avg val loss: 0.1103 Elapsed time: 0:00:52.326513
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 11/20 done. Avg train loss: 0.0917. Avg val loss: 0.1078 Elapsed time: 0:00:52.164311
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 12/20 done. Avg train loss: 0.0910. Avg val loss: 0.1084 Elapsed time: 0:00:51.935571
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 13/20 done. Avg train loss: 0.0907. Avg val loss: 0.1061 Elapsed time: 0:00:52.138027
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 14/20 done. Avg train loss: 0.0903. Avg val loss: 0.1057 Elapsed time: 0:00:52.125736
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 15/20 done. Avg train loss: 0.0898. Avg val loss: 0.1049 Elapsed time: 0:00:52.247833
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 16/20 done. Avg train loss: 0.0894. Avg val loss: 0.1056 Elapsed time: 0:00:52.037452
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 17/20 done. Avg train loss: 0.0891. Avg val loss: 0.1045 Elapsed time: 0:00:52.267434
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 18/20 done. Avg train loss: 0.0889. Avg val loss: 0.1031 Elapsed time: 0:00:52.044880
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 19/20 done. Avg train loss: 0.0883. Avg val loss: 0.1040 Elapsed time: 0:00:52.311006
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 20/20 done. Avg train loss: 0.0882. Avg val loss: 0.1039 Elapsed time: 0:00:52.146859
+saving model at epoch: 20
+Finished model architectures_cpc.cpc_combined.CPCCombined. Output saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined1 Progress: 2/8
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined2
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 1/20 done. Avg train loss: 0.0892. Avg val loss: 0.1815 Elapsed time: 0:00:52.201804
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 2/20 done. Avg train loss: 0.0830. Avg val loss: 0.1695 Elapsed time: 0:00:52.134448
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 3/20 done. Avg train loss: 0.0833. Avg val loss: 0.1360 Elapsed time: 0:00:52.589605
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 4/20 done. Avg train loss: 0.0792. Avg val loss: 0.1524 Elapsed time: 0:00:52.242847
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 5/20 done. Avg train loss: 0.0803. Avg val loss: 0.1299 Elapsed time: 0:00:52.259866
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 6/20 done. Avg train loss: 0.0789. Avg val loss: 0.1433 Elapsed time: 0:00:52.419479
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 7/20 done. Avg train loss: 0.0787. Avg val loss: 0.1369 Elapsed time: 0:00:52.324337
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 8/20 done. Avg train loss: 0.0778. Avg val loss: 0.1434 Elapsed time: 0:00:52.429380
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 9/20 done. Avg train loss: 0.0770. Avg val loss: 0.1515 Elapsed time: 0:00:52.290056
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 10/20 done. Avg train loss: 0.0782. Avg val loss: 0.1306 Elapsed time: 0:00:52.450772
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 11/20 done. Avg train loss: 0.0783. Avg val loss: 0.1240 Elapsed time: 0:00:52.631381
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 12/20 done. Avg train loss: 0.0785. Avg val loss: 0.1141 Elapsed time: 0:00:52.583928
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 13/20 done. Avg train loss: 0.0774. Avg val loss: 0.1191 Elapsed time: 0:00:52.427537
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 14/20 done. Avg train loss: 0.0762. Avg val loss: 0.1369 Elapsed time: 0:00:52.349745
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 15/20 done. Avg train loss: 0.0760. Avg val loss: 0.1356 Elapsed time: 0:00:52.251058
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 16/20 done. Avg train loss: 0.0760. Avg val loss: 0.1311 Elapsed time: 0:00:52.099989
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 17/20 done. Avg train loss: 0.0768. Avg val loss: 0.1155 Elapsed time: 0:00:52.271126
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 18/20 done. Avg train loss: 0.0767. Avg val loss: 0.1174 Elapsed time: 0:00:52.111098
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 19/20 done. Avg train loss: 0.0766. Avg val loss: 0.1339 Elapsed time: 0:00:52.315405
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 20/20 done. Avg train loss: 0.0762. Avg val loss: 0.1248 Elapsed time: 0:00:52.368661
+saving model at epoch: 20
+Finished model architectures_cpc.cpc_combined.CPCCombined. Output saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined2 Progress: 3/8
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined3
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 1/20 done. Avg train loss: 0.1043. Avg val loss: 0.1150 Elapsed time: 0:00:52.345245
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 2/20 done. Avg train loss: 0.0943. Avg val loss: 0.1156 Elapsed time: 0:00:52.526590
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 3/20 done. Avg train loss: 0.0893. Avg val loss: 0.1132 Elapsed time: 0:00:52.313150
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 4/20 done. Avg train loss: 0.0860. Avg val loss: 0.1115 Elapsed time: 0:00:52.089342
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 5/20 done. Avg train loss: 0.0865. Avg val loss: 0.1282 Elapsed time: 0:00:52.477321
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 6/20 done. Avg train loss: 0.0867. Avg val loss: 0.1194 Elapsed time: 0:00:52.419369
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 7/20 done. Avg train loss: 0.0845. Avg val loss: 0.1179 Elapsed time: 0:00:52.327170
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 8/20 done. Avg train loss: 0.0855. Avg val loss: 0.1194 Elapsed time: 0:00:52.443785
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 9/20 done. Avg train loss: 0.0862. Avg val loss: 0.1166 Elapsed time: 0:00:52.110821
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 10/20 done. Avg train loss: 0.0845. Avg val loss: 0.1189 Elapsed time: 0:00:52.096528
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 11/20 done. Avg train loss: 0.0821. Avg val loss: 0.1303 Elapsed time: 0:00:52.077759
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 12/20 done. Avg train loss: 0.0820. Avg val loss: 0.1239 Elapsed time: 0:00:52.288553
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 13/20 done. Avg train loss: 0.0814. Avg val loss: 0.1378 Elapsed time: 0:00:52.361624
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 14/20 done. Avg train loss: 0.0856. Avg val loss: 0.1155 Elapsed time: 0:00:52.242020
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 15/20 done. Avg train loss: 0.0846. Avg val loss: 0.1157 Elapsed time: 0:00:52.090425
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 16/20 done. Avg train loss: 0.0826. Avg val loss: 0.1114 Elapsed time: 0:00:52.259500
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 17/20 done. Avg train loss: 0.0802. Avg val loss: 0.1233 Elapsed time: 0:00:52.174188
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 18/20 done. Avg train loss: 0.0801. Avg val loss: 0.1167 Elapsed time: 0:00:52.370855
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 19/20 done. Avg train loss: 0.0800. Avg val loss: 0.1201 Elapsed time: 0:00:52.750040
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 20/20 done. Avg train loss: 0.0801. Avg val loss: 0.1181 Elapsed time: 0:00:52.805549
+saving model at epoch: 20
+Finished model architectures_cpc.cpc_combined.CPCCombined. Output saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined3 Progress: 4/8
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined4
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 1/20 done. Avg train loss: 0.0906. Avg val loss: 0.1620 Elapsed time: 0:00:53.161290
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 2/20 done. Avg train loss: 0.0827. Avg val loss: 0.1330 Elapsed time: 0:00:52.983987
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 3/20 done. Avg train loss: 0.0800. Avg val loss: 0.1249 Elapsed time: 0:00:53.020577
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 4/20 done. Avg train loss: 0.0778. Avg val loss: 0.1306 Elapsed time: 0:00:53.178458
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 5/20 done. Avg train loss: 0.0769. Avg val loss: 0.1210 Elapsed time: 0:00:52.961010
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 6/20 done. Avg train loss: 0.0753. Avg val loss: 0.1424 Elapsed time: 0:00:52.687147
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 7/20 done. Avg train loss: 0.0749. Avg val loss: 0.1288 Elapsed time: 0:00:53.303480
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 8/20 done. Avg train loss: 0.0747. Avg val loss: 0.1299 Elapsed time: 0:00:53.025994
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 9/20 done. Avg train loss: 0.0745. Avg val loss: 0.1209 Elapsed time: 0:00:53.207316
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 10/20 done. Avg train loss: 0.0737. Avg val loss: 0.1262 Elapsed time: 0:00:53.125555
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 11/20 done. Avg train loss: 0.0742. Avg val loss: 0.1234 Elapsed time: 0:00:52.772393
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 12/20 done. Avg train loss: 0.0739. Avg val loss: 0.1260 Elapsed time: 0:00:52.766549
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 13/20 done. Avg train loss: 0.0735. Avg val loss: 0.1221 Elapsed time: 0:00:52.911419
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 14/20 done. Avg train loss: 0.0729. Avg val loss: 0.1228 Elapsed time: 0:00:52.930018
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 15/20 done. Avg train loss: 0.0727. Avg val loss: 0.1212 Elapsed time: 0:00:52.951514
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 16/20 done. Avg train loss: 0.0724. Avg val loss: 0.1203 Elapsed time: 0:00:52.499164
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 17/20 done. Avg train loss: 0.0723. Avg val loss: 0.1206 Elapsed time: 0:00:52.771359
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 18/20 done. Avg train loss: 0.0723. Avg val loss: 0.1219 Elapsed time: 0:00:52.954664
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 19/20 done. Avg train loss: 0.0720. Avg val loss: 0.1075 Elapsed time: 0:00:52.784677
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 20/20 done. Avg train loss: 0.0720. Avg val loss: 0.1166 Elapsed time: 0:00:52.722944
+saving model at epoch: 20
+Finished model architectures_cpc.cpc_combined.CPCCombined. Output saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined4 Progress: 5/8
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined5
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 1/20 done. Avg train loss: 0.1059. Avg val loss: 0.1356 Elapsed time: 0:00:53.121333
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 2/20 done. Avg train loss: 0.0929. Avg val loss: 0.1202 Elapsed time: 0:00:52.929630
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 3/20 done. Avg train loss: 0.0903. Avg val loss: 0.1274 Elapsed time: 0:00:52.905173
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 4/20 done. Avg train loss: 0.0890. Avg val loss: 0.1291 Elapsed time: 0:00:52.883826
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 5/20 done. Avg train loss: 0.0875. Avg val loss: 0.1264 Elapsed time: 0:00:52.892506
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 6/20 done. Avg train loss: 0.0864. Avg val loss: 0.1212 Elapsed time: 0:00:52.985256
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 7/20 done. Avg train loss: 0.0847. Avg val loss: 0.1216 Elapsed time: 0:00:53.117211
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 8/20 done. Avg train loss: 0.0842. Avg val loss: 0.1206 Elapsed time: 0:00:52.880867
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 9/20 done. Avg train loss: 0.0834. Avg val loss: 0.1177 Elapsed time: 0:00:53.368158
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 10/20 done. Avg train loss: 0.0820. Avg val loss: 0.1299 Elapsed time: 0:00:52.336612
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 11/20 done. Avg train loss: 0.0826. Avg val loss: 0.1207 Elapsed time: 0:00:53.045920
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 12/20 done. Avg train loss: 0.0828. Avg val loss: 0.1168 Elapsed time: 0:00:53.010157
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 13/20 done. Avg train loss: 0.0815. Avg val loss: 0.1156 Elapsed time: 0:00:52.599302
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 14/20 done. Avg train loss: 0.0807. Avg val loss: 0.1175 Elapsed time: 0:00:52.351093
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 15/20 done. Avg train loss: 0.0805. Avg val loss: 0.1155 Elapsed time: 0:00:52.649777
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 16/20 done. Avg train loss: 0.0808. Avg val loss: 0.1120 Elapsed time: 0:00:52.881854
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 17/20 done. Avg train loss: 0.0800. Avg val loss: 0.1121 Elapsed time: 0:00:52.653951
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 18/20 done. Avg train loss: 0.0799. Avg val loss: 0.1105 Elapsed time: 0:00:52.672749
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 19/20 done. Avg train loss: 0.0795. Avg val loss: 0.1112 Elapsed time: 0:00:52.983455
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 20/20 done. Avg train loss: 0.0789. Avg val loss: 0.1128 Elapsed time: 0:00:52.777121
+saving model at epoch: 20
+Finished model architectures_cpc.cpc_combined.CPCCombined. Output saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined5 Progress: 6/8
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined6
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 1/20 done. Avg train loss: 0.0930. Avg val loss: 0.1544 Elapsed time: 0:00:53.091880
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 2/20 done. Avg train loss: 0.0837. Avg val loss: 0.1246 Elapsed time: 0:00:52.836682
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 3/20 done. Avg train loss: 0.0802. Avg val loss: 0.1269 Elapsed time: 0:00:53.204952
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 4/20 done. Avg train loss: 0.0795. Avg val loss: 0.1288 Elapsed time: 0:00:53.163948
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 5/20 done. Avg train loss: 0.0783. Avg val loss: 0.1315 Elapsed time: 0:00:52.786480
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 6/20 done. Avg train loss: 0.0779. Avg val loss: 0.1244 Elapsed time: 0:00:53.181325
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 7/20 done. Avg train loss: 0.0771. Avg val loss: 0.1234 Elapsed time: 0:00:53.085084
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 8/20 done. Avg train loss: 0.0773. Avg val loss: 0.1236 Elapsed time: 0:00:53.220866
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 9/20 done. Avg train loss: 0.0783. Avg val loss: 0.1183 Elapsed time: 0:00:53.128165
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 10/20 done. Avg train loss: 0.0785. Avg val loss: 0.1117 Elapsed time: 0:00:53.030245
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 11/20 done. Avg train loss: 0.0779. Avg val loss: 0.1095 Elapsed time: 0:00:52.941327
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 12/20 done. Avg train loss: 0.0762. Avg val loss: 0.1204 Elapsed time: 0:00:52.954102
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 13/20 done. Avg train loss: 0.0763. Avg val loss: 0.1192 Elapsed time: 0:00:52.953405
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 14/20 done. Avg train loss: 0.0747. Avg val loss: 0.1309 Elapsed time: 0:00:52.872774
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 15/20 done. Avg train loss: 0.0749. Avg val loss: 0.1150 Elapsed time: 0:00:52.896270
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 16/20 done. Avg train loss: 0.0742. Avg val loss: 0.1194 Elapsed time: 0:00:52.812936
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 17/20 done. Avg train loss: 0.0734. Avg val loss: 0.1309 Elapsed time: 0:00:52.679630
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 18/20 done. Avg train loss: 0.0734. Avg val loss: 0.1291 Elapsed time: 0:00:52.957674
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 19/20 done. Avg train loss: 0.0732. Avg val loss: 0.1206 Elapsed time: 0:00:52.947278
+	Finished training dataset 0. Progress: 1/1
+	Finished vaildation dataset 0. Progress: 1/1
+Epoch 20/20 done. Avg train loss: 0.0728. Avg val loss: 0.1226 Elapsed time: 0:00:52.945971
+saving model at epoch: 20
+Finished model architectures_cpc.cpc_combined.CPCCombined. Output saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined6 Progress: 7/8
+Begin training of architectures_cpc.cpc_combined.CPCCombined. Output will  be saved to dir: models/12_05_21-13-train/architectures_cpc.cpc_combined.CPCCombined7
+Saving full model...
+	Finished training dataset 0. Progress: 1/1
