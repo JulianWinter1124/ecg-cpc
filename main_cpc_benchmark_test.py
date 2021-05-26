@@ -72,7 +72,7 @@ def main(args):
     model_folders = [
         #'models/01_03_21-14'
         #'models/04_03_21-14',
-        'models/21_05_21-11-train'
+        'models/25_05_21-16-train'
     ]
     #infer class from model-arch file
     model_dicts = []

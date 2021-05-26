@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix
+from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix, roc_auc_score
 import pandas as pd
 import glob
 import os
@@ -91,6 +91,11 @@ def precision_recall(labels:np.ndarray, predictions:np.ndarray, n_classes): #see
     print('Average precision score, macro-averaged over all classes: {0:0.5f}'
           .format(average_precision["macro"]))
     return precision, recall, average_precision
+
+def auc_scores(labels, predictions, average=None):
+    auc = roc_auc_score(labels, predictions, average=average)
+    return auc
+
 
 def precision_scores(binary_labels, binary_predictions, average=None):
     cm = confusion_matrix(binary_labels, binary_predictions) # n_classes x 2 x 2

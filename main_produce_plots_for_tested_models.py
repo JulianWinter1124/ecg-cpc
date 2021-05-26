@@ -147,6 +147,7 @@ def create_paper_metrics(model_folders, data_loader_index=0):
     rec_dff = DataFrameFactory()
     classfit_dff = DataFrameFactory()
     zerofit_dff = DataFrameFactory()
+    auc_dff = DataFrameFactory()
 
     for mi, model_folder in enumerate(model_folders):
         try:
@@ -162,6 +163,7 @@ def create_paper_metrics(model_folders, data_loader_index=0):
             #scores with probability
             classfit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.class_fit_score, model_name))
             zerofit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.zero_fit_score, model_name))
+            auc_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name))
 
         except FileNotFoundError as e: #folder with not the correct csv?
             print(e)
@@ -181,12 +183,13 @@ def create_paper_metrics(model_folders, data_loader_index=0):
             #cst_acc_dff.to_csv(p, f'Custom Accuracy{data_loader_index}.tex')
             classfit_dff.to_latex(p, f'Custom Accuracy (Class Fit){data_loader_index}.tex', caption='Class Fit Scores', label='tbl:classfitscores')
             zerofit_dff.to_latex(p, f'Custom Accuracy (Zero Fit){data_loader_index}.tex', caption='Zero Fit Scores', label='tbl:zerofitscores')
+            auc_dff.to_latex(p, f'AUC-score-dataloader{data_loader_index}.tex', caption='AUC score', label='tbl:aucscores')
     return model_thresholds
 
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/25_05_21-11-test/') #auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/25_05_21-18-test/') #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
     create_paper_metrics(model_folders, data_loader_index=TEST_SET) #On Testset
     create_paper_plots(model_folders, data_loader_index=TEST_SET)
