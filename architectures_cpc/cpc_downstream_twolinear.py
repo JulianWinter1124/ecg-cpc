@@ -38,6 +38,8 @@ class DownstreamLinearNet(nn.Module):
         elif self.use_latents:
             x, c = self.rnn(latents)
             context = x[-1, :]
+
+
         pred = self.classifier(context)
         output = self.activation(pred)
         #print('pred shape', pred.shape)

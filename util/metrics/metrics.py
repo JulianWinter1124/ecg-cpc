@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix, roc_auc_score
+import sklearn
 import pandas as pd
 import glob
 import os
@@ -54,6 +55,7 @@ def top1_score(labels, predictions):
 
 def confusion_matrix(binary_labels, binary_predictions):
     return np.array(multilabel_confusion_matrix(binary_labels, binary_predictions), dtype=int)
+
 
 
 def ROC(labels:np.ndarray, predictions:np.ndarray): #see scikit learn doc
@@ -135,6 +137,11 @@ def accuracy_scores(binary_labels, binary_predictions, average=None):
         return (np.sum(tp)+np.sum(tn))/(np.sum(tp)+np.sum(fp)+np.sum(tn)+np.sum(fn)) #Micro
     else:
         return (tp+tn)/(tp+tn+fp+fn)
+
+
+def average_precision_scores(binary_labels, score_predictions, average=None):
+    return sklearn.metrics.average_precision_score(binary_labels, score_predictions, average=average)
+
 
 def balanced_accuracy_scores(binary_labels, binary_predictions, average=None):
     cm = confusion_matrix(binary_labels, binary_predictions) # n_classes x 2 x 2

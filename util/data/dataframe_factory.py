@@ -28,8 +28,12 @@ class DataFrameFactory():
         p = os.path.join(output_folder, filename)
         self.dataframe.to_csv(p)
 
-    def to_latex(self, output_folder, filename, caption="", label=""):
+    def to_latex(self, output_folder, filename, caption="", label="", description=""):
         p = os.path.join(output_folder, filename)
         latex_string = self.dataframe.to_latex(label=label, caption=caption, na_rep='-', float_format="%.3f", bold_rows=True)
+        latex_lines = latex_string.split('\n')
+        if description != "":
+            latex_lines = latex_lines[:-1] + [description] + latex_lines[-1]
+        latex_string = '\n'.join(latex_lines)
         with open(p, 'w') as f:
             f.write(latex_string)

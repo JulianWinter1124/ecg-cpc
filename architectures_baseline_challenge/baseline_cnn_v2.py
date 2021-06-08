@@ -1,6 +1,10 @@
 import torch
 from torch import nn
 
+"""
+5 CNN Layers
+"""
+
 
 class BaselineNet(nn.Module):
 

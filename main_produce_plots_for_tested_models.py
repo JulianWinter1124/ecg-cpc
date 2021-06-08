@@ -70,15 +70,18 @@ def auto_find_tested_models(path='models/'):
 #     #plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder, plot_name=model_folder_name)
 
 def create_metric_score_dataframe(binary_labels, binary_preds, classes, metric_function, model_name=None, average_only=False):
+    scdf = pd.DataFrame(columns=['micro', 'macro'])
+    print(metric_function(binary_labels, binary_preds, average='micro'))
+    scdf.loc['micro'] = metric_function(binary_labels, binary_preds, average='micro')
+    scdf.loc['macro'] = metric_function(binary_labels, binary_preds, average='macro')
     if not average_only:
         scores = metric_function(binary_labels, binary_preds, average=None)
-        scdf = pd.DataFrame(scores[np.newaxis, :], columns=classes)
-    else:
-        scdf = pd.DataFrame()
-    scdf.insert(0, 'micro', metric_function(binary_labels, binary_preds, average='micro'), allow_duplicates=True)
-    scdf.insert(0, 'macro', metric_function(binary_labels, binary_preds, average='macro'), allow_duplicates=True)
+        scdf = pd.concat([scdf, pd.DataFrame(scores[np.newaxis, :], columns=classes)], axis=1, )
+    # scdf.insert(0, 'micro', metric_function(binary_labels, binary_preds, average='micro'), allow_duplicates=True)
+    # scdf.insert(0, 'macro', metric_function(binary_labels, binary_preds, average='macro'), allow_duplicates=True)
     scdf['model'] = model_name
     scdf = scdf.set_index('model')
+    print(scdf)
     return scdf
 
 def create_metric_confusion_matrix(model_folder, binary_labels, pred, classes:list):
@@ -137,7 +140,7 @@ def create_paper_plots(model_folders, data_loader_index=0):
             print("File not found")
 
 
-def create_paper_metrics(model_folders, data_loader_index=0):
+def create_paper_metrics(model_folders, data_loader_index=0, average_only=False):
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
 
     model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
@@ -157,13 +160,14 @@ def create_paper_metrics(model_folders, data_loader_index=0):
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
             #scores with binary
-            f1_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.f1_scores, model_name))
-            prec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.precision_scores, model_name))
-            rec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.recall_scores, model_name))
+            f1_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.f1_scores, model_name, average_only))
+
+            prec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.precision_scores, model_name, average_only))
+            rec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.recall_scores, model_name, average_only))
             #scores with probability
-            classfit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.class_fit_score, model_name))
-            zerofit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.zero_fit_score, model_name))
-            auc_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name))
+            classfit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.class_fit_score, model_name, average_only))
+            zerofit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.zero_fit_score, model_name, average_only))
+            auc_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name, average_only))
 
         except FileNotFoundError as e: #folder with not the correct csv?
             print(e)
@@ -172,24 +176,26 @@ def create_paper_metrics(model_folders, data_loader_index=0):
         """
         If if models from multiple test sessions are run, put a csv into every of their basepath folders.
         """
+        label = 'scores' + 'avg' if average_only else ''
         for p in ps:
             print(f"Saving metrics to: {p}")
             #f1_dff.to_csv(p, f'f1-score-dataloader{data_loader_index}.csv')
             #prec_dff.to_csv(p, f'precision-score-dataloader{data_loader_index}.csv')
             #rec_dff.to_csv(p, f'recall-score-dataloader{data_loader_index}.csv')
-            f1_dff.to_latex(p, f'f1-score-dataloader{data_loader_index}.tex', caption='F1 Scores', label='tbl:f1scores')
-            prec_dff.to_latex(p, f'precision-score-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:precisionscores')
-            rec_dff.to_latex(p, f'recall-score-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:recallscores')
+            f1_dff.to_latex(p, f'f1-{label}-dataloader{data_loader_index}.tex', caption='F1 Scores', label='tbl:f1' + label)
+            prec_dff.to_latex(p, f'precision-{label}-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:precision' + label)
+            rec_dff.to_latex(p, f'recall-{label}-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:recall' + label)
             #cst_acc_dff.to_csv(p, f'Custom Accuracy{data_loader_index}.tex')
-            classfit_dff.to_latex(p, f'Custom Accuracy (Class Fit){data_loader_index}.tex', caption='Class Fit Scores', label='tbl:classfitscores')
-            zerofit_dff.to_latex(p, f'Custom Accuracy (Zero Fit){data_loader_index}.tex', caption='Zero Fit Scores', label='tbl:zerofitscores')
-            auc_dff.to_latex(p, f'AUC-score-dataloader{data_loader_index}.tex', caption='AUC score', label='tbl:aucscores')
+            classfit_dff.to_latex(p, f'Custom Accuracy (Class Fit){label}-dataloader-{data_loader_index}.tex', caption='Class Fit Scores', label='tbl:classfit' + label)
+            zerofit_dff.to_latex(p, f'Custom Accuracy (Zero Fit){label}-dataloader-{data_loader_index}.tex', caption='Zero Fit Scores', label='tbl:zerofit' + label)
+            auc_dff.to_latex(p, f'AUC-{label}-dataloader{data_loader_index}.tex', caption='AUC score', label='tbl:auc' + label)
     return model_thresholds
 
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/25_05_21-18-test/') #auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/25_05_21-18-test') #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
-    create_paper_metrics(model_folders, data_loader_index=TEST_SET) #On Testset
+    create_paper_metrics(model_folders, data_loader_index=TEST_SET, average_only=False) #On Testset
+    create_paper_metrics(model_folders, data_loader_index=TEST_SET, average_only=True) #On Testset
     create_paper_plots(model_folders, data_loader_index=TEST_SET)
