@@ -25,6 +25,7 @@ def auto_find_tested_models_recursive(path='models/'):
                 ch_temp.append(os.path.join(root, file))
         if len(fm_temp) > 0 and len(ch_temp) > 0:
             files.append(os.path.split(fm_temp[0])[0])
+    print(f"Found {len(files)} model test files")
     return files
 
 def auto_find_tested_models(path='models/'):
@@ -70,10 +71,10 @@ def auto_find_tested_models(path='models/'):
 #     #plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder, plot_name=model_folder_name)
 
 def create_metric_score_dataframe(binary_labels, binary_preds, classes, metric_function, model_name=None, average_only=False):
-    scdf = pd.DataFrame(columns=['micro', 'macro'])
-    print(metric_function(binary_labels, binary_preds, average='micro'))
-    scdf.loc['micro'] = metric_function(binary_labels, binary_preds, average='micro')
-    scdf.loc['macro'] = metric_function(binary_labels, binary_preds, average='macro')
+    scdf = pd.DataFrame(data={
+        'micro':np.atleast_1d(metric_function(binary_labels, binary_preds, average='micro')),
+        'macro':np.atleast_1d(metric_function(binary_labels, binary_preds, average='macro'))
+    })
     if not average_only:
         scores = metric_function(binary_labels, binary_preds, average=None)
         scdf = pd.concat([scdf, pd.DataFrame(scores[np.newaxis, :], columns=classes)], axis=1, )
@@ -90,8 +91,8 @@ def create_metric_confusion_matrix(model_folder, binary_labels, pred, classes:li
     n_classes = len(classes)
     tpr, fpr, roc_auc, thresholds = m.ROC(binary_labels, pred)
     tps, fps, best_thresholds = m.select_best_thresholds(tpr, fpr, thresholds, n_classes)
-    test_thresholds = {c:0.5 for c in classes}
-    binary_preds = m.convert_pred_to_binary(pred, test_thresholds)
+    #test_thresholds = {c:0.5 for c in classes}
+    binary_preds = m.convert_pred_to_binary(pred, best_thresholds)
     print(binary_preds)
     print(binary_labels)
     cm = m.confusion_matrix(binary_labels, binary_preds)
@@ -124,7 +125,9 @@ def create_paper_plots(model_folders, data_loader_index=0):
     model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
     for mi, model_folder in enumerate(model_folders):
         try:
-            model_name = '.'.join(os.path.split(model_folder)[1].split('.')[-2:]) #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            model_name = os.path.split(model_folder)[1]
+            model_name = '.'.join(model_name.split('.')[-2:]) if '.' in model_name else model_name #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            print(model_name)
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
@@ -154,7 +157,8 @@ def create_paper_metrics(model_folders, data_loader_index=0, average_only=False)
 
     for mi, model_folder in enumerate(model_folders):
         try:
-            model_name = '.'.join(os.path.split(model_folder)[1].split('.')[-2:]) #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            model_name = os.path.split(model_folder)[1]
+            model_name = '.'.join(model_name.split('.')[-2:]) if '.' in model_name else model_name #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
             print(model_name)
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
@@ -194,7 +198,7 @@ def create_paper_metrics(model_folders, data_loader_index=0, average_only=False)
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/25_05_21-18-test') #auto_find_tested_models() #or manual list
+    model_folders = auto_find_tested_models_recursive('models/11_06_21-16-test') #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
     create_paper_metrics(model_folders, data_loader_index=TEST_SET, average_only=False) #On Testset
     create_paper_metrics(model_folders, data_loader_index=TEST_SET, average_only=True) #On Testset

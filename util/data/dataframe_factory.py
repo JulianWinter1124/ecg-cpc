@@ -30,7 +30,8 @@ class DataFrameFactory():
 
     def to_latex(self, output_folder, filename, caption="", label="", description=""):
         p = os.path.join(output_folder, filename)
-        latex_string = self.dataframe.to_latex(label=label, caption=caption, na_rep='-', float_format="%.3f", bold_rows=True)
+        with pd.option_context("max_colwidth", 1000):
+            latex_string = self.dataframe.to_latex(label=label, caption=caption, na_rep='-', float_format="%.3f", bold_rows=True)
         latex_lines = latex_string.split('\n')
         if description != "":
             latex_lines = latex_lines[:-1] + [description] + latex_lines[-1]
