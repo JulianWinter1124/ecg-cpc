@@ -70,11 +70,12 @@ def main(args):
     test_dataset_challenge = ChainDataset([ptbxl_test, georgia_test, cpsc_test, cpsc2_test])
     #all_dataset_challenge = ChainDataset[ptbxl_challenge, georgia_challenge, cpsc_challenge, cpsc2_challenge]
     model_folders = [
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/14_05_21-15-train|(8x)cpc',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/19_05_21-16-train|cpc',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/19_05_21-17-train|cpc',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/20_05_21-18-train|(2x)bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/25_05_21-13-train|bl_FCN'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/14_05_21-15-train|(8x)cpc',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/19_05_21-16-train|cpc',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/19_05_21-17-train|cpc',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/20_05_21-18-train|(2x)bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/25_05_21-13-train|bl_FCN' #used class weights
+        # 'models_symbolic_links/train/correct-age/class_weights/'
     ]
     #infer class from model-arch file
     model_dicts = []
@@ -85,6 +86,8 @@ def main(args):
             fm_f = fm_fs[0]
             cp_f = sorted(cp_fs)[-1]
             model = load_model_architecture(fm_f)
+            if model is None:
+                continue
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
             print(f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
             model_dicts.append({'model':model, 'model_folder':root})

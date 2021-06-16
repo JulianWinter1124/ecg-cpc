@@ -129,6 +129,46 @@ def filter_folders_params(base='.', params_filter='use_class_weights'):
             filtered += [f]
     return filtered
 
+def filter_folders_model_variables(base='.', model_variables_filter='normalize_latents'):
+    folders = glob(os.path.join(base, "*_*_*", ""))
+    filtered = []
+    for f in folders:
+        checks = []
+        for root, dirs, files in os.walk(f):
+            if len(dirs) == 0 and len(files)==0:
+                continue
+            if len(dirs) > 0: #Traverse more
+                continue
+            if len(dirs) == 0 and len(files)>0: #leaf dir
+                if 'model_variables.txt' in files:
+                    with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
+                        content = file.read()
+                    checks.append(model_variables_filter in content)
+        if len(checks) > 0 and any(checks): #Found a test dir
+            print(f"{f} Train session used {model_variables_filter} param.")
+            filtered += [f]
+    return filtered
+
+def filter_folders_model_arch(base='.', model_arch_filter='use_class_weights'):
+    folders = glob(os.path.join(base, "*_*_*", ""))
+    filtered = []
+    for f in folders:
+        checks = []
+        for root, dirs, files in os.walk(f):
+            if len(dirs) == 0 and len(files)==0:
+                continue
+            if len(dirs) > 0: #Traverse more
+                continue
+            if len(dirs) == 0 and len(files)>0: #leaf dir
+                if 'model_arch.txt' in files:
+                    with open(os.path.join(root, 'model_arch.txt'), 'r') as file:
+                        content = file.read()
+                    checks.append(model_arch_filter in content)
+        if len(checks) > 0 and any(checks): #Found a test dir
+            print(f"{f} Train session used {model_arch_filter} param.")
+            filtered += [f]
+    return filtered
+
 def filter_folders_age(base='.', newer_than=1619628667):
     folders = glob(os.path.join(base, "*_*_*", ""))
     filtered = []
@@ -261,14 +301,7 @@ def write_models_to_dirs(base = '.'):
                 with open(ap, 'w') as apf:
                     apf.write(mclass)
 
-if __name__ == '__main__':
-    # for i in range(10): #run this multiple time to remove nested folders
-    #     print('Deletion routine:', i)
-    #move_incomplete_training_folders()
-    #rename_folders_into_test()
-    #write_models_to_dirs()
-    #rename_folders_into_models()
-    #rename_folders_into_splits()
+def clean_rename():
     correct_age = set(filter_folders_age(newer_than=1619628667)) #Newer than introduction of correct train-test-split
     incorrect_age = set(filter_folders_age(newer_than=0)) - correct_age
     uses_weights_all = set(filter_folders_params(params_filter='use_class_weights=True'))
@@ -277,11 +310,45 @@ if __name__ == '__main__':
     uses_no_weights = correct_age - uses_weights
     print(uses_no_weights)
     rename_model_folders(folders=correct_age)
-    #move_folders_to_old(folders=incorrect_age)
-    #
-    train_folders = set(filter(lambda x: not 'test' in x, correct_age))
     # create_symbolics(uses_weights, 'class_weights')
     # create_symbolics(uses_no_weights, 'no_class_weights')
     # create_symbolics(train_folders & uses_weights, 'train/class_weights')
     # create_symbolics(train_folders & uses_no_weights, 'train/no_class_weights')
+
+def clean_categorize():
+    uses_model_variables = set(filter_folders_model_variables(model_variables_filter=''))
+    correct_age = set(filter_folders_age(newer_than=1619628667)) & uses_model_variables
+    train_folders = set(filter(lambda x: not 'test' in x, correct_age))
+    baseline_folders = set(filter_folders_model_arch(model_arch_filter='BaselineNet')) & train_folders
+    print(baseline_folders)
+    cpc_folders = train_folders - baseline_folders
+    correct_epochs_baseline_folders = set(filter_folders_params(params_filter='downstream_epochs=120')) & baseline_folders
+    correct_epochs_cpc_folders = set(filter_folders_params(params_filter='downstream_epochs=20')) & cpc_folders
+    uses_weights = set(filter_folders_params(params_filter='use_class_weights=True')) & correct_age
+    uses_no_weights = correct_age - uses_weights
+    create_symbolics(correct_epochs_cpc_folders & uses_weights, 'train/correct-age/class_weights/cpc')
+    create_symbolics(correct_epochs_cpc_folders & uses_no_weights, 'train/correct-age/no_class_weights/cpc')
+    create_symbolics(correct_epochs_baseline_folders & uses_weights, 'train/correct-age/class_weights/baseline')
+    create_symbolics(correct_epochs_baseline_folders & uses_no_weights, 'train/correct-age/no_class_weights/baseline')
+
+
+if __name__ == '__main__':
+    # for i in range(10): #run this multiple time to remove nested folders
+    #     print('Deletion routine:', i)
+    #move_incomplete_training_folders()
+    #rename_folders_into_test()
+    #write_models_to_dirs()
+    #rename_folders_into_models()
+    #rename_folders_into_splits()
+
+    #move_folders_to_old(folders=incorrect_age)
+    #
+
+    clean_rename()
+
+    #cpc_folders = train_folders - baseline_folders
+
+
+
+
 

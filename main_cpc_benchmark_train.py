@@ -111,13 +111,13 @@ def main(args):
     downstream_train_dataset = ChainDataset([ptbxl_train, georgia_train, cpsc_train, cpsc2_train])
     downstream_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val])
     pretrain_models = [
-        cpc_intersect.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        # ),
         # cpc_intersect.CPC(
         #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
         #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
@@ -149,40 +149,50 @@ def main(args):
         # ),
     ]
     downstream_models = [
-        # cpc_downstream_only.DownstreamLinearNet(
+        cpc_downstream_only.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=False, use_context=True, verbose=False
+        ),
+        cpc_downstream_only.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=False, verbose=False
+        ),
+        cpc_downstream_only.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=True, verbose=False
+        ),
+        # cpc_downstream_twolinear.DownstreamLinearNet(
         #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-        #     use_latents=False, use_context=True, verbose=False
+        #     use_latents=True, use_context=True, verbose=False
         # ),
-        cpc_downstream_twolinear.DownstreamLinearNet(
-            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-            use_latents=True, use_context=True, verbose=False
-        ),
-        cpc_downstream_cnn.DownstreamLinearNet(
-            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-            use_latents=True, use_context=True, verbose=False
-        ),
-        cpc_downstream_latent_maximum.DownstreamLinearNet(
-            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-            use_latents=True, use_context=True, verbose=False
-        ),
+        # cpc_downstream_cnn.DownstreamLinearNet(
+        #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+        #     use_latents=True, use_context=True, verbose=False
+        # ),
+        # cpc_downstream_latent_maximum.DownstreamLinearNet(
+        #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+        #     use_latents=True, use_context=True, verbose=False
+        # ),
     ]
     trained_model_dicts = [ #continue training for these in some way
-        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined0',
+        {'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined0|frozen|C|m:all|cpc_downstream_only|dte:1|pte:100',
          'model': None #Model will be loaded by method below
          },
-        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined1',
+        {'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined1|strided|frozen|C|m:all|cpc_downstream_only|dte:1|pte:100',
          'model': None #Model will be loaded by method below
          },
-        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined2',
+        {'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined2|frozen|C|m:same|cpc_downstream_only|dte:1|pte:100',
          'model': None #Model will be loaded by method below
          },
-        {'folder': 'models/11_05_21-16/architectures_cpc.cpc_combined.CPCCombined3',
+        {'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined3|strided|frozen|C|m:same|cpc_downstream_only|dte:1|pte:100',
          'model': None #Model will be loaded by method below
          },
     ]
     for model_i, trained_model_dict in enumerate(trained_model_dicts): #hack bad
         model_path = trained_model_dict['folder']
         model_files = store_models.extract_model_files_from_dir(model_path)
+        if len(model_files) == 0:
+            print(f"Could not find specified model {model_path}")
         for mfile in model_files:
             fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
@@ -192,9 +202,21 @@ def main(args):
             trained_model_dict['model'] = model #load model into dict
             break #only take first you find
     models = [
-        baseline_FCN.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
-        baseline_resnet.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
+        # baseline_FCN.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_resnet.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
 #         baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
 #         baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
 #         baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),

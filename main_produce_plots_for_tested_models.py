@@ -1,5 +1,7 @@
 import glob
 import os
+import re
+
 import pandas as pd
 import torch
 import numpy as np
@@ -15,6 +17,7 @@ from util.store_models import extract_model_files_from_dir
 
 def auto_find_tested_models_recursive(path='models/'):
     #only works with specific file structure date/modelfolder/files
+    print(f"Looking for models at {os.path.abspath(path)}")
     files = []
     for root, dirs, dir_files in os.walk(path):
         fm_temp, ch_temp = [], []
@@ -33,7 +36,11 @@ def auto_find_tested_models(path='models/'):
     csv_paths = list(reversed(list(set([os.path.abspath(os.path.split(csv)[0]) for csv in csvs]))))
     return csv_paths
 
-
+def long_to_shortname(model_name):
+    model_name = re.sub('cpc_combined.CPCCombined\d*', 'CPC', model_name)
+    model_name = re.sub('baseline_cnn', 'BL', model_name)
+    model_name = re.sub('.BaselineNet\d*', '', model_name)
+    return model_name
 
 # def create_metric_plots(model_folder, binary_labels, pred, classes):
 #     print("creating for:", model_folder)
@@ -82,7 +89,6 @@ def create_metric_score_dataframe(binary_labels, binary_preds, classes, metric_f
     # scdf.insert(0, 'macro', metric_function(binary_labels, binary_preds, average='macro'), allow_duplicates=True)
     scdf['model'] = model_name
     scdf = scdf.set_index('model')
-    print(scdf)
     return scdf
 
 def create_metric_confusion_matrix(model_folder, binary_labels, pred, classes:list):
@@ -143,7 +149,7 @@ def create_paper_plots(model_folders, data_loader_index=0):
             print("File not found")
 
 
-def create_paper_metrics(model_folders, data_loader_index=0, average_only=False):
+def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_only=False, long_tables=False, save_to_all_dirs=True):
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
 
     model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
@@ -159,6 +165,7 @@ def create_paper_metrics(model_folders, data_loader_index=0, average_only=False)
         try:
             model_name = os.path.split(model_folder)[1]
             model_name = '.'.join(model_name.split('.')[-2:]) if '.' in model_name else model_name #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            model_name = long_to_shortname(model_name)
             print(model_name)
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
@@ -175,31 +182,40 @@ def create_paper_metrics(model_folders, data_loader_index=0, average_only=False)
 
         except FileNotFoundError as e: #folder with not the correct csv?
             print(e)
+    auc_dff.sort_index()
     if len(model_folders) > 0:
-        ps = list(set([os.path.split(mf)[0] for mf in model_folders])) # GEt all basepaths
+        if save_to_all_dirs:
+            ps = list(set([os.path.split(mf)[0] for mf in model_folders])) # GEt all basepaths
+            print(ps)
+        else:
+            ps = [root_path]
         """
         If if models from multiple test sessions are run, put a csv into every of their basepath folders.
         """
-        label = 'scores' + 'avg' if average_only else ''
+        label = 'scores'
+        label += '-avg' if average_only else ''
+        label += '-long' if long_tables else ''
         for p in ps:
             print(f"Saving metrics to: {p}")
             #f1_dff.to_csv(p, f'f1-score-dataloader{data_loader_index}.csv')
             #prec_dff.to_csv(p, f'precision-score-dataloader{data_loader_index}.csv')
             #rec_dff.to_csv(p, f'recall-score-dataloader{data_loader_index}.csv')
-            f1_dff.to_latex(p, f'f1-{label}-dataloader{data_loader_index}.tex', caption='F1 Scores', label='tbl:f1' + label)
-            prec_dff.to_latex(p, f'precision-{label}-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:precision' + label)
-            rec_dff.to_latex(p, f'recall-{label}-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:recall' + label)
+            f1_dff.to_latex(p, f'f1-{label}-dataloader{data_loader_index}.tex', caption='F1 Scores', label='tbl:f1' + label, long_tables=long_tables, only_tabular_environment=True)
+            prec_dff.to_latex(p, f'precision-{label}-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:precision' + label, long_tables=long_tables, only_tabular_environment=True)
+            rec_dff.to_latex(p, f'recall-{label}-dataloader{data_loader_index}.tex', caption='Precision Scores', label='tbl:recall' + label, long_tables=long_tables, only_tabular_environment=True)
             #cst_acc_dff.to_csv(p, f'Custom Accuracy{data_loader_index}.tex')
-            classfit_dff.to_latex(p, f'Custom Accuracy (Class Fit){label}-dataloader-{data_loader_index}.tex', caption='Class Fit Scores', label='tbl:classfit' + label)
-            zerofit_dff.to_latex(p, f'Custom Accuracy (Zero Fit){label}-dataloader-{data_loader_index}.tex', caption='Zero Fit Scores', label='tbl:zerofit' + label)
-            auc_dff.to_latex(p, f'AUC-{label}-dataloader{data_loader_index}.tex', caption='AUC score', label='tbl:auc' + label)
+            classfit_dff.to_latex(p, f'Custom Accuracy (Class Fit){label}-dataloader-{data_loader_index}.tex', caption='Class Fit Scores', label='tbl:classfit' + label, long_tables=long_tables, only_tabular_environment=True)
+            zerofit_dff.to_latex(p, f'Custom Accuracy (Zero Fit){label}-dataloader-{data_loader_index}.tex', caption='Zero Fit Scores', label='tbl:zerofit' + label, long_tables=long_tables, only_tabular_environment=True)
+            auc_dff.to_latex(p, f'AUC-{label}-dataloader{data_loader_index}.tex', caption='AUC score', label='tbl:auc' + label, long_tables=long_tables, only_tabular_environment=True)
     return model_thresholds
 
 
 
 if __name__ == '__main__':
-    model_folders = auto_find_tested_models_recursive('models/11_06_21-16-test') #auto_find_tested_models() #or manual list
+    path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_06_21-17-test'
+    model_folders = auto_find_tested_models_recursive(path) #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
-    create_paper_metrics(model_folders, data_loader_index=TEST_SET, average_only=False) #On Testset
-    create_paper_metrics(model_folders, data_loader_index=TEST_SET, average_only=True) #On Testset
-    create_paper_plots(model_folders, data_loader_index=TEST_SET)
+    create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=False, save_to_all_dirs=False) #On Testset
+    create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
+    create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)
+    #create_paper_plots(model_folders, data_loader_index=TEST_SET)

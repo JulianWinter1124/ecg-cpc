@@ -36,7 +36,11 @@ def save_model_variables_text_only(output_path, model, name=""):
         print(json.dumps(extract_params_from_model(model), sort_keys=True, indent=2), file=f)
 
 def load_model_architecture(full_model_file, device_id='cuda:0'): #
-    model = torch.load(full_model_file, map_location=device_id)
+    try:
+        model = torch.load(full_model_file, map_location=device_id)
+    except ModuleNotFoundError as e:
+        print(e)
+        return None
     return model
 
 def load_model_checkpoint(model_checkpoint_file, model, optimizer=None, device_id='cuda:0'):
@@ -56,7 +60,7 @@ def load_model(full_model_file, model_checkpoint_file, optimizer):
 
 def extract_model_files_from_dir(directory):
     files = []
-    for root, dirs, dir_files in os.walk(directory):
+    for root, dirs, dir_files in os.walk(directory, followlinks=True):
         fm_temp, ch_temp = [], []
         for file in dir_files:
             if 'full_model' in file and file.endswith('.pt'):
