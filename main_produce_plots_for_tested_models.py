@@ -40,6 +40,10 @@ def long_to_shortname(model_name):
     model_name = re.sub('cpc_combined.CPCCombined\d*', 'CPC', model_name)
     model_name = re.sub('baseline_cnn', 'BL', model_name)
     model_name = re.sub('.BaselineNet\d*', '', model_name)
+    model_name = re.sub('cpc_downstream_only', 'linear', model_name)
+    model_name = re.sub('cpc_downstream_', '', model_name)
+    model_name = re.sub('|use_weights', '', model_name)
+    #model_name = re.sub('|pte:\d*', '', model_name)
     return model_name
 
 # def create_metric_plots(model_folder, binary_labels, pred, classes):
@@ -212,10 +216,10 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
 
 
 if __name__ == '__main__':
-    path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_06_21-17-test'
+    path = 'models/17_06_21-18-test/'
     model_folders = auto_find_tested_models_recursive(path) #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
     create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=False, save_to_all_dirs=False) #On Testset
     create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
     create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)
-    #create_paper_plots(model_folders, data_loader_index=TEST_SET)
+    create_paper_plots(model_folders, data_loader_index=TEST_SET)

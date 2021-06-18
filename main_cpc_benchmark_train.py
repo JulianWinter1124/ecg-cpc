@@ -111,20 +111,20 @@ def main(args):
     downstream_train_dataset = ChainDataset([ptbxl_train, georgia_train, cpsc_train, cpsc2_train])
     downstream_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val])
     pretrain_models = [
-        # cpc_intersect.CPC(
-        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
-        #     args.timesteps_in, args.timesteps_out, args.latent_size,
-        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        # ),
-        # cpc_intersect.CPC(
-        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
-        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
-        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        # ),
+        cpc_intersect.CPC(
+            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+            args.timesteps_in, args.timesteps_out, args.latent_size,
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        ),
+        cpc_intersect.CPC(
+            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
+            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
+            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        ),
         # cpc_intersect.CPC(
         #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
         #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
@@ -202,14 +202,18 @@ def main(args):
             trained_model_dict['model'] = model #load model into dict
             break #only take first you find
     models = [
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},

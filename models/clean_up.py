@@ -107,7 +107,7 @@ def rename_folders_into_models(base='.'):
             old_folder_name = f.split('|')[0].rstrip('/')
             new_folder_name = old_folder_name + '|' + '+'.join(model_names_unique)
             print(f"Renaming {f} to {new_folder_name}")
-            #os.rename(f, new_folder_name)
+            os.rename(f, new_folder_name)
 
 def filter_folders_params(base='.', params_filter='use_class_weights'):
     folders = glob(os.path.join(base, "*_*_*", ""))
@@ -310,6 +310,7 @@ def clean_rename():
     uses_no_weights = correct_age - uses_weights
     print(uses_no_weights)
     rename_model_folders(folders=correct_age)
+    rename_folders_into_models()
     # create_symbolics(uses_weights, 'class_weights')
     # create_symbolics(uses_no_weights, 'no_class_weights')
     # create_symbolics(train_folders & uses_weights, 'train/class_weights')
@@ -345,6 +346,7 @@ if __name__ == '__main__':
     #
 
     clean_rename()
+    #clean_categorize()
 
     #cpc_folders = train_folders - baseline_folders
 
