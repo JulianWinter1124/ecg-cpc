@@ -76,7 +76,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/20_05_21-18-train|(2x)bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/25_05_21-13-train|bl_FCN' #used class weights
         # 'models_symbolic_links/train/correct-age/class_weights/'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/17_06_21-14-train|(4x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_06_21-13-train|(8x)cpc'
     ]
     #infer class from model-arch file
     model_dicts = []
@@ -145,6 +145,10 @@ def main(args):
                     if len(pred.shape) == 1: #hack for squeezed batch dimension
                         pred = pred.unsqueeze(0)
                     pred = pred.detach().cpu()
+                    if torch.any(torch.isnan(pred)):
+                        print('nan encountered' )
+                        print('nan in data:', torch.any(torch.isnan(data)))
+                        print(pred)
                     labels = labels.cpu()
                     labels_numpy = parse_tensor_to_numpy_or_scalar(labels)
                     pred_numpy = parse_tensor_to_numpy_or_scalar(pred)

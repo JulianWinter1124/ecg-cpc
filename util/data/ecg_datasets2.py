@@ -4,15 +4,16 @@ from random import shuffle
 import h5py
 import numpy as np
 import torch
-from torch._six import container_abcs, string_classes, int_classes
+#from torch._six import container_abcs, string_classes, int_classes
 from torch.utils.data import IterableDataset
+
 from torch.utils.data._utils.collate import np_str_obj_array_pattern, default_collate_err_msg_format
 
 from external import helper_code
 from util.utility import timestamp
 
 
-class ECGDataset(torch.utils.data.IterableDataset):
+class ECGDataset(IterableDataset):
     def __init__(self, BASE_DIR, window_size, n_windows, files=None, channels=None, use_labels=False, preload_windows=0): #TODO: option to load into ram
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
@@ -687,15 +688,15 @@ def collate_fn(batch): #https://github.com/pytorch/pytorch/blob/master/torch/uti
             return torch.as_tensor(batch)
     elif isinstance(elem, float):
         return torch.tensor(batch)
-    elif isinstance(elem, int_classes):
+    elif issubclass(type(elem), int):
         return torch.tensor(batch)
-    elif isinstance(elem, string_classes):
+    elif issubclass(type(elem), str):
         return batch
-    elif isinstance(elem, container_abcs.Mapping):
+    elif issubclass(type(elem), dict):
         return {key: collate_fn([d[key] for d in batch]) for key in elem}
     elif isinstance(elem, tuple) and hasattr(elem, '_fields'):  # namedtuple
         return elem_type(*(collate_fn(samples) for samples in zip(*batch)))
-    elif isinstance(elem, container_abcs.Sequence):
+    elif issubclass(type(elem), list):
         # check to make sure that the elements in batch have consistent size
         transposed = zip(*batch)
         return [collate_fn(samples) for samples in transposed]

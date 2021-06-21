@@ -92,8 +92,8 @@ def rename_folders_into_test(base='.'):
             print(f"{f} is a test directory. Renaming")
             os.rename(f, f.rstrip('/')+'-test(a)')
 
-def rename_folders_into_models(base='.'):
-    folders = glob(os.path.join(base, "*_*_*", ""))
+def rename_folders_into_models(base='.', folders=None):
+    folders = folders or glob(os.path.join(base, "*_*_*", ""))
     for f in folders:
         model_names = []
         for root, dirs, files in os.walk(f):
@@ -301,7 +301,7 @@ def write_models_to_dirs(base = '.'):
                 with open(ap, 'w') as apf:
                     apf.write(mclass)
 
-def clean_rename():
+def clean_rename(folders=None):
     correct_age = set(filter_folders_age(newer_than=1619628667)) #Newer than introduction of correct train-test-split
     incorrect_age = set(filter_folders_age(newer_than=0)) - correct_age
     uses_weights_all = set(filter_folders_params(params_filter='use_class_weights=True'))
@@ -309,8 +309,8 @@ def clean_rename():
     print(uses_weights)
     uses_no_weights = correct_age - uses_weights
     print(uses_no_weights)
-    rename_model_folders(folders=correct_age)
-    rename_folders_into_models()
+    rename_model_folders(folders=folders or correct_age)
+    rename_folders_into_models(folders=folders or correct_age)
     # create_symbolics(uses_weights, 'class_weights')
     # create_symbolics(uses_no_weights, 'no_class_weights')
     # create_symbolics(train_folders & uses_weights, 'train/class_weights')
@@ -345,7 +345,7 @@ if __name__ == '__main__':
     #move_folders_to_old(folders=incorrect_age)
     #
 
-    clean_rename()
+    clean_rename(['/home/julian/Downloads/Github/contrastive-predictive-coding/models/21_06_21-11-test|(7x)cpc'])
     #clean_categorize()
 
     #cpc_folders = train_folders - baseline_folders

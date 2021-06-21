@@ -118,10 +118,15 @@ def create_metric_confusion_matrix(model_folder, binary_labels, pred, classes:li
 def calculate_best_thresholds(model_folders, data_loader_index = 1): #0 = test, 1 = val, 2 = train
     model_thresholds = []
     for mi, model_folder in enumerate(model_folders):
+        print(model_folder)
         best_thresholds = None
         try:
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            if np.any(np.isnan(predictions)):
+                print(f"Encountered nan value in {model_folder} prediction!")
+                model_thresholds.append(None)
+                continue
             tprs, fprs, roc_auc, thresholds = m.ROC(binary_labels, predictions)
             tpr, fpr, best_thresholds = m.select_best_thresholds(tprs, fprs, thresholds, len(classes))
         except FileNotFoundError as e: #folder with not the correct csv?
@@ -134,6 +139,9 @@ def create_paper_plots(model_folders, data_loader_index=0):
 
     model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
     for mi, model_folder in enumerate(model_folders):
+        if model_thresholds[mi] is None:
+            print(f"Encountered nan value in {model_folder} prediction!. Skipping this model.")
+            continue
         try:
             model_name = os.path.split(model_folder)[1]
             model_name = '.'.join(model_name.split('.')[-2:]) if '.' in model_name else model_name #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
@@ -167,6 +175,9 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
 
     for mi, model_folder in enumerate(model_folders):
         try:
+            if model_thresholds[mi] is None:
+                print(f"Encountered nan value in {model_folder} prediction!. Skipping this model.")
+                continue
             model_name = os.path.split(model_folder)[1]
             model_name = '.'.join(model_name.split('.')[-2:]) if '.' in model_name else model_name #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
             model_name = long_to_shortname(model_name)
@@ -216,7 +227,7 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
 
 
 if __name__ == '__main__':
-    path = 'models/17_06_21-18-test/'
+    path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/21_06_21-18-test'
     model_folders = auto_find_tested_models_recursive(path) #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
     create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=False, save_to_all_dirs=False) #On Testset
