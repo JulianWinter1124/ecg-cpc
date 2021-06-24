@@ -227,7 +227,7 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
 
 
 if __name__ == '__main__':
-    path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/21_06_21-18-test'
+    path = 'models/16_06_21-15-test|(2x)bl_FCN+(2x)bl_cnn_v0+(2x)bl_cnn_v0_1+(2x)bl_cnn_v0_2+(2x)bl_cnn_v0_3+(2x)bl_cnn_v1+(2x)bl_cnn_v14+(2x)bl_cnn_v2+(2x)bl_cnn_v3+(2x)bl_cnn_v4+(2x)bl_cnn_v5+(2x)bl_cnn_v6+(2x)bl_cnn_v8+(2x)bl_cnn_v9+(50x)cpc+bl_MLP/BL|no-class-weights'
     model_folders = auto_find_tested_models_recursive(path) #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
     create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=False, save_to_all_dirs=False) #On Testset

@@ -11,7 +11,7 @@ class BaselineNet(nn.Module):
         self.n_out_classes = out_classes
         self.verbose = verbose
         self.tcn = TemporalConvNet(in_channels, [in_channels*2**1, in_channels*2, out_classes], kernel_size=3, dropout=0.2)
-        self.downsample = nn.Conv1d(in_channels=9500, out_channels=1, kernel_size=1)
+        self.downsample = nn.Conv1d(in_channels=4500, out_channels=1, kernel_size=1)
 
         self.fc = nn.Linear(out_classes, out_classes)
         #self.activation = nn.LogSoftmax(dim=1)

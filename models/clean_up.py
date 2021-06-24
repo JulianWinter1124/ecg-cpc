@@ -107,7 +107,13 @@ def rename_folders_into_models(base='.', folders=None):
             old_folder_name = f.split('|')[0].rstrip('/')
             new_folder_name = old_folder_name + '|' + '+'.join(model_names_unique)
             print(f"Renaming {f} to {new_folder_name}")
-            os.rename(f, new_folder_name)
+            try:
+                os.rename(f, new_folder_name)
+            except OSError as ose:
+                if ose.errno == 36:
+                    os.rename(f, new_folder_name[0:254])
+                else:
+                    raise
 
 def filter_folders_params(base='.', params_filter='use_class_weights'):
     folders = glob(os.path.join(base, "*_*_*", ""))
@@ -210,10 +216,11 @@ def create_symbolics(folders, symbolic_dir, symbolic_base_dir = '../models_symbo
             print(f"File already exists: {sym_path}\n{e}")
 
 
-def rename_model_folders(base='.', folders = None):
+def rename_model_folders(base='.', folders = None, rename_in_test=False):
     folders = folders or glob(os.path.join(base, "*_*_*", ""))
     for f in folders:
-        if not ('test' in f):
+        if rename_in_test or not ('test' in f):
+            print(f"Checking {f}...")
             for root, dirs, files in os.walk(f):
                 if len(dirs) == 0 and len(files)==0:
                     continue
@@ -262,7 +269,15 @@ def rename_model_folders(base='.', folders = None):
                             epos = content.split('pretrain_epochs=')[1].split(',')[0]
                             name += f'|pte:{epos}'
                     print(f"Renaming {root} to {name}")
-                    os.rename(root, name)
+                    try:
+                        os.rename(root, name)
+                    except OSError as ose:
+                        if ose.errno == 36:
+                            os.rename(root, name[0:254])
+                        else:
+                            raise
+
+
 
 
 def long_to_abbreviation(name):
@@ -345,11 +360,11 @@ if __name__ == '__main__':
     #move_folders_to_old(folders=incorrect_age)
     #
 
-    clean_rename(['/home/julian/Downloads/Github/contrastive-predictive-coding/models/21_06_21-11-test|(7x)cpc'])
+    clean_rename()
     #clean_categorize()
 
     #cpc_folders = train_folders - baseline_folders
-
+    #rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])
 
 
 

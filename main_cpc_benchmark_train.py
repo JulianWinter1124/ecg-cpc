@@ -11,29 +11,15 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-import baseline_FCN
-import baseline_MLP
-import baseline_cnn_v0
-import baseline_cnn_v0_1
-import baseline_cnn_v0_2
-import baseline_cnn_v0_3
-import baseline_cnn_v1
-import baseline_cnn_v2
-import baseline_cnn_v3
-import baseline_cnn_v4
-import baseline_cnn_v5
-import baseline_cnn_v6
-import baseline_cnn_v8
-import baseline_cnn_v9
-import baseline_resnet
-import baseline_rnn_simplest_gru
-import cpc_downstream_cnn
-import cpc_downstream_latent_maximum
-import cpc_downstream_twolinear
-import cpc_encoder_as_strided
-# import cpc_base
+from architectures_baseline_challenge import baseline_FCN, baseline_MLP, baseline_alex_v2, baseline_TCN_down, \
+    baseline_TCN_last, baseline_TCN_flatten, baseline_TCN_block, baseline_cnn_v15, \
+    baseline_cnn_v2, baseline_cnn_v3, baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v8, \
+    baseline_cnn_v9, baseline_resnet, baseline_rnn_simplest_gru, baseline_rnn_simplest_lstm
+
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, \
-    cpc_predictor_v0
+    cpc_predictor_v0, cpc_downstream_latent_maximum, cpc_downstream_twolinear, cpc_downstream_cnn, \
+    cpc_encoder_as_strided
+
 from util import store_models
 from util.data import ecg_datasets2
 from util.full_class_name import fullname
@@ -202,10 +188,10 @@ def main(args):
             trained_model_dict['model'] = model #load model into dict
             break #only take first you find
     models = [
-        {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
@@ -219,7 +205,8 @@ def main(args):
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # baseline_FCN.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
+        baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
+        baseline_alex_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_resnet.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
 #         baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
 #         baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
@@ -237,12 +224,12 @@ def main(args):
         # baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v10.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v11.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # #baseline_cnn_v12.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v13.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_TCN_last.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_TCN_flatten.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_TCN_down.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_TCN_block.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain':False, 'will_downtrain':True},
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
@@ -259,7 +246,7 @@ def main(args):
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[0]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[1]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
-        #baseline_rnn.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
+        baseline_rnn_simplest_lstm.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
         # baseline_rnn_simplest_gru.BaselineNet(in_channels=args.channels, out_channels=None, out_classes=args.forward_classes, verbose=False),
     ]
 
