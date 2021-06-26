@@ -27,7 +27,6 @@ def move_incomplete_training_folders(base = '.'):
                 print(f"Found unsuccessfull run dir {root}")
                 move_filetree(root, move_to)
             elif len(dirs) == 0:
-                print("checking leaf", root)
                 try:
                     param_file = os.path.join(root, 'params.txt')
                     #print(f"Looking for params.txt at {param_file}")
@@ -347,11 +346,14 @@ def clean_categorize():
     create_symbolics(correct_epochs_baseline_folders & uses_weights, 'train/correct-age/class_weights/baseline')
     create_symbolics(correct_epochs_baseline_folders & uses_no_weights, 'train/correct-age/no_class_weights/baseline')
 
+def clean_remove_dry_run():
+    move_incomplete_training_folders()
+
 
 if __name__ == '__main__':
     # for i in range(10): #run this multiple time to remove nested folders
     #     print('Deletion routine:', i)
-    #move_incomplete_training_folders()
+    #
     #rename_folders_into_test()
     #write_models_to_dirs()
     #rename_folders_into_models()
@@ -359,9 +361,9 @@ if __name__ == '__main__':
 
     #move_folders_to_old(folders=incorrect_age)
     #
-
+    #clean_remove_dry_run()
     clean_rename()
-    #clean_categorize()
+    clean_categorize()
 
     #cpc_folders = train_folders - baseline_folders
     #rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])

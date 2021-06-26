@@ -55,7 +55,7 @@ def tensor_to_video(filename: str,
                 options: Optional[Dict[str, Any]] = None):
     return write_video(filename, video_array, fps, video_codec, options)
 
-def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_classes: list = None, ground_truth:list=None, downsample_factor=2, color=(0.1, 0.2, 0.5), convert_to_rgb=False, filename :str=None, verbose = True, show=False):
+def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_classes: list = None, ground_truth:list=None, downsample_factor=2, color=(0.1, 0.2, 0.5), convert_to_rgb=False, filename :str=None, verbose = True, show=False, save=True):
     batch, n, channels = data.shape
     rgba_colors = np.zeros((n, 4))
     for i in range(len(color)):
@@ -81,7 +81,7 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
         plt.legend()
         io_buf = io.BytesIO()
         fig.savefig(io_buf, format='raw', dpi=100)
-        if not filename is None:
+        if not filename is None and save:
             fig.savefig(filename + '_' + str(p) + '.png', dpi=100)
         io_buf.seek(0)
         img_arr = np.reshape(np.frombuffer(io_buf.getvalue(), dtype=np.uint8),

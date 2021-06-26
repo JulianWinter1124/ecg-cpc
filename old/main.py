@@ -8,7 +8,7 @@ import torch
 from torch import optim
 from torch.utils.data import DataLoader, ChainDataset
 
-from architectures_various import baseline_cnn_explain
+from architectures_various import explain_network
 from util.data import ecg_datasets2
 from architectures_baseline import baseline_convencoder, baseline_cnn_v0_3
 # from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
@@ -352,7 +352,7 @@ def main(args):
 
         bmodel, optimizer, epoch = load_model_state(args.saved_model, bmodel, optimizer)
 
-        model = baseline_cnn_explain.ExplainLabel(bmodel)
+        model = explain_network.ExplainLabel(bmodel)
         model.eval()
         model.cuda()
 
