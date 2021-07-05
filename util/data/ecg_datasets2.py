@@ -441,14 +441,15 @@ class ECGChallengeDatasetBatching(torch.utils.data.IterableDataset):
 
 
 class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
-    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, return_labels=False, return_filename=False, classes=None, normalize_fn=None):
+    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, return_labels=False, return_filename=False, classes=None, normalize_fn=None, verbose=False):
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
         self.window_size = window_size
         self.pad_to_size = pad_to_size or window_size
         self.files = files or self.search_files()
         self.classes = classes or helper_code.get_classes(self.files)
-        self.print_file_attributes()
+        if verbose:
+            self.print_file_attributes()
         self.channels = channels
         self.total_length = 1 #Trying a weird approach (calculated in __iter__)
         self.return_labels = return_labels
@@ -557,6 +558,38 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         train_files = list(set(train_files))
         val_files = list(set(val_files))
         test_files = list(set(test_files))
+        if save:
+            p = save_path_overwrite or self.BASE_DIR
+            fname = filename_overwrite or 'train-test-splits.txt'
+            save_train_test_split(os.path.join(p, fname), train_files, val_files, test_files)
+        return train_files, val_files, test_files
+
+    def random_train_split_with_class_count_mins(self, train_counts, val_counts, test_counts, save=True, save_path_overwrite=None, filename_overwrite=None):
+        class_buckets = [[] for x in range(len(self.classes))] #Creates classes buckets
+        for i, f in enumerate(self.files):
+            label = self._read_header_labels(f)
+            label_idx = np.argwhere(label).flatten()
+            for l in label_idx: #can return more than one (multi-label)
+                class_buckets[l].append(f) #Put this file into class l bucket
+        file_splits = [[], [], []]
+        for i, split_counts in enumerate([test_counts, val_counts, train_counts]):
+            sorted_class_idxs = np.argsort(split_counts)
+            sorted_class_idxs = sorted_class_idxs[np.argwhere(split_counts[sorted_class_idxs]>0)].ravel()
+            while(len(sorted_class_idxs) > 0): #TODO:add bad counter
+                for class_idx in sorted_class_idxs:
+                    if len(class_buckets[class_idx]) == 0:
+                        split_counts[class_idx] = 0
+                        continue
+                    shuffle(class_buckets[class_idx])
+                    file_splits[i].append(class_buckets[class_idx].pop())
+                    split_counts[class_idx] -= 1
+
+                sorted_class_idxs = np.argsort(split_counts)
+                sorted_class_idxs = sorted_class_idxs[np.argwhere(split_counts[sorted_class_idxs]>0)].ravel()
+
+        train_files = list(set(file_splits[2]))
+        val_files = list(set(file_splits[1]))
+        test_files = list(set(file_splits[0]))
         if save:
             p = save_path_overwrite or self.BASE_DIR
             fname = filename_overwrite or 'train-test-splits.txt'
