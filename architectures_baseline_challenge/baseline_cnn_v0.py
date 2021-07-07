@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 """
-2 Conv Layers
+2 Conv Layersv0
 """
 
 class BaselineNet(nn.Module):

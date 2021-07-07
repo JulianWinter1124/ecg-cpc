@@ -168,3 +168,7 @@ if __name__ == '__main__': # DO NOT CALL UNLESS YOU WANT TO OVERWRITE
     # create_few_labels_splits_like_old(train_fraction=0.5)
     # create_few_labels_splits_like_old(train_fraction=0.6)
     create_few_labels_splits_minimum_cut(min_cut=200)
+    create_few_labels_splits_minimum_cut(min_cut=150)
+    create_few_labels_splits_minimum_cut(min_cut=100)
+    create_few_labels_splits_minimum_cut(min_cut=50)
+    create_few_labels_splits_minimum_cut(min_cut=25)

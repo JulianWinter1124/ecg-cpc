@@ -64,7 +64,7 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
     images = []
     for p, b in enumerate(data):
         fig, axs = plt.subplots(channels, 1, sharex='all', gridspec_kw={'hspace': 0}, figsize=(n/100/downsample_factor, channels*300/100/downsample_factor), dpi=100)
-        fig.tight_layout(pad=0)
+        fig.tight_layout(pad=0, rect=[0.03, 0.03, 1, 0.90])
         x = np.arange(0, n)
         for i, ax in enumerate(axs):
             y = b[:, i]
@@ -72,12 +72,15 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
                 alpha = grad[p, :, i]
                 alpha = (alpha-grad[p, :, :].min())/(grad[p, :, :].max()-grad[p, :, :].min()) #TODO: consider normalizing this channelwise
                 rgba_colors[:, 3] = alpha #alpha channel is gradient
-            ax.scatter(x, y, label='channel_'+str(i), color=rgba_colors, s=1.0)
+                ax.scatter(x, y, label='channel_'+str(i), color=rgba_colors, s=1.0)
+            else:
+                ax.plot(x, y, label='channel_'+str(i), )
+        plt.xlabel('Time (500 steps = 1 second)', fontsize=30)
             #ax.label_outer()
         if not pred_classes is None:
             plt.figtext(0.5, 0.01, ",".join([str(st) for st in pred_classes[p]]), wrap=True, horizontalalignment='center', fontsize=12)
         if not ground_truth is None:
-            fig.suptitle(",".join([str(st) for st in ground_truth[p]]), fontsize=16)
+            fig.suptitle("\n".join([str(st) for st in ground_truth[p]]), fontsize=40)
         plt.legend()
         io_buf = io.BytesIO()
         fig.savefig(io_buf, format='raw', dpi=100)
