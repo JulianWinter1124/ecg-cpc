@@ -66,6 +66,8 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepat
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
+    parts = plot_name.split('|')
+    plot_name = parts[0]+'\n'+'|'.join(parts[1:])
     plt.title(plot_name+'\nReceiver operating characteristic for multi-class')
     if plot_legends:
         plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
@@ -124,6 +126,8 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, class
     plt.ylim([0.0, 1.05])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
+    parts = plot_name.split('|')
+    plot_name = parts[0]+'\n'+'|'.join(parts[1:])
     plt.title(plot_name+'\nExtension of Precision-Recall curve to multi-class')
 
     if plot_legends:

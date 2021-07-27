@@ -1,5 +1,5 @@
 import re
-
+import natsort
 import pandas as pd
 import os
 
@@ -30,8 +30,11 @@ class DataFrameFactory():
         p = os.path.join(output_folder, filename)
         self.dataframe.to_csv(p)
 
-    def sort_index(self):
-        self.dataframe.sort_index(inplace=True)
+    def sort_index(self, key=None):
+        #self.dataframe.sort_index(inplace=True)
+        print(self.dataframe.index)
+        self.dataframe.index = natsort.natsorted(self.dataframe.index, key=key)
+
 
     def to_latex(self, output_folder, filename, caption="", label="", description="", long_tables=False, only_tabular_environment=False):
         p = os.path.join(output_folder, filename)

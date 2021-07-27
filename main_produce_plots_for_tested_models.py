@@ -1,10 +1,14 @@
 import glob
+import json
 import os
 import re
 
 import pandas as pd
 import torch
 import numpy as np
+
+import seaborn as sns
+from matplotlib.font_manager import FontProperties
 
 from util import store_models
 from util.data.dataframe_factory import DataFrameFactory
@@ -13,6 +17,11 @@ from util.metrics.baseline_losses import bidirectional_cross_entropy, cross_entr
 from util.metrics import metrics as m
 import util.visualize.plot_metrics as plotm
 from util.store_models import extract_model_files_from_dir
+import matplotlib.pyplot as plt
+
+import natsort
+
+from util.utility.dict_utils import count_key_in_dict, extract_values_for_key_in_dict
 
 
 def auto_find_tested_models_recursive(path='models/'):
@@ -22,12 +31,15 @@ def auto_find_tested_models_recursive(path='models/'):
     for root, dirs, dir_files in os.walk(path):
         fm_temp, ch_temp = [], []
         for file in dir_files:
+            #print('Checking', file, 'labels' in file and file.endswith('.csv'), 'output' in file and file.endswith('.csv'))
             if 'labels' in file and file.endswith('.csv'):
                 fm_temp.append(os.path.join(root, file))
-            elif 'output' in file and file.endswith('.csv'):
+            if 'output' in file and file.endswith('.csv'):
                 ch_temp.append(os.path.join(root, file))
         if len(fm_temp) > 0 and len(ch_temp) > 0:
             files.append(os.path.split(fm_temp[0])[0])
+        else:
+            print(f"not a model folder: {root}")
     print(f"Found {len(files)} model test files")
     return files
 
@@ -38,11 +50,13 @@ def auto_find_tested_models(path='models/'):
 
 def long_to_shortname(model_name):
     model_name = re.sub('cpc_combined.CPCCombined\d*', 'CPC', model_name)
+    model_name = re.sub('architectures_baseline_challenge.', '', model_name)
     model_name = re.sub('baseline_cnn', 'BL', model_name)
+    model_name = re.sub('baseline', 'BL', model_name)
     model_name = re.sub('.BaselineNet\d*', '', model_name)
     model_name = re.sub('cpc_downstream_only', 'linear', model_name)
     model_name = re.sub('cpc_downstream_', '', model_name)
-    model_name = re.sub('|use_weights', '', model_name)
+    #model_name = re.sub('|use_weights', '', model_name)
     #model_name = re.sub('|pte:\d*', '', model_name)
     return model_name
 
@@ -198,6 +212,11 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
         except FileNotFoundError as e: #folder with not the correct csv?
             print(e)
     auc_dff.sort_index()
+    prec_dff.sort_index()
+    rec_dff.sort_index()
+    zerofit_dff.sort_index()
+    f1_dff.sort_index()
+    classfit_dff.sort_index()
     if len(model_folders) > 0:
         if save_to_all_dirs:
             ps = list(set([os.path.split(mf)[0] for mf in model_folders])) # GEt all basepaths
@@ -222,15 +241,257 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
             classfit_dff.to_latex(p, f'Custom Accuracy (Class Fit){label}-dataloader-{data_loader_index}.tex', caption='Class Fit Scores', label='tbl:classfit' + label, long_tables=long_tables, only_tabular_environment=True)
             zerofit_dff.to_latex(p, f'Custom Accuracy (Zero Fit){label}-dataloader-{data_loader_index}.tex', caption='Zero Fit Scores', label='tbl:zerofit' + label, long_tables=long_tables, only_tabular_environment=True)
             auc_dff.to_latex(p, f'AUC-{label}-dataloader{data_loader_index}.tex', caption='AUC score', label='tbl:auc' + label, long_tables=long_tables, only_tabular_environment=True)
+        #make attribute parallel lines plot at this position
+
     return model_thresholds
 
 
+def create_lowlabel_plots(model_folders, filename, save_to='/home/julian/Documents/projekt-master/bilder', data_loader_index=0):
+    TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
+
+    model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
+
+    f1_dff = DataFrameFactory()
+    prec_dff = DataFrameFactory()
+    rec_dff = DataFrameFactory()
+    classfit_dff = DataFrameFactory()
+    zerofit_dff = DataFrameFactory()
+    auc_dff = DataFrameFactory()
+
+    average_only = True
+
+    for mi, model_folder in enumerate(model_folders):
+        try:
+            if model_thresholds[mi] is None:
+                print(f"Encountered nan value in {model_folder} prediction!. Skipping this model.")
+                continue
+            model_name = os.path.split(model_folder)[1]
+            model_name = '.'.join(model_name.split('.')[-2:]) if '.' in model_name else model_name #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            model_name = long_to_shortname(model_name)
+            print(model_name)
+            binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
+            #scores with binary
+            f1_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.f1_scores, model_name, average_only))
+
+            prec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.precision_scores, model_name, average_only))
+            rec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.recall_scores, model_name, average_only))
+            #scores with probability
+            classfit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.class_fit_score, model_name, average_only))
+            zerofit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.zero_fit_score, model_name, average_only))
+            auc_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name, average_only))
+
+        except FileNotFoundError as e: #folder with not the correct csv?
+            print(e)
+    auc_dff.sort_index()
+    def find_splits_in_string(s):
+        if 'train-test-splits_' in s:
+            sfile = s.split('train-test-splits_')[1].split('|')[0]
+            return (sfile, s.replace('train-test-splits_'+sfile, '').replace('||', '|').replace('||', '|'))
+        elif 'train-test-splits-' in s:
+            sfile = s.split('train-test-splits-')[1].split('|')[0]
+            return (sfile, s.replace('train-test-splits-'+sfile, '').replace('||', '|').replace('||', '|'))
+        else:
+            return ("standard", s)
+
+    auc_dff.dataframe.index = pd.MultiIndex.from_tuples([find_splits_in_string(i) for i, _ in auc_dff.dataframe.iterrows()])
+    prec_dff.sort_index()
+    rec_dff.sort_index()
+    zerofit_dff.sort_index()
+    f1_dff.sort_index()
+    classfit_dff.sort_index()
+    plt.figure()
+    fractions = {'fewer-labels10': 0.26806032451356626,
+             'fewer-labels14': 0.26832963037770147,
+             'fewer-labels20': 0.4714199151686528,
+             'fewer-labels30': 0.6274826634349963,
+             'fewer-labels40': 0.7492425772571197,
+             'fewer-labels50': 0.8480441661617182,
+             'fewer-labels60': 0.9301151282569178,
+             'min_cut25': 0.05308691846764963,
+             'min_cut50': 0.09688278462263515,
+             'min_cut100': 0.165555779977109,
+             'min_cut150': 0.22046051302767117,
+             'min_cut200': 0.268834578872955}
+    ordered_splits = [k for k, v in sorted(fractions.items(), key=lambda item: item[1])]
+    def get_fraction_x_for_splitsname(name):
+        return fractions[name]
+
+    groups = auc_dff.dataframe.groupby(level=[1], as_index=False)
+    auc_dff.to_csv('/home/julian/Desktop', 'model-lowlabel.csv')
+    color_palette = sns.color_palette("husl", max(map(lambda x: len(x[1]), groups)))
+
+    #
+    # colors = {}
+    # for name, group in groups:
+    #     print(name, len(group))
+    #     for index, value in group.reset_index()['level_1'].iteritems():
+    #         if not value in colors:
+    #             colors[value] = color_palette[len(colors)]
+    # print(colors.keys())
+    fontP = FontProperties()
+    fontP.set_size('xx-small')
+    plt.figure()
+    plt.title('Micro Accuracy for low label availability')
+    for name, group in groups:
+        g = group.reset_index()
+        g.insert(loc=0, column='splitfraction', value=[get_fraction_x_for_splitsname(sp) for sp in g['level_0']])
+        g = g.sort_values(by='splitfraction')
+        with pd.option_context('display.max_rows', 300, 'display.max_columns', 7, 'display.expand_frame_repr', False):
+            print('spilt files', g['level_0'].values)
+        plt.plot(g['splitfraction'], g['micro'], '-o', label=name)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', prop=fontP)
+    plt.savefig(os.path.join(save_to, filename + '-micro.png'), bbox_inches='tight')
+    plt.show()
+
+    plt.figure()
+    plt.title('Micro Accuracy for low label availability')
+    for name, group in groups:
+        g = group.reset_index()
+        g.insert(loc=0, column='splitfraction', value=[get_fraction_x_for_splitsname(sp) for sp in g['level_0']])
+        g = g.sort_values(by='splitfraction')
+        with pd.option_context('display.max_rows', 300, 'display.max_columns', 7, 'display.expand_frame_repr', False):
+            print('spilt files', g['level_0'].values)
+        plt.plot(g['splitfraction'], g['macro'], '-o', label=name)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', prop=fontP)
+    plt.savefig(os.path.join(save_to, filename + '-macro.png'), bbox_inches='tight')
+    plt.show()
+
+def create_parallel_plots(model_folders, data_loader_index=0):
+    TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
+
+    model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
+
+    auc_dff = DataFrameFactory()
+
+    average_only = True
+
+    for mi, model_folder in enumerate(model_folders):
+        try:
+            if model_thresholds[mi] is None:
+                print(f"Encountered nan value in {model_folder} prediction!. Skipping this model.")
+                continue
+            model_name = os.path.split(model_folder)[1]
+            model_name = '.'.join(model_name.split('.')[-2:]) if '.' in model_name else model_name #fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+            model_name = long_to_shortname(model_name)
+            print(model_name)
+            binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
+            binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
+            auc_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name, average_only))
+
+        except FileNotFoundError as e: #folder with not the correct csv?
+            print(e)
+    auc_dff.sort_index()
+
+
+def create_model_attribute_table(model_folders, filename, save_to='/home/julian/Documents/projekt-master/tables', skip_cpc=True):
+    attribute_df = DataFrameFactory()
+
+    for f in model_folders:
+        for root, dirs, files in os.walk(f):
+            if len(dirs) == 0 and len(files)==0:
+                continue
+            if len(dirs) > 0: #Traverse more
+                continue
+            if len(dirs) == 0 and len(files)>0: #leaf dir (model?)
+                name = long_to_shortname(root.split(os.sep)[-1].split('|')[0])
+                is_cpc = True
+                attrs = {}
+                if 'model_arch.txt' in files:
+                    with open(os.path.join(root, 'model_arch.txt'), 'r') as file:
+                        content = file.read()
+                    if 'BaselineNet' in content:
+                        is_cpc = False
+                    if is_cpc and 'StridedEncoder' in content:
+                        attrs['strided']=True
+                    elif is_cpc:
+                        attrs['strided']=False
+                if skip_cpc and is_cpc:
+                    continue
+
+                if 'params.txt' in files:
+                        with open(os.path.join(root, 'params.txt'), 'r') as file:
+                            content = file.read()
+                        if 'splits_file=' in content:
+                            attrs['splits_file'] = content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
+                        attrs['use_class_weights'] = 'use_class_weights=True' in content
+
+
+
+                if is_cpc:
+                    if 'model_variables.txt' in files:
+                        with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
+                            content = file.read()
+                        attrs['freeze CPC'] = not '"freeze_cpc": false' in content
+                        attrs['uses context'] = '"use_context": true' in content
+                        attrs['uses latents'] = '"use_latents": true' in content
+                        attrs['normalizes latents'] = '"normalize_latents": true' in content
+                        if "sampling_mode" in content:
+                            attrs['CPC Sampling Mode'] = content.split('"sampling_mode": ')[1].split(',')[0][1:-1]
+                        else:
+                            attrs['CPC Sampling Mode'] = 'same'
+                        if '"downstream_model":' in content:
+                            attrs['Downstream Model'] = content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[-2]
+
+                    if 'params.txt' in files:
+                        with open(os.path.join(root, 'params.txt'), 'r') as file:
+                            content = file.read()
+                        # if 'use_class_weights=True' in content:
+                        #     name += '|use_weights'
+                        # if 'downstream_epochs' in content:
+                        #     epos = content.split('downstream_epochs=')[1].split(',')[0]
+                        #     name += f'|dte:{epos}'
+                        # if 'pretrain_epochs' in content and is_cpc:
+                        #     epos = content.split('pretrain_epochs=')[1].split(',')[0]
+                        #     name += f'|pte:{epos}'
+
+
+                else: #not cpc
+
+                    if 'model_variables.txt' in files:
+                        with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
+                            content = file.readlines()
+                            for i, line in enumerate(content):
+                                if '{' in line:
+                                    content = '\n'.join(content[i:])
+                                    break
+                        data = json.loads(content)
+                        attrs['Convolutional Layer Number'] = count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d')
+                        attrs['uses Max Pool'] = 'torch.nn.modules.pooling.MaxPool1d' in content
+                        attrs['uses Adaptive Average Pooling'] = 'torch.nn.modules.pooling.AdaptiveAvgPool1d' in content
+                        attrs['uses Linear'] = 'torch.nn.modules.linear.Linear' in content
+                        attrs['uses LSTM'] = 'torch.nn.modules.rnn.LSTM' in content
+                        attrs['uses BatchNorm'] = 'torch.nn.modules.batchnorm.BatchNorm1d' in content
+                        attrs['Sum of Strides'] = int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum())
+                        attrs['Sum of Dilation'] = int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum())
+                        attrs['Sum of Paddings'] = int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum())
+                        attrs['Sum of Filters'] = int(np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum())
+
+                attrs['Model Name'] = name
+                attrs = pd.DataFrame(attrs, index=[0])
+                attrs = attrs.set_index('Model Name')
+                attribute_df.append(attrs)
+    attribute_df.sort_index()
+    attribute_df.dataframe.to_csv('/home/julian/Desktop/attributesmodels.csv')
+
+
+
+def sort_naturally(data):
+    pass
 
 if __name__ == '__main__':
-    path = 'models/26_06_21-15-test|(2x)bl_MLP+bl_FCN+bl_TCN_block+bl_TCN_down+bl_TCN_flatten+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v7+bl_cnn_v8+bl_cnn'
-    model_folders = auto_find_tested_models_recursive(path) #auto_find_tested_models() #or manual list
+    # path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-50-test|(48x)cpc'
+    # path2 = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8'
+
+    path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-18-41-test|(48x)cpc'
+    path2 = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-16-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8'
+    model_folders = auto_find_tested_models_recursive(path) + auto_find_tested_models_recursive(path2) #auto_find_tested_models() #or manual list
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
-    create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=False, save_to_all_dirs=False) #On Testset
-    create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
-    create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)
-    create_paper_plots(model_folders, data_loader_index=TEST_SET)
+    # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=False, save_to_all_dirs=False) #On Testset
+    # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
+    # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)
+    # create_paper_plots(model_folders, data_loader_index=TEST_SET)
+    #create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability')
+    create_model_attribute_table(model_folders, 'test')

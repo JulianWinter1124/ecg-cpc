@@ -1,11 +1,17 @@
+import json
 import os
 import pathlib
 import shutil
 from glob import glob
+from itertools import chain
 from pathlib import Path
+import numpy as np
 from collections import Counter
 
+import torch
+
 from util.store_models import extract_model_files_from_dir
+from util.utility.dict_utils import count_key_in_dict, extract_values_for_key_in_dict
 
 
 def move_incomplete_training_folders(base = '.'):
@@ -228,6 +234,15 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                 if len(dirs) == 0 and len(files)>0: #leaf dir (model?)
                     name = os.sep.join(root.split(os.sep)[:-1] + [root.split(os.sep)[-1].split('|')[0]])
                     is_cpc = True
+
+                    if 'params.txt' in files:
+                            with open(os.path.join(root, 'params.txt'), 'r') as file:
+                                content = file.read()
+                            if 'splits_file=' in content:
+                                name += '|'+content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
+                            if 'use_class_weights=True' in content:
+                                name += '|use_weights'
+
                     if 'model_arch.txt' in files:
                         with open(os.path.join(root, 'model_arch.txt'), 'r') as file:
                             content = file.read()
@@ -236,37 +251,66 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                         if 'BaselineNet' in content:
                             is_cpc = False
 
-                    if 'model_variables.txt' in files:
-                        with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
-                            content = file.read()
-                        if '"freeze_cpc": false' in content:
-                            name += '|unfrozen'
-                        elif is_cpc:
-                            name += '|frozen'
-                        if '"use_context": true' in content:
-                            name += '|C'
-                        if '"use_latents": true' in content:
-                            name += '|L'
-                        if '"normalize_latents": true' in content:
-                            name += '|LNorm'
-                        if "sampling_mode" in content:
-                            m = content.split('"sampling_mode": ')[1].split(',')[0][1:-1]
-                            name += f'|m:{m}'
-                        if '"downstream_model":' in content:
-                            m = content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[-2]
-                            name += f'|{m}'
+                    if is_cpc:
+                        if 'model_variables.txt' in files:
+                            with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
+                                content = file.read()
+                            if '"freeze_cpc": false' in content:
+                                name += '|unfrozen'
+                            elif is_cpc:
+                                name += '|frozen'
+                            if '"use_context": true' in content:
+                                name += '|C'
+                            if '"use_latents": true' in content:
+                                name += '|L'
+                            if '"normalize_latents": true' in content:
+                                name += '|LNorm'
+                            if "sampling_mode" in content:
+                                m = content.split('"sampling_mode": ')[1].split(',')[0][1:-1]
+                                name += f'|m:{m}'
+                            if '"downstream_model":' in content:
+                                m = content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[-2]
+                                name += f'|{m}'
 
-                    if 'params.txt' in files:
-                        with open(os.path.join(root, 'params.txt'), 'r') as file:
-                            content = file.read()
-                        if 'use_class_weights=True' in content:
-                            name += '|use_weights'
-                        if 'downstream_epochs' in content:
-                            epos = content.split('downstream_epochs=')[1].split(',')[0]
-                            name += f'|dte:{epos}'
-                        if 'pretrain_epochs' in content and is_cpc:
-                            epos = content.split('pretrain_epochs=')[1].split(',')[0]
-                            name += f'|pte:{epos}'
+                        if 'params.txt' in files:
+                            with open(os.path.join(root, 'params.txt'), 'r') as file:
+                                content = file.read()
+                            # if 'use_class_weights=True' in content:
+                            #     name += '|use_weights'
+                            # if 'downstream_epochs' in content:
+                            #     epos = content.split('downstream_epochs=')[1].split(',')[0]
+                            #     name += f'|dte:{epos}'
+                            # if 'pretrain_epochs' in content and is_cpc:
+                            #     epos = content.split('pretrain_epochs=')[1].split(',')[0]
+                            #     name += f'|pte:{epos}'
+
+
+                    else: #not cpc
+
+                        if 'model_variables.txt' in files:
+                            with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
+                                content = file.readlines()
+                                for i, line in enumerate(content):
+                                    if '{' in line:
+                                        content = '\n'.join(content[i:])
+                                        break
+                            data = json.loads(content)
+                            name += '|ConvLyrs:'+str(count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d'))
+                            if 'torch.nn.modules.pooling.MaxPool1d' in content:
+                                name += '|MaxPool'
+                            if 'torch.nn.modules.pooling.AdaptiveAvgPool1d' in content:
+                                name += '|AvgPool'
+                            if 'torch.nn.modules.linear.Linear' in content:
+                                name += '|Linear'
+                            if 'torch.nn.modules.rnn.LSTM' in content:
+                                name += '|LSTM'
+                            if 'torch.nn.modules.batchnorm.BatchNorm1d' in content:
+                                name += '|BatchNorm'
+                            name += '|stride_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum()))
+                            name += '|dilation_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum()))
+                            name += '|padding_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum()))
+                            name += '|krnls_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum()))
+
                     print(f"Renaming {root} to {name}")
                     try:
                         os.rename(root, name)
@@ -330,21 +374,46 @@ def clean_rename(folders=None):
     # create_symbolics(train_folders & uses_weights, 'train/class_weights')
     # create_symbolics(train_folders & uses_no_weights, 'train/no_class_weights')
 
-def clean_categorize():
+def clean_categorize(test=False):
     uses_model_variables = set(filter_folders_model_variables(model_variables_filter=''))
     correct_age = set(filter_folders_age(newer_than=1619628667)) & uses_model_variables
-    train_folders = set(filter(lambda x: not 'test' in x, correct_age))
-    baseline_folders = set(filter_folders_model_arch(model_arch_filter='BaselineNet')) & train_folders
+    if not test:
+        train_or_test_folders = set(filter(lambda x: not 'test' in x, correct_age))
+    else:
+        train_or_test_folders = set(filter(lambda x: 'test' in x, correct_age))
+    baseline_folders = set(filter_folders_model_arch(model_arch_filter='BaselineNet')) & train_or_test_folders
     print(baseline_folders)
-    cpc_folders = train_folders - baseline_folders
+    cpc_folders = train_or_test_folders - baseline_folders
     correct_epochs_baseline_folders = set(filter_folders_params(params_filter='downstream_epochs=120')) & baseline_folders
     correct_epochs_cpc_folders = set(filter_folders_params(params_filter='downstream_epochs=20')) & cpc_folders
     uses_weights = set(filter_folders_params(params_filter='use_class_weights=True')) & correct_age
+    splits = {}
+    splits['min_cut-25'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut25.txt'")) & correct_age
+    splits['min_cut-50'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut50.txt'")) & correct_age
+    splits['min_cut-100'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut100.txt'")) & correct_age
+    splits['min_cut-150'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut150.txt'")) & correct_age
+    splits['min_cut-200'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut200.txt'")) & correct_age
+
+    splits['fewer_labels-10'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels10.txt'")) & correct_age
+    splits['fewer_labels-14'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels14.txt'")) & correct_age
+    splits['fewer_labels-20'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels20.txt'")) & correct_age
+    splits['fewer_labels-30'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels30.txt'")) & correct_age
+    splits['fewer_labels-40'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels40.txt'")) & correct_age
+    splits['fewer_labels-50'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels50.txt'")) & correct_age
+    splits['fewer_labels-60'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels60.txt'")) & correct_age
+    other_splits = correct_age - set(chain.from_iterable(splits.values()))
+
     uses_no_weights = correct_age - uses_weights
-    create_symbolics(correct_epochs_cpc_folders & uses_weights, 'train/correct-age/class_weights/cpc')
-    create_symbolics(correct_epochs_cpc_folders & uses_no_weights, 'train/correct-age/no_class_weights/cpc')
-    create_symbolics(correct_epochs_baseline_folders & uses_weights, 'train/correct-age/class_weights/baseline')
-    create_symbolics(correct_epochs_baseline_folders & uses_no_weights, 'train/correct-age/no_class_weights/baseline')
+    base_dir = 'test' if test else 'train'
+    for sfile, v in splits.items():
+        create_symbolics(correct_epochs_cpc_folders & uses_weights & v, base_dir+'/class_weights/'+'/few-labels/cpc/'+sfile)
+        create_symbolics(correct_epochs_cpc_folders & uses_no_weights & v, base_dir+'/no_class_weights/'+'/few-labels/cpc/'+sfile)
+        create_symbolics(correct_epochs_baseline_folders & uses_weights & v, base_dir+'/class_weights/'+'/few-labels/baseline/'+sfile)
+        create_symbolics(correct_epochs_baseline_folders & uses_no_weights & v, base_dir+'/no_class_weights/'+'/few-labels/baseline/'+sfile)
+    create_symbolics(correct_epochs_cpc_folders & uses_weights & other_splits, base_dir+'/class_weights/other-splits/cpc/')
+    create_symbolics(correct_epochs_cpc_folders & uses_no_weights & other_splits, base_dir+'/no_class_weights/other-splits/cpc/')
+    create_symbolics(correct_epochs_baseline_folders & uses_weights & other_splits, base_dir+'/class_weights/other-splits/baseline/')
+    create_symbolics(correct_epochs_baseline_folders & uses_no_weights & other_splits, base_dir+'/no_class_weights/other-splits/baseline/')
 
 def clean_remove_dry_run():
     move_incomplete_training_folders()
@@ -361,10 +430,10 @@ if __name__ == '__main__':
 
     #move_folders_to_old(folders=incorrect_age)
     #
-    #clean_remove_dry_run()
+    # clean_remove_dry_run()
     clean_rename()
     clean_categorize()
-
+    #print(torch.version.__version__)
     #cpc_folders = train_folders - baseline_folders
     #rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])
 

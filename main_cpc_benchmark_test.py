@@ -20,8 +20,11 @@ from util.data import ecg_datasets2, ptbxl_data
 from util.full_class_name import fullname
 from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
+
+
 def main(args):
     np.random.seed(args.seed)
+    #os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     torch.cuda.set_device(args.gpu_device)
     print(f'Device set to : {torch.cuda.current_device()}. Selected was {args.gpu_device}')
     torch.cuda.manual_seed(args.seed)
@@ -76,7 +79,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/20_05_21-18-train|(2x)bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/25_05_21-13-train|bl_FCN' #used class weights
         # 'models_symbolic_links/train/correct-age/class_weights/'
-        'models_symbolic_links/train/correct-age/no_class_weights/baseline'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/no_class_weights/few-labels/cpc'
 
     ]
     #infer class from model-arch file
@@ -117,7 +120,11 @@ def main(args):
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
         store_models.save_model_variables_text_only(output_path, model)
-        store_models.save_model_architecture_text_only(output_path, model)
+        try:
+            store_models.save_model_architecture_text_only(output_path, model)
+        except AttributeError as e:
+            print(e)
+            print('Older/Newer Model maybe?')
         with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
             cfg.write(str(args))
         model.cuda()
@@ -136,6 +143,7 @@ def main(args):
                     data, labels, filenames = dataset_tuple
                     data = data.float().cuda()
                     labels = labels.float().cuda()
+                    #print(torch.any(torch.isnan(data)), data.shape, torch.any(torch.isnan(labels)), labels.shape)
                     # if first:
                     #     dummy = torch.randn_like(data, requires_grad=True)
                     #     dummy_p = model(dummy)
@@ -143,13 +151,15 @@ def main(args):
                     #     first = False
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
+                    #print(pred.shape)
                     if len(pred.shape) == 1: #hack for squeezed batch dimension
                         pred = pred.unsqueeze(0)
-                    pred = pred.detach().cpu()
                     if torch.any(torch.isnan(pred)):
                         print('nan encountered' )
                         print('nan in data:', torch.any(torch.isnan(data)))
                         print(pred)
+                    pred = pred.detach().cpu()
+
                     labels = labels.cpu()
                     labels_numpy = parse_tensor_to_numpy_or_scalar(labels)
                     pred_numpy = parse_tensor_to_numpy_or_scalar(pred)
@@ -219,7 +229,7 @@ if __name__ == "__main__":
                         type=str)  # , choices=['context, latents, all']
 
     parser.add_argument('--out_path', help="The output directory for losses and models",
-                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")) + '-test', type=str)
+                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H-%M")) + '-test', type=str)
 
     parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")
