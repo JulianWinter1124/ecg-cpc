@@ -30,10 +30,16 @@ class DataFrameFactory():
         p = os.path.join(output_folder, filename)
         self.dataframe.to_csv(p)
 
-    def sort_index(self, key=None):
+    def natsort_single_index(self, key=None):
+        convert = lambda text: int(text) if text.isdigit() else text.lower()
+        alphanum_key = lambda key: [[convert(c) for c in re.split('([0-9]+)', k)] for k in key]
+        self.dataframe.sort_index(key=alphanum_key, inplace=True)
+
+    def natsort_multi_index(self, key=None):
+        raise NotImplementedError
         #self.dataframe.sort_index(inplace=True)
         print(self.dataframe.index)
-        self.dataframe.index = natsort.natsorted(self.dataframe.index, key=key)
+        self.dataframe.set_index(natsort.natsorted(self.dataframe.index, key=key), inplace=True)
 
 
     def to_latex(self, output_folder, filename, caption="", label="", description="", long_tables=False, only_tabular_environment=False):
