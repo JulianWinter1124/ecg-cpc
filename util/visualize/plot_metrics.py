@@ -1,8 +1,12 @@
 import os
 from itertools import cycle
 
-import matplotlib.pyplot as plt
+import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import seaborn
+from matplotlib.font_manager import FontProperties
 from numpy import interp
 from sklearn.metrics import auc, ConfusionMatrixDisplay
 
@@ -140,3 +144,100 @@ def plot_confusion_matrix(confusion_matrix:np.ndarray, classes):
     disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=classes)
     disp.plot()
 
+def plot_parallel_coordinates(df: pd.DataFrame, color_column, save_to, drop_columns:list=[], put_last_columns:list=[], exclude_color_column=True):
+    def _make_plotly_dict(column_name, data):
+        d = dict()
+        t = data.dtype
+        if t == bool:
+            d['range'] = [-0.5,1.5]
+            d['tickvals'] = [True, False]
+            d['ticktext'] = ['True', 'False']
+            d['values'] = data
+        elif t == str or t == object:
+            da = data.astype('category').cat
+            d['tickvals'] = da.codes
+            d['ticktext'] = da.categories
+            d['values'] = da.codes
+        elif t == int:
+            d['range'] = [data.min(), data.max()]
+            d['tickformat'] = 'd'
+            d['values'] = data
+        else:
+            d['range'] = [data.min(), data.max()]
+            d['values'] = data
+        d['label'] = column_name
+        return d
+    cols = df.columns.tolist()
+    #cols = list(set(cols)-set(put_last_columns)-set(exclude_columns))+put_last_columns
+    cols = [c for c in cols if not (c in drop_columns or c in put_last_columns)] + put_last_columns
+    df = df[cols]
+    dimensions = [_make_plotly_dict(column_name, data) for column_name, data in df.iteritems() if not (exclude_color_column and column_name == color_column)]
+    fig = go.Figure(data=
+        go.Parcoords(
+            line = dict(color = df[color_column],
+                       colorscale = 'Electric',
+                        #autocolorscale=True,
+                       showscale = True,
+                       cmin = df[color_column].min(),
+                       cmax = df[color_column].max()),
+            dimensions = dimensions
+        )
+    )
+    fig.update_traces(labelangle=-90, selector=dict(type='parcoords'))
+    fig.show()
+    if not save_to is None:
+        fig.write_image(save_to)
+
+
+def plot_lowlabel_availabilty(df_groups, title, save_to, filename, data_col='micro', save_legend_seperate=False):
+    fractions = {'fewer-labels0_001': 0.0012756005952802778,
+                 'fewer-labels0_005': 0.009378026598634634,
+                 'fewer-labels0_05': 0.10032362459546926,
+                 'fewer-labels0_01': 0.02010252049228734,
+                 'fewer-labels10': 0.18834006566980843,
+                 'fewer-labels14': 0.18829282120331656,
+                 'fewer-labels20': 0.3308057543760187,
+                 'fewer-labels30': 0.44031842770415514,
+                 'fewer-labels40': 0.5257600453546878,
+                 'fewer-labels50': 0.5950912999314956,
+                 'fewer-labels60': 0.6526823045850755,
+                 'train-test-splits': 0.7017220608036284,
+                 'train-test-splits_min_cut10': 0.015330829376609265,
+                 'train-test-splits_min_cut25': 0.037252261828833295,
+                 'train-test-splits_min_cut50': 0.06798478728178962,
+                 'train-test-splits_min_cut100': 0.116174143103489,
+                 'train-test-splits_min_cut150': 0.15470200552760258,
+                 'train-test-splits_min_cut200': 0.18864715470200552}
+    ordered_splits = [k for k, v in sorted(fractions.items(), key=lambda item: item[1])]
+    def get_fraction_x_for_splitsname(name):
+        return fractions[name]
+    fontP = FontProperties()
+    fontP.set_size('xx-small')
+    fig, ax = plt.subplots(figsize=(20,10))
+    seaborn.set_palette("hls", len(df_groups))
+    plt.title(title)
+    for name, group in df_groups:
+        g = group.reset_index()
+        g.insert(loc=0, column='splitfraction', value=[get_fraction_x_for_splitsname(sp) for sp in g['level_0']])
+        g = g.sort_values(by='splitfraction')
+        if 'cpc' in name.lower():
+            ax.plot(g['splitfraction'], g[data_col], '--o', label=name)
+        else:
+            ax.plot(g['splitfraction'], g[data_col], '-o', label=name)
+    plt.ylabel('average AUC score')
+
+    plt.xlabel('fraction of files used (i.r.t. all files)')
+    handles, labels = ax.get_legend_handles_labels()
+    if save_legend_seperate:
+        legend = plt.legend(handles, labels, loc=3, framealpha=1, frameon=False)
+        export_legend(legend, save_to, 'legend-'+filename)
+    else:
+        ax.legend(handles, labels, loc='lower right', prop=fontP, handlelength=3) #bbox_to_anchor=(1.05, 1)
+    fig.savefig(os.path.join(save_to, filename), bbox_inches='tight')
+    plt.show()
+
+def export_legend(legend, save_to, filename="legend.png"):
+    fig  = legend.figure
+    fig.canvas.draw()
+    bbox  = legend.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    fig.savefig(os.path.join(save_to, filename), dpi="figure", bbox_inches=bbox)

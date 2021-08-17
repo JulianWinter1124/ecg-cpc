@@ -8,13 +8,12 @@ class DataFrameFactory():
         self.columns = colum_labels
         self.dataframe = None
         if data is None:
-            if dataframe is not None:
-                self.dataframe = pd.DataFrame(dataframe, columns=colum_labels)
+            self.dataframe = pd.DataFrame()
         else:
             self.dataframe = pd.DataFrame(data, columns=colum_labels)
 
     def append(self, data):
-        if self.dataframe is None:
+        if self.dataframe is None or len(self.dataframe)==0:
             self.dataframe = pd.DataFrame(data, self.columns)
         else:
             dftemp = pd.DataFrame(data, columns=self.columns)

@@ -239,7 +239,7 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                             with open(os.path.join(root, 'params.txt'), 'r') as file:
                                 content = file.read()
                             if 'splits_file=' in content:
-                                name += '|'+content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
+                                name += '|'+content.split("splits_file='")[1].split("'")[0].replace('.txt', '').replace('.','_')
                             if 'use_class_weights=True' in content:
                                 name += '|use_weights'
 
@@ -324,7 +324,7 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
 
 
 def long_to_abbreviation(name):
-    parts = name.split('.')
+    parts = name.split('|')[0].split('.')
     shortname = parts[-2]
     shortname = shortname.replace('cpc_combined', 'cpc')
     shortname = shortname.replace('baseline', 'bl')
@@ -394,6 +394,10 @@ def clean_categorize(test=False):
     splits['min_cut-150'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut150.txt'")) & correct_age
     splits['min_cut-200'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut200.txt'")) & correct_age
 
+    splits['fewer_labels-0_01'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.01.txt'")) & correct_age
+    splits['fewer_labels-0_05'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.05.txt'")) & correct_age
+    splits['fewer_labels-0_001'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.001.txt'")) & correct_age
+    splits['fewer_labels-0_005'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.005.txt'")) & correct_age
     splits['fewer_labels-10'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels10.txt'")) & correct_age
     splits['fewer_labels-14'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels14.txt'")) & correct_age
     splits['fewer_labels-20'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels20.txt'")) & correct_age
@@ -436,6 +440,7 @@ if __name__ == '__main__':
     #print(torch.version.__version__)
     #cpc_folders = train_folders - baseline_folders
     #rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])
+    #rename_model_folders(folders=['/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_08_21-15-58-test'], rename_in_test=True)
 
 
 

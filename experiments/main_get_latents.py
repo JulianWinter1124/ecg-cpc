@@ -13,14 +13,14 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 from torchviz import make_dot
 
+import cpc_combined
 from util import store_models
+from util.data.dataframe_factory import DataFrameFactory
 from util.metrics import training_metrics
 from external import helper_code
 from util.data import ecg_datasets2, ptbxl_data
 from util.full_class_name import fullname
 from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
-
-
 
 def main(args):
     np.random.seed(args.seed)
@@ -79,16 +79,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/20_05_21-18-train|(2x)bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/25_05_21-13-train|bl_FCN' #used class weights
         # 'models_symbolic_links/train/correct-age/class_weights/'
-        *'''/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-14_22-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-13_13-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-12_13-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-11_22-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-10_44-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-15_02-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-14_42-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-14_12-train|(4x)cpc
-/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-13_51-train|(4x)cpc'''.split('\n')
+        *'''/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits-fewer-labels60|use_weights|strided|frozen|C|m:all|cpc_downstream_cnn'''.split('\n')
 
     ]
     #infer class from model-arch file
@@ -116,92 +107,45 @@ def main(args):
         #            collate_fn=ecg_datasets2.collate_fn), #Train usually not required
 
     ]
-    metric_functions = [ #Functions that take two tensors as argument and give score or list of score
-        training_metrics.micro_avg_precision_score,
-        training_metrics.micro_avg_recall_score,
-    ]
+
     for model_i, model_dict in enumerate(model_dicts):
-        model = model_dict['model']
+        combined_model = model_dict['model']
+        model = combined_model.cpc_model
+        model.cpc_train_mode=False
         model_name = os.path.split(model_dict['model_folder'])[1]
         train_folder = os.path.split(os.path.split(model_dict['model_folder'])[0])[1]
         output_path = os.path.join(args.out_path, train_folder, model_name)
         print("Evaluating {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
-        store_models.save_model_variables_text_only(output_path, model)
-        try:
-            store_models.save_model_architecture_text_only(output_path, model)
-        except AttributeError as e:
-            print(e)
-            print('Older/Newer Model maybe?')
-        with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
-            cfg.write(str(args))
         model.cuda()
-        # first = True
-        # init optimizer
-        optimizer = Adam(model.parameters(), lr=3e-4)
-        metrics = defaultdict(lambda: defaultdict(list))
+        latent_list = []
         for epoch in range(1, 2):
             starttime = time.time()
             for loader_i, loader in enumerate(loaders):
-                pred_dataframe = pd.DataFrame(columns=classes)
-                pred_dataframe.index.name = 'filename'
-                label_dataframe = pd.DataFrame(columns=classes)
-                label_dataframe.index.name = 'filename'
                 for dataset_tuple in loader:
-                    data, labels, filenames = dataset_tuple
-                    data = data.float().cuda()
-                    labels = labels.float().cuda()
-                    #print(torch.any(torch.isnan(data)), data.shape, torch.any(torch.isnan(labels)), labels.shape)
-                    # if first:
-                    #     dummy = torch.randn_like(data, requires_grad=True)
-                    #     dummy_p = model(dummy)
-                    #     make_dot(dummy_p, params=dict(list(model.named_parameters()) + [('x', dummy)])).render(model_name+'-viz', output_path, format="png")
-                    #     first = False
-                    optimizer.zero_grad()
-                    pred = model(data, y=None)  # makes model return prediction instead of loss
-                    #print(pred.shape)
-                    if len(pred.shape) == 1: #hack for squeezed batch dimension
-                        pred = pred.unsqueeze(0)
-                    if torch.any(torch.isnan(pred)):
-                        print('nan encountered' )
-                        print('nan in data:', torch.any(torch.isnan(data)))
-                        print(pred)
-                    pred = pred.detach().cpu()
-
-                    labels = labels.cpu()
-                    labels_numpy = parse_tensor_to_numpy_or_scalar(labels)
-                    pred_numpy = parse_tensor_to_numpy_or_scalar(pred)
-                    pred_dataframe = pred_dataframe.append(pd.DataFrame(pred_numpy, columns=classes, index=filenames))
-                    label_dataframe = label_dataframe.append(pd.DataFrame(labels_numpy, columns=classes, index=filenames))
-                    helper_code.save_challenge_predictions(output_path, filenames, classes=classes, scores=pred_numpy, labels=labels_numpy)
                     with torch.no_grad():
-                        for i, fn in enumerate(metric_functions):
-                            metrics[epoch]['acc_' + str(i)].append(
-                                parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
-                    if args.dry_run:
-                        break
-                    del data, pred, labels
-                csv_pred_name = "model-{}-dataloader-{}-output.csv".format(model_name, loader_i)
-                csv_label_name = "labels-dataloader-{}.csv".format(loader_i)
-                print("\tFinished dataset {}. Progress: {}/{}".format(loader_i, loader_i + 1, len(loaders)))
-                print("\tSaving prediction and label to csv.")
-                pred_dataframe.to_csv(os.path.join(output_path, csv_pred_name))
-                label_dataframe.to_csv(os.path.join(output_path, csv_label_name))
-                print("\tSaved files {} and {}".format(csv_pred_name, csv_label_name))
-                torch.cuda.empty_cache()
+                        data, labels, filenames = dataset_tuple
+                        data = data.float().cuda()
+                        labels = labels.float().cuda()
+                        encoded_x, context, hidden = model(data, y=None)  # makes model return prediction instead of loss
 
+                        encoded_x = encoded_x.detach().cpu()
+                        context = context.detach().cpu()
+                        labels = labels.cpu()
+                        labels_numpy = parse_tensor_to_numpy_or_scalar(labels)
+                        encoded_x_numpy = parse_tensor_to_numpy_or_scalar(encoded_x)
+                        context_numpy = parse_tensor_to_numpy_or_scalar(context)
+                        latent_list.append({'labels': np.nonzero(labels_numpy), 'latents':encoded_x_numpy, 'context':context_numpy})
+                        del data, labels, encoded_x, encoded_x_numpy, context, context_numpy
+                    torch.cuda.empty_cache()
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
-            metrics[epoch]['elapsed_time'].append(elapsed_time)
             print("Done. Elapsed time: {}".format(elapsed_time))
             if args.dry_run:
                 break
+        with open(os.path.join(output_path, 'latent_list.pickle'), 'wb') as f:
+            pickle.dump(latent_list, f)
 
-        pickle_name = "model-{}-test.pickle".format(model_name)
-        # Saving metrics in pickle
-        with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
-            pickle.dump(dict(metrics), pick_file)
-        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(model_dicts)))
         del model  # delete and free
         torch.cuda.empty_cache()
 
@@ -221,6 +165,7 @@ def parse_tensor_to_numpy_or_scalar(input_tensor):
         return arr
     return input_tensor
 
+
 if __name__ == "__main__":
     import sys
 
@@ -232,20 +177,24 @@ if __name__ == "__main__":
     parser.add_argument('--saved_model', type=str,
                         help='Model path to load weights from. Has to be given for downstream mode.')
 
+    parser.add_argument('--pretrain_epochs', type=int, help='The number of Epochs to pretrain', default=100)
+
+    parser.add_argument('--downstream_epochs', type=int, help='The number of Epochs to downtrain', default=100)
+
     parser.add_argument('--seed', type=int, help='The seed used', default=0)
 
     parser.add_argument('--forward_mode', help="The forward mode to be used.", default='context',
                         type=str)  # , choices=['context, latents, all']
 
     parser.add_argument('--out_path', help="The output directory for losses and models",
-                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H-%M")) + '-test', type=str)
+                        default='data_output/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
 
     parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")
 
     parser.add_argument('--warmup_steps', type=int, default=0, help="The number of warmup steps")
 
-    parser.add_argument('--batch_size', type=int, default=24, help="The batch size")
+    parser.add_argument('--batch_size', type=int, default=1, help="The batch size")
 
     parser.add_argument('--latent_size', type=int, default=128,
                         help="The size of the latent encoding for one window")
@@ -256,14 +205,14 @@ if __name__ == "__main__":
     parser.add_argument('--timesteps_out', type=int, default=6,
                         help="The number of windows being predicted from the context (cpc task exclusive)")
 
-    parser.add_argument('--crop_size', type=int, default=4500,
-                        help="The size of the data that it is cropped to. If data is smaller than this number, data gets padded with zeros")
-
     parser.add_argument('--channels', type=int, default=12,
                         help="The number of channels the data will have")  # TODO: auto detect
 
     parser.add_argument('--window_size', type=int, default=512,
                         help="The number of datapoints per channel per window")
+
+    parser.add_argument('--crop_size', type=int, default=4500,
+                        help="The size of the data that it is cropped to. If data is smaller than this number, data gets padded with zeros")
 
     parser.add_argument('--hidden_size', type=int, default=512,
                         help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
@@ -272,7 +221,17 @@ if __name__ == "__main__":
                         help="Only run minimal samples to test all models functionality")
     parser.set_defaults(dry_run=False)
 
+    parser.add_argument('--use_class_weights', dest='use_class_weights', action='store_true',
+                        help="Use class weights determined by datasets class count")
+    parser.set_defaults(use_class_weights=False)
+
+    parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
+                        help="Redo splits. Warning! File will be overwritten!")
+    parser.set_defaults(redo_splits=False)
+
     parser.add_argument("--gpu_device", type=int, default=0)
+
+    parser.add_argument("--comment", type=str, default=None)
 
     args = parser.parse_args()
     main(args)

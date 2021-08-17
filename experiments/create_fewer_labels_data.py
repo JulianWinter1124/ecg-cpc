@@ -76,7 +76,7 @@ def create_few_labels_splits_like_old(train_fraction):
 
     #ecg_datasets2.filter_update_classes_by_count([georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature], min_count=20)
     print("Warning! Redoing splits!")
-    filename = f'train-test-splits-fewer-labels{int(train_fraction*100)}.txt'
+    filename = f'train-test-splits-fewer-labels{str(train_fraction)}.txt'
     print(f'saving as {filename}')
     ptbxl_new_train_split, _, _ = ptbxl_train.random_train_split_with_class_count(new_train_fraction, 0.0, 0.0, save=False)
     georgia_new_train_split, _, _ =georgia_train.random_train_split_with_class_count(new_train_fraction, 0.0, 0.0, save=False)
@@ -161,14 +161,19 @@ def create_few_labels_splits_minimum_cut(min_cut=20):
 
 
 if __name__ == '__main__': # DO NOT CALL UNLESS YOU WANT TO OVERWRITE
+    create_few_labels_splits_like_old(train_fraction=0.001)
+    create_few_labels_splits_like_old(train_fraction=0.005)
+    create_few_labels_splits_like_old(train_fraction=0.01)
+    create_few_labels_splits_like_old(train_fraction=0.05)
     #create_few_labels_splits_like_old(train_fraction=0.1)
     # create_few_labels_splits_like_old(train_fraction=0.2)
     # create_few_labels_splits_like_old(train_fraction=0.3)
     # create_few_labels_splits_like_old(train_fraction=0.4)
     # create_few_labels_splits_like_old(train_fraction=0.5)
     # create_few_labels_splits_like_old(train_fraction=0.6)
-    create_few_labels_splits_minimum_cut(min_cut=200)
-    create_few_labels_splits_minimum_cut(min_cut=150)
-    create_few_labels_splits_minimum_cut(min_cut=100)
-    create_few_labels_splits_minimum_cut(min_cut=50)
-    create_few_labels_splits_minimum_cut(min_cut=25)
+    # create_few_labels_splits_minimum_cut(min_cut=200)
+    # create_few_labels_splits_minimum_cut(min_cut=150)
+    # create_few_labels_splits_minimum_cut(min_cut=100)
+    # create_few_labels_splits_minimum_cut(min_cut=50)
+    # create_few_labels_splits_minimum_cut(min_cut=25)
+    #create_few_labels_splits_minimum_cut(min_cut=3)

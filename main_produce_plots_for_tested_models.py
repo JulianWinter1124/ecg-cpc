@@ -49,6 +49,7 @@ def auto_find_tested_models(path='models/'):
     return csv_paths
 
 def long_to_shortname(model_name):
+    print('modelname in ', model_name)
     model_name = re.sub('cpc_combined.CPCCombined\d*', 'CPC', model_name)
     model_name = re.sub('architectures_baseline_challenge.', '', model_name)
     model_name = re.sub('baseline_cnn', 'BL', model_name)
@@ -246,7 +247,7 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
     return model_thresholds
 
 
-def create_lowlabel_plots(model_folders, filename, save_to='/home/julian/Documents/projekt-master/bilder', data_loader_index=0):
+def create_lowlabel_plots(model_folders, filename, title_add='', save_to='/home/julian/Documents/projekt-master/bilder', data_loader_index=0):
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
 
     model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
@@ -272,14 +273,6 @@ def create_lowlabel_plots(model_folders, filename, save_to='/home/julian/Documen
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder, data_loader_index=data_loader_index)
             binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
-            #scores with binary
-            f1_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.f1_scores, model_name, average_only))
-
-            prec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.precision_scores, model_name, average_only))
-            rec_dff.append(create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.recall_scores, model_name, average_only))
-            #scores with probability
-            classfit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.class_fit_score, model_name, average_only))
-            zerofit_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.zero_fit_score, model_name, average_only))
             auc_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name, average_only))
 
         except FileNotFoundError as e: #folder with not the correct csv?
@@ -296,69 +289,12 @@ def create_lowlabel_plots(model_folders, filename, save_to='/home/julian/Documen
             return ("standard", s)
 
     auc_dff.dataframe.index = pd.MultiIndex.from_tuples([find_splits_in_string(i) for i, _ in auc_dff.dataframe.iterrows()])
-    prec_dff.natsort_single_index()
-    rec_dff.natsort_single_index()
-    zerofit_dff.natsort_single_index()
-    f1_dff.natsort_single_index()
-    classfit_dff.natsort_single_index()
-    plt.figure()
-    fractions = {'fewer-labels10': 0.26806032451356626,
-             'fewer-labels14': 0.26832963037770147,
-             'fewer-labels20': 0.4714199151686528,
-             'fewer-labels30': 0.6274826634349963,
-             'fewer-labels40': 0.7492425772571197,
-             'fewer-labels50': 0.8480441661617182,
-             'fewer-labels60': 0.9301151282569178,
-             'min_cut25': 0.05308691846764963,
-             'min_cut50': 0.09688278462263515,
-             'min_cut100': 0.165555779977109,
-             'min_cut150': 0.22046051302767117,
-             'min_cut200': 0.268834578872955}
-    ordered_splits = [k for k, v in sorted(fractions.items(), key=lambda item: item[1])]
-    def get_fraction_x_for_splitsname(name):
-        return fractions[name]
-
     groups = auc_dff.dataframe.groupby(level=[1], as_index=False)
-    auc_dff.to_csv('/home/julian/Desktop', 'model-lowlabel.csv')
-    color_palette = sns.color_palette("husl", max(map(lambda x: len(x[1]), groups)))
+    plotm.plot_lowlabel_availabilty(groups, 'Micro average AUC score with low label availability' + title_add, save_to, filename+'micro.png', data_col='micro')
+    plotm.plot_lowlabel_availabilty(groups, 'Macro average AUC score with low label availability' + title_add, save_to, filename+'macro.png', data_col='macro')
 
-    #
-    # colors = {}
-    # for name, group in groups:
-    #     print(name, len(group))
-    #     for index, value in group.reset_index()['level_1'].iteritems():
-    #         if not value in colors:
-    #             colors[value] = color_palette[len(colors)]
-    # print(colors.keys())
-    fontP = FontProperties()
-    fontP.set_size('xx-small')
-    plt.figure()
-    plt.title('Micro Accuracy for low label availability')
-    for name, group in groups:
-        g = group.reset_index()
-        g.insert(loc=0, column='splitfraction', value=[get_fraction_x_for_splitsname(sp) for sp in g['level_0']])
-        g = g.sort_values(by='splitfraction')
-        with pd.option_context('display.max_rows', 300, 'display.max_columns', 7, 'display.expand_frame_repr', False):
-            print('spilt files', g['level_0'].values)
-        plt.plot(g['splitfraction'], g['micro'], '-o', label=name)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', prop=fontP)
-    plt.savefig(os.path.join(save_to, filename + '-micro.png'), bbox_inches='tight')
-    plt.show()
 
-    plt.figure()
-    plt.title('Macro Accuracy for low label availability')
-    for name, group in groups:
-        g = group.reset_index()
-        g.insert(loc=0, column='splitfraction', value=[get_fraction_x_for_splitsname(sp) for sp in g['level_0']])
-        g = g.sort_values(by='splitfraction')
-        with pd.option_context('display.max_rows', 300, 'display.max_columns', 7, 'display.expand_frame_repr', False):
-            print('spilt files', g['level_0'].values)
-        plt.plot(g['splitfraction'], g['macro'], '-o', label=name)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', prop=fontP)
-    plt.savefig(os.path.join(save_to, filename + '-macro.png'), bbox_inches='tight')
-    plt.show()
-
-def create_parallel_plots(model_folders, data_loader_index=0):
+def create_parallel_plots(model_folders, savepath, data_loader_index=0, skip_cpc=False, skip_baseline=False):
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
 
     model_thresholds = calculate_best_thresholds(model_folders, data_loader_index=VAL_SET)
@@ -382,7 +318,9 @@ def create_parallel_plots(model_folders, data_loader_index=0):
             auc_df = create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name, average_only)
             #TODO: get train path for call below for most acurate results: not feasible because of random structure
             #TODO: add final layer number desc
-            attribute_df = create_model_attribute_table([model_folder], filename=None, skip_cpc=False, skip_baseline=False)
+            attribute_df = create_model_attribute_table([model_folder], filename=None, skip_cpc=skip_cpc, skip_baseline=skip_baseline)
+            if len(attribute_df) == 0:
+                continue
             attribute_df.index = auc_df.index
             # seperate_folders = model_folder.split(os.sep)
             # train_folder_ix = seperate_folders.index('models')+2
@@ -392,7 +330,10 @@ def create_parallel_plots(model_folders, data_loader_index=0):
         except FileNotFoundError as e: #folder with not the correct csv?
             print(e)
     auc_dff.natsort_single_index()
-    auc_dff.dataframe.to_csv('/home/julian/Desktop/attributeswithauc.csv')
+    auc_dff.dataframe.to_csv('ALLMODELSATTRIBUTES'+str(skip_cpc)+'.csv')
+    plotm.plot_parallel_coordinates(auc_dff.dataframe, 'micro', savepath+'micro.png', drop_columns=['use_class_weights'], put_last_columns=['micro'])
+    plotm.plot_parallel_coordinates(auc_dff.dataframe, 'macro', savepath+'macro.png', drop_columns=['use_class_weights'], put_last_columns=['macro'])
+    #auc_dff.dataframe.to_csv('/home/julian/Desktop/attributeswithauc.csv')
 
 
 def create_model_attribute_table(model_folders, filename, save_to='/home/julian/Documents/projekt-master/tables', skip_cpc=True, skip_baseline=False):
@@ -460,7 +401,6 @@ def create_model_attribute_table(model_folders, filename, save_to='/home/julian/
 
 
                 else: #not cpc
-
                     if 'model_variables.txt' in files:
                         with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
                             content = file.readlines()
@@ -479,16 +419,43 @@ def create_model_attribute_table(model_folders, filename, save_to='/home/julian/
                         attrs['Sum of Dilation'] = int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum())
                         attrs['Sum of Paddings'] = int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum())
                         attrs['Sum of Filters'] = int(np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum())
+                    final_layers = {'BL_FCN': '3',
+                     'BL_v0_2': '4',
+                     'BL_v2': '3',
+                     'BL_v6': '4',
+                     'BL_v1': '3',
+                     'BL_v5': '4',
+                     'BL_v4': '4',
+                     'BL_v14': '4',
+                     'BL_v3': '4',
+                     'BL_v0_1': '4',
+                     'BL_v0': '4',
+                     'BL_v9': '4',
+                     'BL_v8': '4',
+                     'BL_v0_3': '4',
+                     'BL_TCN_down': '4',
+                     'BL_TCN_flatten': '1',
+                     'BL_v7': '4',
+                     'BL_TCN_block': '1',
+                     'BL_rnn_simplest_lstm': '5',
+                     'BL_MLP': '2',
+                     'BL_alex_v2': '1',
+                     'BL_v15': '4',
+                     'BL_TCN_last': '2'}
+                    try:
+                        attrs["Final Layer"] = final_layers[name]
+                    except KeyError:
+                        attrs["Final Layer"] = -1
+                        print(name, 'not found in final layers dict')
 
                 attrs['Model Name'] = name
                 attrs = pd.DataFrame(attrs, index=[0])
                 attrs = attrs.set_index('Model Name')
                 attribute_df.append(attrs)
-    if not filename is None:
-        attribute_df.dataframe.to_csv('/home/julian/Desktop/attributesmodelsnosort'+filename+'.csv')
+    attribute_df.dataframe.drop_duplicates(inplace=True)
     attribute_df.natsort_single_index()
     if not filename is None:
-        attribute_df.dataframe.to_csv('/home/julian/Desktop/attributesmodels'+filename+'.csv')
+        attribute_df.dataframe.to_csv('/home/julian/Desktop/'+filename+'.csv')
     return attribute_df.dataframe
 
 
@@ -496,25 +463,44 @@ def sort_naturally(data):
     pass
 
 if __name__ == '__main__':
-    # path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-50-test|(48x)cpc'
-    # path2 = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8'
-
-    # path = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-18-41-test|(48x)cpc'
-    # path2 = '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-16-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8'
-    # model_folders = auto_find_tested_models_recursive(path) + auto_find_tested_models_recursive(path2) #auto_find_tested_models() #or manual list
-    paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/25_06_21-16-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_flatten+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9+',
-             '/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_06_21-15-test|(2x)bl_MLP+bl_FCN+bl_TCN_block+bl_TCN_down+bl_TCN_flatten+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v7+bl_cnn_v8+bl_cnn',
-             '/home/julian/Downloads/Github/contrastive-predictive-coding/models/09_07_21-17-test|(34x)cpc',
-             '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_06_21-15-test|(2x)bl_FCN+(2x)bl_cnn_v0+(2x)bl_cnn_v0_1+(2x)bl_cnn_v0_2+(2x)bl_cnn_v0_3+(2x)bl_cnn_v1+(2x)bl_cnn_v14+(2x)bl_cnn_v2+(2x)bl_cnn_v3+(2x)bl_cnn_v4+(2x)bl_cnn_v5+(2x)bl_cnn_v6+(2x)bl_cnn_v8+(2x)bl_cnn_v9+(50x)cpc+bl_MLP'
-             ]
-    model_folders = [a for p in paths for a in auto_find_tested_models_recursive(p)]
-
     TEST_SET = 0; VAL_SET = 1; TRAIN_SET = 2
+    # paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/25_06_21-16-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_flatten+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9+',
+    #          '/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_06_21-15-test|(2x)bl_MLP+bl_FCN+bl_TCN_block+bl_TCN_down+bl_TCN_flatten+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v7+bl_cnn_v8+bl_cnn',
+    #          '/home/julian/Downloads/Github/contrastive-predictive-coding/models/09_07_21-17-test|(34x)cpc',
+    #          '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_06_21-15-test|(2x)bl_FCN+(2x)bl_cnn_v0+(2x)bl_cnn_v0_1+(2x)bl_cnn_v0_2+(2x)bl_cnn_v0_3+(2x)bl_cnn_v1+(2x)bl_cnn_v14+(2x)bl_cnn_v2+(2x)bl_cnn_v3+(2x)bl_cnn_v4+(2x)bl_cnn_v5+(2x)bl_cnn_v6+(2x)bl_cnn_v8+(2x)bl_cnn_v9+(50x)cpc+bl_MLP'
+    #          ]
+    # model_folders = [a for p in paths for a in auto_find_tested_models_recursive(p)]
+
+
+    # low_label_noclassweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-50-test|(48x)cpc',
+    #                                '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-16-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
+    # model_folders = [a for p in low_label_noclassweights_paths for a in auto_find_tested_models_recursive(p)]
+    # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_noclassweights')
+
+    low_label_classweights_paths_more_epochs = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
+                                    #'models/13_08_21-10-47-test|(80x)cpc',
+                                    '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc']
+    model_folders = [a for p in low_label_classweights_paths_more_epochs for a in auto_find_tested_models_recursive(p)]
+    create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights-more-epochs', title_add=' (50 CPC epochs, )')
+
+    low_label_classweights_paths = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
+                                    'models/13_08_21-10-47-test|(80x)cpc']
+    model_folders = [a for p in low_label_classweights_paths for a in auto_find_tested_models_recursive(p)]
+    create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights', title_add=' (20 CPC epochs)')
+
+    # low_label_classweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-18-41-test|(48x)cpc',
+    #                                 '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
+    # model_folders = [a for p in low_label_classweights_paths for a in auto_find_tested_models_recursive(p)]
+    #create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights')
+
+    #model_folders = auto_find_tested_models_recursive('/home/julian/Downloads/Github/contrastive-predictive-coding/models/')
+
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=False, save_to_all_dirs=False) #On Testset
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)
     # create_paper_plots(model_folders, data_loader_index=TEST_SET)
-    #create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability')
-    #create_model_attribute_table(model_folders, 'baseline', skip_cpc=True, skip_baseline=False)
-    #create_model_attribute_table(model_folders, 'cpc', skip_cpc=False, skip_baseline=True)
-    create_parallel_plots(model_folders)
+    #create_model_attribute_table(model_folders, 'baseline-attributes-full', skip_cpc=True, skip_baseline=False)
+    #create_model_attribute_table(model_folders, 'cpc-attributes', skip_cpc=False, skip_baseline=True)
+    # create_parallel_plots(model_folders, '/home/julian/Desktop/cpc-attributes-parallelcoords', skip_cpc=False, skip_baseline=True)
+    # create_parallel_plots(model_folders, '/home/julian/Desktop/bl-attributes-parallelcoords', skip_cpc=True, skip_baseline=False)
+
