@@ -9,9 +9,9 @@ class StridedEncoder(nn.Module):
         self.requires_grad_(True)
 
     def forward(self, X):
-        X = nn.Parameter(self.window_layer(X), requires_grad=True)
-        n_windows, n_batches, channels, window_size = X.shape
-        latents = self.cpc_encoder(X.reshape(-1, *X.shape[2:]))  # reshape windows into batch dimension for only one forward
+        X2 = nn.Parameter(self.window_layer(X), requires_grad=True)
+        n_windows, n_batches, channels, window_size = X2.shape
+        latents = self.cpc_encoder(X2.reshape(-1, *X2.shape[2:]))  # reshape windows into batch dimension for only one forward
         latents = latents.reshape(n_windows, n_batches, *latents.shape[1:]).squeeze(-1) #shape is now n_windows, n_batches, n_latents
         latents = latents.movedim(0, -1) #shape is now n_batches, n_latents, steps
         return latents
@@ -39,9 +39,9 @@ class WindowLayer(nn.Module):
     def forward(self, X):
         in_shape = X.shape
         n_windows = X.shape[-1] // self.window_size #how many windows
-        X = X.narrow(-1, 0, self.window_size*n_windows) #slice data
-        X = X.view(*(X.shape[0:-1]), n_windows, self.window_size).movedim(-2, self.stack_dim)
-        return X
+        X1 = X.narrow(-1, 0, self.window_size*n_windows) #slice data
+        X2 = X1.view(*(X1.shape[0:-1]), n_windows, self.window_size).movedim(-2, self.stack_dim)
+        return X2
 
 
 if __name__ == '__main__':

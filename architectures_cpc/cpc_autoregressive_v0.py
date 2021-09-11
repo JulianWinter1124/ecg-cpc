@@ -20,7 +20,7 @@ class AutoRegressor(nn.Module):
 
     def init_hidden(self, batch_size, use_gpu=True):
         if use_gpu: return torch.zeros(self.layers, batch_size, self.hidden_size).cuda()
-        else: return torch.zeros(self.layers, batch_size, self.hidden_size)
+        else: return torch.zeros(self.layers, batch_size, self.hidden_size).cpu()
 
     def forward(self, x, hidden):
         #Input is (seq, batch, latents) maybe (13, 8, 128)

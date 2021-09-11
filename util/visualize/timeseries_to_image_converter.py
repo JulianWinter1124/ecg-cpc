@@ -63,7 +63,7 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
     rgba_colors[:, 3] = 1.0
     images = []
     for p, b in enumerate(data):
-        fig, axs = plt.subplots(channels, 1, sharex='all', gridspec_kw={'hspace': 0}, figsize=(n/100/downsample_factor, channels*300/100/downsample_factor), dpi=100)
+        fig, axs = plt.subplots(channels, 1, sharex='all', gridspec_kw={'hspace': 0}, figsize=(n/100/downsample_factor, channels*300/100/downsample_factor), dpi=100) #dpi=100)
         fig.tight_layout(pad=0, rect=[0.03, 0.03, 1, 0.90])
         x = np.arange(0, n)
         for i, ax in enumerate(axs):

@@ -13,6 +13,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 from torchviz import make_dot
 
+from architectures_various.explain_network2 import ExplainLabel
 from util import store_models
 from util.metrics import training_metrics
 from external import helper_code
@@ -20,7 +21,7 @@ from util.data import ecg_datasets2, ptbxl_data
 from util.full_class_name import fullname
 from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
-from architectures_various import explain_network
+
 from util.visualize.timeseries_to_image_converter import timeseries_to_image
 
 
@@ -69,9 +70,18 @@ def main(args):
     train_dataset_challenge = ChainDataset([a1,a2,a3,a4])
     val_dataset_challenge = ChainDataset([b1,b2,b3,b4])
     test_dataset_challenge = ChainDataset([ptbxl_test, georgia_test, cpsc_test, cpsc2_test])
+
+    if args.use_class_weights:
+        counts, counted_classes = ecg_datasets2.count_merged_classes([a1, b1, ptbxl_test, a2, b2, georgia_test, a3, b3, cpsc_test, a4, b4, cpsc2_test])
+        class_weights = torch.Tensor(max(counts)/counts).to(device=f'cuda:{args.gpu_device}')
+        print('Using the following class weights:', class_weights)
+    else:
+        class_weights = None
+
+
     #all_dataset_challenge = ChainDataset[ptbxl_challenge, georgia_challenge, cpsc_challenge, cpsc2_challenge]
     model_folders = [
-        'models/21_05_21-11-train|bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v0.BaselineNet0|dte:120'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits-fewer-labels60|use_weights|frozen|C|m:all|cpc_downstream_cnn'
     ]
     #infer class from model-arch file
     model_dicts = []
@@ -85,8 +95,10 @@ def main(args):
             if model is None:
                 continue
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
+            if hasattr(model, 'freeze_cpc'):
+                model.freeze_cpc = False
             print(f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
-            explain_model = explain_network.ExplainLabel(model)
+            explain_model = ExplainLabel(model, class_weights=class_weights)
             model_dicts.append({'model':explain_model, 'model_folder':root})
     if len(model_dicts) == 0:
         print(f"Could not find any models in {model_folders}.")
@@ -103,8 +115,8 @@ def main(args):
     SAVE = False
     for model_i, model_dict in enumerate(model_dicts):
         model = model_dict['model']
-        model.eval()
-        model.cpu()
+        model.cuda()
+        model.train()
         # first = True
         # init optimizer
         optimizer = Adam(model.parameters(), lr=3e-4)
@@ -112,25 +124,58 @@ def main(args):
             for loader_i, loader in enumerate(loaders):
                 for dataset_tuple in loader:
                     data, labels, filenames = dataset_tuple
-                    data = data.float().cpu()
+                    data = data.float().cuda()
+                    labels = labels.float().cuda()
+                    #for
+                    #NORMAL GRADIENT
                     optimizer.zero_grad()
-                    pred, grad = model(data, y=None)
-                    grad = grad.detach().cpu()
-                    if len(pred.shape) == 1: #hack for squeezed batch dimension
-                        pred = pred.unsqueeze(0)
-                    pred = pred.detach().cpu()
-                    print(pred.shape)
-                    top3 = np.argsort(pred)[:, -3:]
-                    #TODO: Iterate over output != 0 and calc grad respectively
-                    pred_prob = []
-                    for i, t3 in enumerate(top3):
-                        pred_prob.append(list(zip([classes_by_index[t] for t in t3], pred[i, t3])))
-                    not0 = [[i for i, e in enumerate(a) if e != 0.0] for a in labels]
+                    pred, _ = model(data, y=labels) #obtain pred once
+                    pred = pred.detach()
+                    print(labels)
+                    optimizer.zero_grad()
+                    _, grad1 = model(data, y=labels)# explain_class=
+                    print(labels)
+                    with open('temp-grad.pickle', 'wb') as f:
+                        pickle.dump([data.detach().cpu(), labels.detach().cpu(), grad1.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
+                        print("saved")
 
-                    ground_truth = []
-                    for i, t3 in enumerate(not0):
-                        ground_truth.append(list(zip([classes_by_index[t] for t in t3], labels[i, t3])))
-                    img = timeseries_to_image(data.cpu(), grad, downsample_factor=5, convert_to_rgb=False, pred_classes=pred_prob, ground_truth=ground_truth, filename='images/ptbxl/gradient/ptbxl_timeseries_', show=SHOW, save=SAVE)
+                    #INVERSE GRADIENT
+                    optimizer.zero_grad()
+                    _, grad2 = model(data, y=1-labels)# explain_class=
+                    print(1-labels)
+                    with open('temp-grad-inverse.pickle', 'wb') as f:
+                        pickle.dump([data.detach().cpu(), (1-labels).detach().cpu(), grad2.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
+                        print("done")
+
+                    for class_i in range(labels.shape[1]):
+                        optimizer.zero_grad()
+                        l = pred.clone() #torch.zeros_like(labels, device=labels.device)
+                        l[:, class_i] = 1
+                        _, gradi = model(data, y=l)# explain_class=
+                        print(l)
+                        with open(f'temp-grad{class_i}.pickle', 'wb') as f:
+                            pickle.dump([data.detach().cpu(), labels.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
+                            print("saved")
+                    for class_i in range(labels.shape[1]):
+                        optimizer.zero_grad()
+                        l = pred.clone()
+                        l[:, class_i] = 0
+                        _, gradi = model(data, y=l)# explain_class=
+                        print(l)
+                        with open(f'temp-grad-inverse{class_i}.pickle', 'wb') as f:
+                            pickle.dump([data.detach().cpu(), labels.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
+                            print("saved")
+                    # top3 = np.argsort(pred)[:, -3:]
+                    # #TODO: Iterate over output != 0 and calc grad respectively
+                    # pred_prob = []
+                    # for i, t3 in enumerate(top3):
+                    #     pred_prob.append(list(zip([classes_by_index[t] for t in t3], pred[i, t3])))
+                    # not0 = [[i for i, e in enumerate(a) if e != 0.0] for a in labels]
+                    #
+                    # ground_truth = []
+                    # for i, t3 in enumerate(not0):
+                    #     ground_truth.append(list(zip([classes_by_index[t] for t in t3], labels[i, t3])))
+                    img = timeseries_to_image(data, grad, downsample_factor=5, convert_to_rgb=False, pred_classes=None, ground_truth=None, filename='images/ptbxl/gradient/ptbxl_timeseries_', show=SHOW, save=SAVE)
                     if args.dry_run:
                         break
                     del data, pred, labels
@@ -174,7 +219,7 @@ if __name__ == "__main__":
                         type=str)  # , choices=['context, latents, all']
 
     parser.add_argument('--out_path', help="The output directory for losses and models",
-                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")) + '-test', type=str)
+                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")) + '-explain', type=str)
 
     parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")
@@ -207,6 +252,10 @@ if __name__ == "__main__":
     parser.add_argument('--dry_run', dest='dry_run', action='store_true',
                         help="Only run minimal samples to test all models functionality")
     parser.set_defaults(dry_run=False)
+
+    parser.add_argument('--use_class_weights', dest='use_class_weights', action='store_true',
+                        help="Use class weights determined by datasets class count")
+    parser.set_defaults(use_class_weights=False)
 
     parser.add_argument("--gpu_device", type=int, default=0)
 
