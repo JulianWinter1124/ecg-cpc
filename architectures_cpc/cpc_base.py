@@ -1,4 +1,3 @@
-
 import numpy as np
 import torch
 from torch import nn
@@ -6,7 +5,8 @@ from torch.nn import functional as F
 
 
 class CPC(nn.Module):
-    def __init__(self, encoder_model, autoregressive_model, predictor_model, latent_size, timesteps_in, timesteps_out, timesteps_ignore=0, verbose=False):
+    def __init__(self, encoder_model, autoregressive_model, predictor_model, latent_size, timesteps_in, timesteps_out,
+                 timesteps_ignore=0, verbose=False):
         super(CPC, self).__init__()
         self.timesteps_in = timesteps_in
         self.timesteps_out = timesteps_out
@@ -14,7 +14,7 @@ class CPC(nn.Module):
         self.encoder = encoder_model
         self.autoregressive = autoregressive_model
         self.predictor = predictor_model
-        #self.softmax = nn.Softmax(dim=1)
+        # self.softmax = nn.Softmax(dim=1)
         self.lsoftmax = nn.LogSoftmax(dim=1)
         self.cpc_train_mode = True
         self.timesteps_in = timesteps_in
@@ -23,36 +23,34 @@ class CPC(nn.Module):
         self.verbose = verbose
 
     def forward(self, x_windows, hidden):
-        if self.verbose: print('x_windows has shape:', x_windows.shape) # shape = batch, windows, channels, window_size
-        x_windows = x_windows.transpose(1, 0) #reshaping into windows, batch, channels, windowsize
+        if self.verbose: print('x_windows has shape:', x_windows.shape)  # shape = batch, windows, channels, window_size
+        x_windows = x_windows.transpose(1, 0)  # reshaping into windows, batch, channels, windowsize
         n_windows, n_batches, _, _ = x_windows.shape
         if self.verbose: print('x_windows has shape:', x_windows.shape)
         if self.cpc_train_mode and n_windows != self.timesteps_in + self.timesteps_out:
             print("timesteps in and out not matching total windows")
-        latents = self.encoder(x_windows.reshape(-1, *x_windows.shape[2:])) #reshape windows into batch dimension for only one forward
-        latents = latents.reshape(n_windows, n_batches, *latents.shape[1:]) #reshape shape back
-        if self.verbose: print('latents have shape:', latents.shape) # shape = windows, batch, latent_size
+        latents = self.encoder(
+            x_windows.reshape(-1, *x_windows.shape[2:]))  # reshape windows into batch dimension for only one forward
+        latents = latents.reshape(n_windows, n_batches, *latents.shape[1:])  # reshape shape back
+        if self.verbose: print('latents have shape:', latents.shape)  # shape = windows, batch, latent_size
         context, hidden = self.autoregressive(latents[0:self.timesteps_in, :], hidden)
-        context = context[-1, :, :] #We only need the last state. Shape: batch, context_outputsize
+        context = context[-1, :, :]  # We only need the last state. Shape: batch, context_outputsize
         if not self.cpc_train_mode:
             return latents, context, hidden
 
         loss = torch.Tensor([0.0]).cuda()
-        correct = 0 #will become Tensor
-        for k in range(0, self.timesteps_out): #Do this for each timestep
-            latent_k = latents[-self.timesteps_out + k] #batches, latents
-            pred_k = self.predictor(context, k) # Shape (Batches, latents)
-            #pred_k[0].T @ latent_k
-            #loss += torch.log(torch.exp(pred_k[0].T@latent_k[0])
-            softmax = self.lsoftmax(torch.mm(latent_k, pred_k.T)) #output: (Batches, Batches)
+        correct = 0  # will become Tensor
+        for k in range(0, self.timesteps_out):  # Do this for each timestep
+            latent_k = latents[-self.timesteps_out + k]  # batches, latents
+            pred_k = self.predictor(context, k)  # Shape (Batches, latents)
+            # pred_k[0].T @ latent_k
+            # loss += torch.log(torch.exp(pred_k[0].T@latent_k[0])
+            softmax = self.lsoftmax(torch.mm(latent_k, pred_k.T))  # output: (Batches, Batches)
             correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(n_batches).cuda())
             loss += torch.sum(torch.diag(softmax))
         loss /= (n_batches * self.timesteps_out) * -1.0
-        accuracy = correct.true_divide(n_batches*self.timesteps_out)
+        accuracy = correct.true_divide(n_batches * self.timesteps_out)
         return accuracy, loss, hidden
-
-
-
 
     # Calculate the loss
     # future_latents = []
@@ -63,7 +61,7 @@ class CPC(nn.Module):
     # loss = self.info_NCE_loss_brian(torch.stack(future_latents), torch.stack(predicted_latents))
     #  #Will become Tensor
     # return torch.Tensor([0.0]).cuda(), loss, hidden
-    def info_NCE_loss_brian(self, target_latents: torch.Tensor, pred_latents:torch.Tensor, emb_scale=0):
+    def info_NCE_loss_brian(self, target_latents: torch.Tensor, pred_latents: torch.Tensor, emb_scale=0):
         """
         Calculates the infoNCE loss for CPC according to 'DATA-EFFICIENT IMAGE RECOGNITION
         WITH CONTRASTIVE PREDICTIVE CODING' A.2
@@ -88,24 +86,23 @@ class CPC(nn.Module):
         """
         loss = torch.Tensor([0.0]).cuda()
         # latents = latents.permute(1, 0, 2)
-        #batch_dim, col_dim, row_dim, _ = latents.shape
+        # batch_dim, col_dim, row_dim, _ = latents.shape
         timesteps_out, batch_dim, _ = target_latents.shape
-        #targets = target_latents.transpose(1, 0)
+        # targets = target_latents.transpose(1, 0)
         targets = target_latents.view([-1, self.latent_size])  # reshape
-        #print(targets.shape)
+        # print(targets.shape)
         for i in range(timesteps_out):
-            total_elements = batch_dim #* timesteps_out
-            logits = torch.matmul(pred_latents[i], torch.t(targets[i])) #torch.t(targets)
+            total_elements = batch_dim  # * timesteps_out
+            logits = torch.matmul(pred_latents[i], torch.t(targets[i]))  # torch.t(targets)
             b = torch.arange(total_elements).cuda()
             col = b % timesteps_out
             labels = b + (i + 1) * timesteps_out + col
-            #print(labels)
+            # print(labels)
             temp_loss = torch.sum(- labels * F.log_softmax(logits, -1),
                                   -1)  # From https://gist.github.com/tejaskhot/cf3d087ce4708c422e68b3b747494b9f
             mean_loss = temp_loss.mean()
             loss += mean_loss
         return loss
-
 
     def freeze_layers(self):
         for param in self.parameters():
@@ -118,19 +115,19 @@ class CPC(nn.Module):
     def set_train_mode(self, mode_bool):
         self.cpc_train_mode = mode_bool
 
-
     def test_modules(self, in_channels, window_size, latent_size, timesteps_in, timesteps_out):
         self._test_modules(1, in_channels, window_size, latent_size, timesteps_in, timesteps_out)
         for r in np.random.randint(2, 100, 10):
             self._test_modules(r, in_channels, window_size, latent_size, timesteps_in, timesteps_out)
         self._test_modules(128, in_channels, window_size, latent_size, timesteps_in, timesteps_out, verbose=True)
 
-    def _test_modules(self, batch_size, in_channels, window_size, latent_size, timesteps_in, timesteps_out, verbose=False):
+    def _test_modules(self, batch_size, in_channels, window_size, latent_size, timesteps_in, timesteps_out,
+                      verbose=False):
         enc_in = torch.rand((batch_size, in_channels, window_size))
         if verbose: print('Encoder input shape:', enc_in.shape)
         enc_out = self.encoder(enc_in)
         if verbose: print('Encoder output shape:', enc_out.shape)
-        auto_in = torch.rand((timesteps_in)+enc_in.shape)
+        auto_in = torch.rand((timesteps_in) + enc_in.shape)
         if verbose: print('Autoregressive input shape (stacked encoder):', auto_in.shape)
         auto_out = self.autoregressive(auto_in)
         if verbose: print('Autoregressive output shape:', auto_out.shape)
@@ -141,11 +138,3 @@ class CPC(nn.Module):
             pred_out += self.predictor(pred_in, timesteps_out)
         if verbose: print('Predictor output shape:', pred_out.shape)
         assert enc_out.shape == pred_out.shape
-
-
-
-
-
-
-
-

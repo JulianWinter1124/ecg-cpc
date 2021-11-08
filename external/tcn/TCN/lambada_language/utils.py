@@ -13,6 +13,7 @@ it is the number of segments to speed up computation.
 The goal of PTB is to train a language model to predict the next word.
 """
 
+
 def data_generator(args):
     if os.path.exists(args.data + "/corpus") and not args.corpus:
         corpus = pickle.load(open(args.data + '/corpus', 'rb'))
@@ -23,8 +24,8 @@ def data_generator(args):
 
     eval_batch_size = 1
     train_data = batchify(corpus.train, args.batch_size, args)
-    val_data = [[0] * (args.seq_len-len(line)) + line for line in corpus.valid]
-    test_data = [[0] * (args.seq_len-len(line)) + line for line in corpus.test]
+    val_data = [[0] * (args.seq_len - len(line)) + line for line in corpus.valid]
+    test_data = [[0] * (args.seq_len - len(line)) + line for line in corpus.test]
     return train_data, val_data, test_data, corpus
 
 
@@ -74,7 +75,7 @@ class Corpus(object):
         ids = []
         token = 0
         misses = 0
-        if not path.endswith(".txt"):   # it's a folder
+        if not path.endswith(".txt"):  # it's a folder
             for subdir in os.listdir(path):
                 for filename in os.listdir(path + "/" + subdir):
                     if filename.endswith(".txt"):
@@ -142,6 +143,6 @@ def batchify(data, batch_size, args):
 
 def get_batch(source, i, args, seq_len=None, evaluation=False):
     seq_len = min(seq_len if seq_len else args.seq_len, source.size(1) - 1 - i)
-    data = Variable(source[:, i:i+seq_len], volatile=evaluation)
-    target = Variable(source[:, i+1:i+1+seq_len])  # CAUTION: This is un-flattened!
+    data = Variable(source[:, i:i + seq_len], volatile=evaluation)
+    target = Variable(source[:, i + 1:i + 1 + seq_len])  # CAUTION: This is un-flattened!
     return data, target

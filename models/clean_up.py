@@ -11,7 +11,7 @@ from collections import Counter
 from util.utility.dict_utils import count_key_in_dict, extract_values_for_key_in_dict
 
 
-def move_incomplete_training_folders(base = '.'):
+def move_incomplete_training_folders(base='.'):
     print(f"Cleaning up.")
     move_to_base = os.path.join(base, 'delete')
     move_to_old_base = os.path.join(base, 'old')
@@ -32,28 +32,30 @@ def move_incomplete_training_folders(base = '.'):
             elif len(dirs) == 0:
                 try:
                     param_file = os.path.join(root, 'params.txt')
-                    #print(f"Looking for params.txt at {param_file}")
+                    # print(f"Looking for params.txt at {param_file}")
                     with open(param_file, 'r') as file:
                         content = file.read()
                         if not 'dry_run' in content:
                             print(f"Old model found (no dry_run param)")
                             move_filetree(root, move_to_old)
                         elif 'dry_run=True' in content:
-                            #remove
+                            # remove
                             print(f'Found dry_run=True. Removing {root}, {dirs}, {files}')
                             move_filetree(root, move_to)
                 except:
                     print(f"Could not find params.txt in {root}")
                     move_filetree(root, move_to_old)
 
+
 def move_filetree(source, dest):
     Path(dest).mkdir(parents=True, exist_ok=True)
     print(f'Moving contents of {source} to {dest}')
-    #remove
+    # remove
     try:
         shutil.move(source, dest, copy_function=shutil.copytree)
     except shutil.Error as e:
         print(f'Moving contents of {source} to {dest} failed. Error{e}')
+
 
 def rename_folders_into_splits(base='.'):
     folders = glob(os.path.join(base, "*_*_*", ""))
@@ -61,21 +63,22 @@ def rename_folders_into_splits(base='.'):
         checks = []
         if not ('-test' in f or '-train' in f or 'splits' in f):
             for root, dirs, files in os.walk(f):
-                if len(dirs) == 0 and len(files)==0:
+                if len(dirs) == 0 and len(files) == 0:
                     continue
-                if len(dirs) > 0: #Traverse more
+                if len(dirs) > 0:  # Traverse more
                     continue
-                if len(dirs) == 0 and len(files)>0: #leaf dir
+                if len(dirs) == 0 and len(files) > 0:  # leaf dir
                     if 'params.txt' in files:
                         with open(os.path.join(root, 'params.txt'), 'r') as file:
                             content = file.read()
-                        checks.append('redo_splits' in content) #Not a test dir
+                        checks.append('redo_splits' in content)  # Not a test dir
 
-        if len(checks) > 0 and all(checks): #Found a test dir
+        if len(checks) > 0 and all(checks):  # Found a test dir
             print(f"{f} is a is a model with specific file splits. Renaming")
             new_folder_name = f.rstrip('/') + '|[splits]'
             print(f"Renaming {f} to {new_folder_name}")
             os.rename(f, new_folder_name)
+
 
 def rename_folders_into_test(base='.'):
     folders = glob(os.path.join(base, "*_*_*", ""))
@@ -83,24 +86,25 @@ def rename_folders_into_test(base='.'):
         checks = []
         if not ('-test' in f or '-train' in f):
             for root, dirs, files in os.walk(f):
-                if len(dirs) == 0 and len(files)==0:
+                if len(dirs) == 0 and len(files) == 0:
                     continue
-                if len(dirs) > 0: #Traverse more
+                if len(dirs) > 0:  # Traverse more
                     continue
-                if len(dirs) == 0 and len(files)>0: #leaf dir
-                    checks.append(is_test_folder(files) and not is_train_folder(files)) #Not a test dir
+                if len(dirs) == 0 and len(files) > 0:  # leaf dir
+                    checks.append(is_test_folder(files) and not is_train_folder(files))  # Not a test dir
 
-        if len(checks) > 0 and all(checks): #Found a test dir
+        if len(checks) > 0 and all(checks):  # Found a test dir
             print(f"{f} is a test directory. Renaming")
-            os.rename(f, f.rstrip('/')+'-test(a)')
+            os.rename(f, f.rstrip('/') + '-test(a)')
+
 
 def rename_folders_into_models(base='.', folders=None):
     folders = folders or glob(os.path.join(base, "*_*_*", ""))
     for f in folders:
         model_names = []
         for root, dirs, files in os.walk(f):
-            if len(dirs) > 0: #Do not look in leafs
-                model_folders = list(filter(lambda x: '.' in x, dirs)) #model folders?
+            if len(dirs) > 0:  # Do not look in leafs
+                model_folders = list(filter(lambda x: '.' in x, dirs))  # model folders?
                 print(f"Found the following model files: {model_folders} in {root}")
                 model_names += map(long_to_abbreviation, model_folders)
         if len(model_names) > 0:
@@ -117,25 +121,27 @@ def rename_folders_into_models(base='.', folders=None):
                 else:
                     raise
 
+
 def filter_folders_params(base='.', params_filter='use_class_weights'):
     folders = glob(os.path.join(base, "*_*_*", ""))
     filtered = []
     for f in folders:
         checks = []
         for root, dirs, files in os.walk(f):
-            if len(dirs) == 0 and len(files)==0:
+            if len(dirs) == 0 and len(files) == 0:
                 continue
-            if len(dirs) > 0: #Traverse more
+            if len(dirs) > 0:  # Traverse more
                 continue
-            if len(dirs) == 0 and len(files)>0: #leaf dir
+            if len(dirs) == 0 and len(files) > 0:  # leaf dir
                 if 'params.txt' in files:
                     with open(os.path.join(root, 'params.txt'), 'r') as file:
                         content = file.read()
                     checks.append(params_filter in content)
-        if len(checks) > 0 and any(checks): #Found a test dir
+        if len(checks) > 0 and any(checks):  # Found a test dir
             print(f"{f} Train session used {params_filter} param.")
             filtered += [f]
     return filtered
+
 
 def filter_folders_model_variables(base='.', model_variables_filter='normalize_latents'):
     folders = glob(os.path.join(base, "*_*_*", ""))
@@ -143,19 +149,20 @@ def filter_folders_model_variables(base='.', model_variables_filter='normalize_l
     for f in folders:
         checks = []
         for root, dirs, files in os.walk(f):
-            if len(dirs) == 0 and len(files)==0:
+            if len(dirs) == 0 and len(files) == 0:
                 continue
-            if len(dirs) > 0: #Traverse more
+            if len(dirs) > 0:  # Traverse more
                 continue
-            if len(dirs) == 0 and len(files)>0: #leaf dir
+            if len(dirs) == 0 and len(files) > 0:  # leaf dir
                 if 'model_variables.txt' in files:
                     with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
                         content = file.read()
                     checks.append(model_variables_filter in content)
-        if len(checks) > 0 and any(checks): #Found a test dir
+        if len(checks) > 0 and any(checks):  # Found a test dir
             print(f"{f} Train session used {model_variables_filter} param.")
             filtered += [f]
     return filtered
+
 
 def filter_folders_model_arch(base='.', model_arch_filter='use_class_weights'):
     folders = glob(os.path.join(base, "*_*_*", ""))
@@ -163,19 +170,20 @@ def filter_folders_model_arch(base='.', model_arch_filter='use_class_weights'):
     for f in folders:
         checks = []
         for root, dirs, files in os.walk(f):
-            if len(dirs) == 0 and len(files)==0:
+            if len(dirs) == 0 and len(files) == 0:
                 continue
-            if len(dirs) > 0: #Traverse more
+            if len(dirs) > 0:  # Traverse more
                 continue
-            if len(dirs) == 0 and len(files)>0: #leaf dir
+            if len(dirs) == 0 and len(files) > 0:  # leaf dir
                 if 'model_arch.txt' in files:
                     with open(os.path.join(root, 'model_arch.txt'), 'r') as file:
                         content = file.read()
                     checks.append(model_arch_filter in content)
-        if len(checks) > 0 and any(checks): #Found a test dir
+        if len(checks) > 0 and any(checks):  # Found a test dir
             print(f"{f} Train session used {model_arch_filter} param.")
             filtered += [f]
     return filtered
+
 
 def filter_folders_age(base='.', newer_than=1619628667):
     folders = glob(os.path.join(base, "*_*_*", ""))
@@ -183,19 +191,20 @@ def filter_folders_age(base='.', newer_than=1619628667):
     for f in folders:
         checks = []
         for root, dirs, files in os.walk(f):
-            if len(dirs) == 0 and len(files)==0:
+            if len(dirs) == 0 and len(files) == 0:
                 continue
-            if len(dirs) > 0: #Traverse more
+            if len(dirs) > 0:  # Traverse more
                 continue
-            if len(dirs) == 0 and len(files)>0: #leaf dir
+            if len(dirs) == 0 and len(files) > 0:  # leaf dir
                 if 'params.txt' in files:
                     fname = pathlib.Path(os.path.join(root, 'params.txt'))
                     ctime = int(fname.stat().st_mtime)
-                    checks.append(ctime>newer_than)
-        if len(checks) > 0 and all(checks): #Found a test dir
+                    checks.append(ctime > newer_than)
+        if len(checks) > 0 and all(checks):  # Found a test dir
             print(f"{f} Train session is newer than {newer_than}.")
             filtered += [f]
     return filtered
+
 
 def move_folders_to_old(base='.', folders=None):
     move_to_old_base = os.path.join(base, 'old')
@@ -206,7 +215,8 @@ def move_folders_to_old(base='.', folders=None):
         print(f, move_to_old)
         move_filetree(f, move_to_old)
 
-def create_symbolics(folders, symbolic_dir, symbolic_base_dir = '../models_symbolic_links'):
+
+def create_symbolics(folders, symbolic_dir, symbolic_base_dir='../models_symbolic_links'):
     dst = os.path.join(symbolic_base_dir, symbolic_dir)
     Path(dst).mkdir(parents=True, exist_ok=True)
     for f in folders:
@@ -218,27 +228,28 @@ def create_symbolics(folders, symbolic_dir, symbolic_base_dir = '../models_symbo
             print(f"File already exists: {sym_path}\n{e}")
 
 
-def rename_model_folders(base='.', folders = None, rename_in_test=False):
+def rename_model_folders(base='.', folders=None, rename_in_test=False):
     folders = folders or glob(os.path.join(base, "*_*_*", ""))
     for f in folders:
         if rename_in_test or not ('test' in f):
             print(f"Checking {f}...")
             for root, dirs, files in os.walk(f):
-                if len(dirs) == 0 and len(files)==0:
+                if len(dirs) == 0 and len(files) == 0:
                     continue
-                if len(dirs) > 0: #Traverse more
+                if len(dirs) > 0:  # Traverse more
                     continue
-                if len(dirs) == 0 and len(files)>0: #leaf dir (model?)
+                if len(dirs) == 0 and len(files) > 0:  # leaf dir (model?)
                     name = os.sep.join(root.split(os.sep)[:-1] + [root.split(os.sep)[-1].split('|')[0]])
                     is_cpc = True
 
                     if 'params.txt' in files:
-                            with open(os.path.join(root, 'params.txt'), 'r') as file:
-                                content = file.read()
-                            if 'splits_file=' in content:
-                                name += '|'+content.split("splits_file='")[1].split("'")[0].replace('.txt', '').replace('.','_')
-                            if 'use_class_weights=True' in content:
-                                name += '|use_weights'
+                        with open(os.path.join(root, 'params.txt'), 'r') as file:
+                            content = file.read()
+                        if 'splits_file=' in content:
+                            name += '|' + content.split("splits_file='")[1].split("'")[0].replace('.txt', '').replace(
+                                '.', '_')
+                        if 'use_class_weights=True' in content:
+                            name += '|use_weights'
 
                     if 'model_arch.txt' in files:
                         with open(os.path.join(root, 'model_arch.txt'), 'r') as file:
@@ -266,7 +277,9 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                                 m = content.split('"sampling_mode": ')[1].split(',')[0][1:-1]
                                 name += f'|m:{m}'
                             if '"downstream_model":' in content:
-                                m = content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[-2]
+                                m = \
+                                content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split(
+                                    '.')[-2]
                                 name += f'|{m}'
 
                         if 'params.txt' in files:
@@ -282,7 +295,7 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                             #     name += f'|pte:{epos}'
 
 
-                    else: #not cpc
+                    else:  # not cpc
 
                         if 'model_variables.txt' in files:
                             with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
@@ -292,7 +305,7 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                                         content = '\n'.join(content[i:])
                                         break
                             data = json.loads(content)
-                            name += '|ConvLyrs:'+str(count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d'))
+                            name += '|ConvLyrs:' + str(count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d'))
                             if 'torch.nn.modules.pooling.MaxPool1d' in content:
                                 name += '|MaxPool'
                             if 'torch.nn.modules.pooling.AdaptiveAvgPool1d' in content:
@@ -303,10 +316,14 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                                 name += '|LSTM'
                             if 'torch.nn.modules.batchnorm.BatchNorm1d' in content:
                                 name += '|BatchNorm'
-                            name += '|stride_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum()))
-                            name += '|dilation_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum()))
-                            name += '|padding_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum()))
-                            name += '|krnls_sum:' + str(int(np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum()))
+                            name += '|stride_sum:' + str(
+                                int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum()))
+                            name += '|dilation_sum:' + str(
+                                int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum()))
+                            name += '|padding_sum:' + str(
+                                int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum()))
+                            name += '|krnls_sum:' + str(
+                                int(np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum()))
 
                     print(f"Renaming {root} to {name}")
                     try:
@@ -316,8 +333,6 @@ def rename_model_folders(base='.', folders = None, rename_in_test=False):
                             os.rename(root, name[0:254])
                         else:
                             raise
-
-
 
 
 def long_to_abbreviation(name):
@@ -336,6 +351,7 @@ def is_test_folder(files):
 
     return c1 and c2 and c3
 
+
 def is_train_folder(files):
     c1 = any([f.endswith('.pt') and 'checkpoint' in f for f in files])
     c2 = any([f.endswith('full_model.pt') for f in files])
@@ -344,7 +360,7 @@ def is_train_folder(files):
     return c1 and c2 and c3 and c4
 
 
-def write_models_to_dirs(base = '.'):
+def write_models_to_dirs(base='.'):
     model_file = '../train-folder-models'
     arch_file = 'model_arch.txt'
     with open(model_file, 'r') as f:
@@ -356,8 +372,9 @@ def write_models_to_dirs(base = '.'):
                 with open(ap, 'w') as apf:
                     apf.write(mclass)
 
+
 def clean_rename(folders=None):
-    correct_age = set(filter_folders_age(newer_than=1619628667)) #Newer than introduction of correct train-test-split
+    correct_age = set(filter_folders_age(newer_than=1619628667))  # Newer than introduction of correct train-test-split
     incorrect_age = set(filter_folders_age(newer_than=0)) - correct_age
     uses_weights_all = set(filter_folders_params(params_filter='use_class_weights=True'))
     uses_weights = (correct_age & uses_weights_all)
@@ -371,6 +388,7 @@ def clean_rename(folders=None):
     # create_symbolics(train_folders & uses_weights, 'train/class_weights')
     # create_symbolics(train_folders & uses_no_weights, 'train/no_class_weights')
 
+
 def clean_categorize(test=False):
     uses_model_variables = set(filter_folders_model_variables(model_variables_filter=''))
     correct_age = set(filter_folders_age(newer_than=1619628667)) & uses_model_variables
@@ -381,40 +399,66 @@ def clean_categorize(test=False):
     baseline_folders = set(filter_folders_model_arch(model_arch_filter='BaselineNet')) & train_or_test_folders
     print(baseline_folders)
     cpc_folders = train_or_test_folders - baseline_folders
-    correct_epochs_baseline_folders = set(filter_folders_params(params_filter='downstream_epochs=120')) & baseline_folders
+    correct_epochs_baseline_folders = set(
+        filter_folders_params(params_filter='downstream_epochs=120')) & baseline_folders
     correct_epochs_cpc_folders = set(filter_folders_params(params_filter='downstream_epochs=20')) & cpc_folders
     uses_weights = set(filter_folders_params(params_filter='use_class_weights=True')) & correct_age
     splits = {}
-    splits['min_cut-25'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut25.txt'")) & correct_age
-    splits['min_cut-50'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut50.txt'")) & correct_age
-    splits['min_cut-100'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut100.txt'")) & correct_age
-    splits['min_cut-150'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut150.txt'")) & correct_age
-    splits['min_cut-200'] = set(filter_folders_params(params_filter="splits_file='train-test-splits_min_cut200.txt'")) & correct_age
+    splits['min_cut-25'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits_min_cut25.txt'")) & correct_age
+    splits['min_cut-50'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits_min_cut50.txt'")) & correct_age
+    splits['min_cut-100'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits_min_cut100.txt'")) & correct_age
+    splits['min_cut-150'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits_min_cut150.txt'")) & correct_age
+    splits['min_cut-200'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits_min_cut200.txt'")) & correct_age
 
-    splits['fewer_labels-0_01'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.01.txt'")) & correct_age
-    splits['fewer_labels-0_05'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.05.txt'")) & correct_age
-    splits['fewer_labels-0_001'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.001.txt'")) & correct_age
-    splits['fewer_labels-0_005'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.005.txt'")) & correct_age
-    splits['fewer_labels-10'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels10.txt'")) & correct_age
-    splits['fewer_labels-14'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels14.txt'")) & correct_age
-    splits['fewer_labels-20'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels20.txt'")) & correct_age
-    splits['fewer_labels-30'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels30.txt'")) & correct_age
-    splits['fewer_labels-40'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels40.txt'")) & correct_age
-    splits['fewer_labels-50'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels50.txt'")) & correct_age
-    splits['fewer_labels-60'] = set(filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels60.txt'")) & correct_age
+    splits['fewer_labels-0_01'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.01.txt'")) & correct_age
+    splits['fewer_labels-0_05'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.05.txt'")) & correct_age
+    splits['fewer_labels-0_001'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.001.txt'")) & correct_age
+    splits['fewer_labels-0_005'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels0.005.txt'")) & correct_age
+    splits['fewer_labels-10'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels10.txt'")) & correct_age
+    splits['fewer_labels-14'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels14.txt'")) & correct_age
+    splits['fewer_labels-20'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels20.txt'")) & correct_age
+    splits['fewer_labels-30'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels30.txt'")) & correct_age
+    splits['fewer_labels-40'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels40.txt'")) & correct_age
+    splits['fewer_labels-50'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels50.txt'")) & correct_age
+    splits['fewer_labels-60'] = set(
+        filter_folders_params(params_filter="splits_file='train-test-splits-fewer-labels60.txt'")) & correct_age
     other_splits = correct_age - set(chain.from_iterable(splits.values()))
 
     uses_no_weights = correct_age - uses_weights
     base_dir = 'test' if test else 'train'
     for sfile, v in splits.items():
-        create_symbolics(correct_epochs_cpc_folders & uses_weights & v, base_dir+'/class_weights/'+'/few-labels/cpc/'+sfile)
-        create_symbolics(correct_epochs_cpc_folders & uses_no_weights & v, base_dir+'/no_class_weights/'+'/few-labels/cpc/'+sfile)
-        create_symbolics(correct_epochs_baseline_folders & uses_weights & v, base_dir+'/class_weights/'+'/few-labels/baseline/'+sfile)
-        create_symbolics(correct_epochs_baseline_folders & uses_no_weights & v, base_dir+'/no_class_weights/'+'/few-labels/baseline/'+sfile)
-    create_symbolics(correct_epochs_cpc_folders & uses_weights & other_splits, base_dir+'/class_weights/other-splits/cpc/')
-    create_symbolics(correct_epochs_cpc_folders & uses_no_weights & other_splits, base_dir+'/no_class_weights/other-splits/cpc/')
-    create_symbolics(correct_epochs_baseline_folders & uses_weights & other_splits, base_dir+'/class_weights/other-splits/baseline/')
-    create_symbolics(correct_epochs_baseline_folders & uses_no_weights & other_splits, base_dir+'/no_class_weights/other-splits/baseline/')
+        create_symbolics(correct_epochs_cpc_folders & uses_weights & v,
+                         base_dir + '/class_weights/' + '/few-labels/cpc/' + sfile)
+        create_symbolics(correct_epochs_cpc_folders & uses_no_weights & v,
+                         base_dir + '/no_class_weights/' + '/few-labels/cpc/' + sfile)
+        create_symbolics(correct_epochs_baseline_folders & uses_weights & v,
+                         base_dir + '/class_weights/' + '/few-labels/baseline/' + sfile)
+        create_symbolics(correct_epochs_baseline_folders & uses_no_weights & v,
+                         base_dir + '/no_class_weights/' + '/few-labels/baseline/' + sfile)
+    create_symbolics(correct_epochs_cpc_folders & uses_weights & other_splits,
+                     base_dir + '/class_weights/other-splits/cpc/')
+    create_symbolics(correct_epochs_cpc_folders & uses_no_weights & other_splits,
+                     base_dir + '/no_class_weights/other-splits/cpc/')
+    create_symbolics(correct_epochs_baseline_folders & uses_weights & other_splits,
+                     base_dir + '/class_weights/other-splits/baseline/')
+    create_symbolics(correct_epochs_baseline_folders & uses_no_weights & other_splits,
+                     base_dir + '/no_class_weights/other-splits/baseline/')
+
 
 def clean_remove_dry_run():
     move_incomplete_training_folders()
@@ -424,21 +468,17 @@ if __name__ == '__main__':
     # for i in range(10): #run this multiple time to remove nested folders
     #     print('Deletion routine:', i)
     #
-    #rename_folders_into_test()
-    #write_models_to_dirs()
-    #rename_folders_into_models()
-    #rename_folders_into_splits()
+    # rename_folders_into_test()
+    # write_models_to_dirs()
+    # rename_folders_into_models()
+    # rename_folders_into_splits()
 
-    #move_folders_to_old(folders=incorrect_age)
+    # move_folders_to_old(folders=incorrect_age)
     #
     # clean_remove_dry_run()
     clean_rename()
     clean_categorize()
-    #print(torch.version.__version__)
-    #cpc_folders = train_folders - baseline_folders
-    #rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])
-    #rename_model_folders(folders=['/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_08_21-15-58-test'], rename_in_test=True)
-
-
-
-
+    # print(torch.version.__version__)
+    # cpc_folders = train_folders - baseline_folders
+    # rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])
+    # rename_model_folders(folders=['/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_08_21-15-58-test'], rename_in_test=True)

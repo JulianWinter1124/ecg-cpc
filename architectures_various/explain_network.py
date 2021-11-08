@@ -15,12 +15,12 @@ class ExplainLabel(nn.Module):
             output = self.model(X)
             if explain_class_index > -1:
                 fake_truth = torch.zeros_like(output)
-                if self.normal_label_index>=0:
+                if self.normal_label_index >= 0:
                     fake_truth[self.normal_label_index] = 1
             else:
                 fake_truth = output.clone()
                 fake_truth[:, explain_class_index] = 0.0
-            loss = torch.sum(torch.square(fake_truth-output)) #Same as just sum of squared output in this case
+            loss = torch.sum(torch.square(fake_truth - output))  # Same as just sum of squared output in this case
             loss.backward()
             grad = torch.abs(X.grad)
             X.grad = None
@@ -28,9 +28,6 @@ class ExplainLabel(nn.Module):
         else:
             accuracies, loss = self.model(X, y)
             loss.backward()
-            grad = torch.abs(X.grad) #in Heat map distance is important not specific direction
+            grad = torch.abs(X.grad)  # in Heat map distance is important not specific direction
             X.grad = None
             return accuracies, loss, grad
-
-
-

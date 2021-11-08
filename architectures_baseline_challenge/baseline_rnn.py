@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class BaselineNet(nn.Module):
     def __init__(self, in_channels, out_channels, out_classes=94, verbose=False):
         super(BaselineNet, self).__init__()
@@ -26,9 +27,8 @@ class BaselineNet(nn.Module):
         x = x.transpose(1, 2)
         x = self.features(x)
         x = torch.movedim(x, -1, 0)
-        x, c_nh_n = self.lstm(x) #no hidden state so its 0, take last output
+        x, c_nh_n = self.lstm(x)  # no hidden state so its 0, take last output
         x = x[-1]
         x = self.classifier(x)
         x = self.activation(x)
         return x
-

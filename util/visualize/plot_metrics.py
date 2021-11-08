@@ -22,14 +22,16 @@ def plot_roc_singleclass(tpr, fpr, roc_auc, class_name, class_i, savepath=None, 
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title(plot_name+'\nReceiver operating characteristic for single class: ' + class_name)
+    plt.title(plot_name + '\nReceiver operating characteristic for single class: ' + class_name)
     if plot_legends:
         plt.legend(loc="lower right")
     if savepath:
         plt.savefig(os.path.join(savepath, f'roc-{class_name}.png'), bbox_inches='tight')
     plt.show()
 
-def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepath=None, plot_name='', plot_legends=True):
+
+def plot_roc_multiclass(tpr, fpr, roc_auc, classes: list, selection=None, savepath=None, plot_name='',
+                        plot_legends=True):
     n_classes = len(classes)
     selection = range(n_classes) if selection is None else selection
     all_fpr = np.unique(np.concatenate([fpr[i] for i in selection]))
@@ -59,12 +61,12 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepat
              color='navy', linestyle=':', linewidth=4)
 
     cm = plt.get_cmap('gist_rainbow')
-    colors = cycle([cm(1.*i/n_classes) for i in selection])
+    colors = cycle([cm(1. * i / n_classes) for i in selection])
 
     for i, color in zip(selection, colors):
         plt.plot(fpr[i], tpr[i], color=color, lw=lw,
                  label='{0} (area = {1:0.2f})'
-                 ''.format(classes[i], roc_auc[i]))
+                       ''.format(classes[i], roc_auc[i]))
 
     plt.plot([0, 1], [0, 1], 'k--', lw=lw)
     plt.xlim([0.0, 1.0])
@@ -72,13 +74,14 @@ def plot_roc_multiclass(tpr, fpr, roc_auc, classes:list, selection=None, savepat
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     parts = plot_name.split('|')
-    plot_name = parts[0]+'\n'+'|'.join(parts[1:])
-    plt.title(plot_name+'\nReceiver operating characteristic for multi-class')
+    plot_name = parts[0] + '\n' + '|'.join(parts[1:])
+    plt.title(plot_name + '\nReceiver operating characteristic for multi-class')
     if plot_legends:
         plt.legend(bbox_to_anchor=(1.04, 1), loc='upper left', fontsize=6)
     if savepath:
         plt.savefig(os.path.join(savepath, 'ROC-multiclass.png'), bbox_inches='tight')
     plt.show()
+
 
 def plot_precision_recall_microavg(recall, precision, average_precision, savepath=None):
     plt.figure()
@@ -90,18 +93,19 @@ def plot_precision_recall_microavg(recall, precision, average_precision, savepat
     plt.xlim([0.0, 1.0])
     plt.title(
         'Average precision score, micro-averaged over all classes: AP={0:0.2f}'
-        .format(average_precision["micro"]))
+            .format(average_precision["micro"]))
     if savepath:
         plt.savefig(os.path.join(savepath, 'precision-recall-microavg.png'))
 
 
-def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None, savepath=None, plot_name='', plot_legends=True):
+def plot_precision_recall_multiclass(precision, recall, average_precision, classes, selection=None, savepath=None,
+                                     plot_name='', plot_legends=True):
     n_classes = len(classes)
     if selection is None:
         selection = range(n_classes)
     # setup plot details
     cm = plt.get_cmap('gist_rainbow')
-    colors = cycle([cm(1.*i/n_classes) for i in selection])
+    colors = cycle([cm(1. * i / n_classes) for i in selection])
 
     plt.figure(figsize=(12, 10))
     f_scores = np.linspace(0.2, 0.8, num=4)
@@ -112,7 +116,7 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, class
         y = f_score * x / (2 * x - f_score)
         l, = plt.plot(x[y >= 0], y[y >= 0], color='gray', alpha=0.2)
         plt.annotate('f1={0:0.1f}'.format(f_score), xy=(0.9, y[45] + 0.02))
-    lines.append(l) #yes only one
+    lines.append(l)  # yes only one
     labels.append('iso-f1 curves')
 
     l, = plt.plot(recall["micro"], precision["micro"], color='gold', lw=2)
@@ -132,8 +136,8 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, class
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     parts = plot_name.split('|')
-    plot_name = parts[0]+'\n'+'|'.join(parts[1:])
-    plt.title(plot_name+'\nExtension of Precision-Recall curve to multi-class')
+    plot_name = parts[0] + '\n' + '|'.join(parts[1:])
+    plt.title(plot_name + '\nExtension of Precision-Recall curve to multi-class')
 
     if plot_legends:
         plt.legend(lines, labels, bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=6)
@@ -141,16 +145,19 @@ def plot_precision_recall_multiclass(precision, recall, average_precision, class
         plt.savefig(os.path.join(savepath, 'precision-recall-multiclass.png'), bbox_inches='tight')
     plt.show()
 
-def plot_confusion_matrix(confusion_matrix:np.ndarray, classes):
+
+def plot_confusion_matrix(confusion_matrix: np.ndarray, classes):
     disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix, display_labels=classes)
     disp.plot()
 
-def plot_parallel_coordinates(df: pd.DataFrame, color_column, save_to, drop_columns:list=[], put_last_columns:list=[], exclude_color_column=True):
+
+def plot_parallel_coordinates(df: pd.DataFrame, color_column, save_to, drop_columns: list = [],
+                              put_last_columns: list = [], exclude_color_column=True):
     def _make_plotly_dict(column_name, data):
         d = dict()
         t = data.dtype
         if t == bool:
-            d['range'] = [-0.5,1.5]
+            d['range'] = [-0.5, 1.5]
             d['tickvals'] = [True, False]
             d['ticktext'] = ['True', 'False']
             d['values'] = data
@@ -168,21 +175,23 @@ def plot_parallel_coordinates(df: pd.DataFrame, color_column, save_to, drop_colu
             d['values'] = data
         d['label'] = column_name
         return d
+
     cols = df.columns.tolist()
-    #cols = list(set(cols)-set(put_last_columns)-set(exclude_columns))+put_last_columns
+    # cols = list(set(cols)-set(put_last_columns)-set(exclude_columns))+put_last_columns
     cols = [c for c in cols if not (c in drop_columns or c in put_last_columns)] + put_last_columns
     df = df[cols]
-    dimensions = [_make_plotly_dict(column_name, data) for column_name, data in df.iteritems() if not (exclude_color_column and column_name == color_column)]
+    dimensions = [_make_plotly_dict(column_name, data) for column_name, data in df.iteritems() if
+                  not (exclude_color_column and column_name == color_column)]
     fig = go.Figure(data=
-        go.Parcoords(
-            line = dict(color = df[color_column],
-                       colorscale = 'Electric',
-                        #autocolorscale=True,
-                       showscale = True,
-                       cmin = df[color_column].min(),
-                       cmax = df[color_column].max()),
-            dimensions = dimensions
-        )
+    go.Parcoords(
+        line=dict(color=df[color_column],
+                  colorscale='Electric',
+                  # autocolorscale=True,
+                  showscale=True,
+                  cmin=df[color_column].min(),
+                  cmax=df[color_column].max()),
+        dimensions=dimensions
+    )
     )
     fig.update_traces(labelangle=-90, selector=dict(type='parcoords'))
     fig.show()
@@ -210,11 +219,13 @@ def plot_lowlabel_availabilty(df_groups, title, save_to, filename, data_col='mic
                  'train-test-splits_min_cut150': 0.15470200552760258,
                  'train-test-splits_min_cut200': 0.18864715470200552}
     ordered_splits = [k for k, v in sorted(fractions.items(), key=lambda item: item[1])]
+
     def get_fraction_x_for_splitsname(name):
         return fractions[name]
+
     fontP = FontProperties()
     fontP.set_size('xx-small')
-    fig, ax = plt.subplots(figsize=(20,10))
+    fig, ax = plt.subplots(figsize=(20, 10))
     seaborn.set_palette("hls", len(df_groups))
     plt.title(title)
     for name, group in df_groups:
@@ -231,17 +242,19 @@ def plot_lowlabel_availabilty(df_groups, title, save_to, filename, data_col='mic
     handles, labels = ax.get_legend_handles_labels()
     if save_legend_seperate:
         legend = plt.legend(handles, labels, loc=3, framealpha=1, frameon=False)
-        export_legend(legend, save_to, 'legend-'+filename)
+        export_legend(legend, save_to, 'legend-' + filename)
     else:
-        ax.legend(handles, labels, loc='lower right', prop=fontP, handlelength=3) #bbox_to_anchor=(1.05, 1)
+        ax.legend(handles, labels, loc='lower right', prop=fontP, handlelength=3)  # bbox_to_anchor=(1.05, 1)
     fig.savefig(os.path.join(save_to, filename), bbox_inches='tight')
     plt.show()
 
+
 def export_legend(legend, save_to, filename="legend.png"):
-    fig  = legend.figure
+    fig = legend.figure
     fig.canvas.draw()
-    bbox  = legend.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    bbox = legend.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(os.path.join(save_to, filename), dpi="figure", bbox_inches=bbox)
+
 
 def plot_prediction_scatterplots(labels, pred, model_thresholds, filename=None, save=False, show=True):
     binary_pred = pred[0] >= model_thresholds
@@ -249,11 +262,11 @@ def plot_prediction_scatterplots(labels, pred, model_thresholds, filename=None, 
     x = np.arange(len(model_thresholds))
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, figsize=(15, 5))
     title = "Correct classes: " + ", ".join(map(str, np.nonzero(labels)[:, 1].numpy()))
-    #title += "\n Predicted classes (binary): " + ", ".join(map(str, np.nonzero(binary_pred.numpy())[0]))
+    # title += "\n Predicted classes (binary): " + ", ".join(map(str, np.nonzero(binary_pred.numpy())[0]))
 
     fig.suptitle(title)
     ##First plot
-    ax1.set_aspect='equal'
+    ax1.set_aspect = 'equal'
     ax1.scatter(x[binary_pred], pred[0][binary_pred], c='yellow', label='true')
     ax1.scatter(x[~binary_pred], pred[0][~binary_pred], c='purple', label='false')
     ax1.set_xlabel('Class Nr.')
@@ -263,7 +276,7 @@ def plot_prediction_scatterplots(labels, pred, model_thresholds, filename=None, 
         ax1.annotate(str(class_i), (class_i, pred[0][class_i]))
     ax1.legend()
     ##Second Plot
-    ax2.set_aspect='equal'
+    ax2.set_aspect = 'equal'
     ax2.scatter(x[binary_pred], diff[binary_pred], c='yellow', label='true')
     ax2.scatter(x[~binary_pred], diff[~binary_pred], c='purple', label='false')
     ax2.set_xlabel('Class Nr.')
@@ -272,16 +285,15 @@ def plot_prediction_scatterplots(labels, pred, model_thresholds, filename=None, 
         ax2.annotate(str(class_i), (class_i, diff[class_i]))
     ax2.legend()
     ##Third Plot
-    normed_pos = diff/(1-model_thresholds)
-    normed_neg = diff/model_thresholds
-    #probs =
-    probs = (np.where(diff>=0, normed_pos, normed_neg)+1)/2
+    normed_pos = diff / (1 - model_thresholds)
+    normed_neg = diff / model_thresholds
+    # probs =
+    probs = (np.where(diff >= 0, normed_pos, normed_neg) + 1) / 2
     ax3.scatter(x[binary_pred], probs[binary_pred], c='yellow', label='true')
     ax3.scatter(x[~binary_pred], probs[~binary_pred], c='purple', label='false')
     ax3.set_ylim(top=1.05)
 
-
-    ax3.set_aspect='equal'
+    ax3.set_aspect = 'equal'
     ax3.set_xlabel('Class Nr.')
     ax3.set_ylabel(r'"Probabilties" obtained by weighting output with threshold$^{-1}$')
     for class_i in x:

@@ -1,4 +1,5 @@
-class ScheduledOptim(object): #https://github.com/jefflai108/Contrastive-Predictive-Coding-PyTorch/blob/a9dab4e759aaa68dce1b1ada46a8035076ba3296/src/optimizer_v1.py#L24
+class ScheduledOptim(
+    object):  # https://github.com/jefflai108/Contrastive-Predictive-Coding-PyTorch/blob/a9dab4e759aaa68dce1b1ada46a8035076ba3296/src/optimizer_v1.py#L24
     """A simple wrapper class for learning rate scheduling"""
 
     def __init__(self, optimizer, n_warmup_steps):
@@ -29,11 +30,11 @@ class ScheduledOptim(object): #https://github.com/jefflai108/Contrastive-Predict
         """Learning rate scheduling per step"""
         lr = 0.0
         for param_group in self.optimizer.param_groups:
-            lr = param_group['lr']*0.5
+            lr = param_group['lr'] * 0.5
             print('updating lr from', param_group['lr'], end=' ')
             break
 
         for param_group in self.optimizer.param_groups:
-             param_group['lr'] = lr
+            param_group['lr'] = lr
         print('to', lr)
         return lr

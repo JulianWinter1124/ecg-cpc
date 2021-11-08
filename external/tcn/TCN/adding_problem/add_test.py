@@ -54,9 +54,8 @@ print("Producing data...")
 X_train, Y_train = data_generator(50000, seq_length)
 X_test, Y_test = data_generator(1000, seq_length)
 
-
 # Note: We use a very simple setting here (assuming all levels have the same # of channels.
-channel_sizes = [args.nhid]*args.levels
+channel_sizes = [args.nhid] * args.levels
 kernel_size = args.ksize
 dropout = args.dropout
 model = TCN(input_channels, n_classes, channel_sizes, kernel_size=kernel_size, dropout=dropout)
@@ -81,7 +80,7 @@ def train(epoch):
         if i + batch_size > X_train.size(0):
             x, y = X_train[i:], Y_train[i:]
         else:
-            x, y = X_train[i:(i+batch_size)], Y_train[i:(i+batch_size)]
+            x, y = X_train[i:(i + batch_size)], Y_train[i:(i + batch_size)]
         optimizer.zero_grad()
         output = model(x)
         loss = F.mse_loss(output, y)
@@ -94,9 +93,9 @@ def train(epoch):
 
         if batch_idx % args.log_interval == 0:
             cur_loss = total_loss / args.log_interval
-            processed = min(i+batch_size, X_train.size(0))
+            processed = min(i + batch_size, X_train.size(0))
             print('Train Epoch: {:2d} [{:6d}/{:6d} ({:.0f}%)]\tLearning rate: {:.4f}\tLoss: {:.6f}'.format(
-                epoch, processed, X_train.size(0), 100.*processed/X_train.size(0), lr, cur_loss))
+                epoch, processed, X_train.size(0), 100. * processed / X_train.size(0), lr, cur_loss))
             total_loss = 0
 
 
@@ -109,9 +108,6 @@ def evaluate():
         return test_loss.item()
 
 
-for ep in range(1, epochs+1):
+for ep in range(1, epochs + 1):
     train(ep)
     tloss = evaluate()
-
-
-

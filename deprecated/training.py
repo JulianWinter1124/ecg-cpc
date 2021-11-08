@@ -19,7 +19,7 @@ def cpc_train(model, train_loader, timesteps_in, timesteps_out, optimizer, epoch
         data = data.float().cuda()
         optimizer.zero_grad()
         hidden = model.autoregressive.init_hidden(data.shape[0], use_gpu=True)
-        #hidden.detach_()
+        # hidden.detach_()
         hidden = hidden.detach()
         count += 1
         acc, loss, hidden = model(data, hidden=hidden)
@@ -27,44 +27,48 @@ def cpc_train(model, train_loader, timesteps_in, timesteps_out, optimizer, epoch
         total_acc += acc
         loss.backward()
         optimizer.step()
-        elapsed_times.append(time.time()-batch_time)
+        elapsed_times.append(time.time() - batch_time)
         if batch_idx % 10 == 0:
             print('Train Epoch: {} \tAccuracy: {:.4f}\tLoss: {:.6f}\tElapsed time: {}'.format(
                 epoch, acc.item(), loss.item(), str(timedelta(seconds=elapsed_times[-1]))))
     total_loss /= count
     total_acc /= count
 
-    print('===> Trainings set: Average loss: {:.4f}\tAccuracy: {:.4f}\tElapsed time (average): {}\tElapsed time (total): {}\n'.format(
-        total_loss.item(), total_acc.item(), str(timedelta(seconds=np.average(elapsed_times))), str(timedelta(seconds=time.time()-start_time))))
+    print(
+        '===> Trainings set: Average loss: {:.4f}\tAccuracy: {:.4f}\tElapsed time (average): {}\tElapsed time (total): {}\n'.format(
+            total_loss.item(), total_acc.item(), str(timedelta(seconds=np.average(elapsed_times))),
+            str(timedelta(seconds=time.time() - start_time))))
     return total_acc, total_loss
+
 
 def cpc_validation(model, data_loader, timesteps_in, timesteps_out, batch_size):
     model.eval()
     total_loss = 0
-    total_acc  = 0
+    total_acc = 0
     count = 0
     hidden = None
     with torch.no_grad():
         for _, data_and_labels in enumerate(data_loader):
             data, _ = data_and_labels
-            data = data.float().cuda() # add channel dimension
-            if True: #hidden is None or batch_size != data.shape[0]:
+            data = data.float().cuda()  # add channel dimension
+            if True:  # hidden is None or batch_size != data.shape[0]:
                 hidden = model.autoregressive.init_hidden(len(data), use_gpu=True)
             acc, loss, hidden = model(data, hidden=hidden)
             count += 1
             total_loss += loss
-            total_acc  += acc
+            total_acc += acc
 
-    total_loss /= count # average loss
-    total_acc  /= count # average acc
+    total_loss /= count  # average loss
+    total_acc /= count  # average acc
 
     print('===> Validation set: Average loss: {:.4f}\tAccuracy: {:.4f}\n'.format(
-                total_loss.item(), total_acc.item()))
+        total_loss.item(), total_acc.item()))
 
     return total_acc, total_loss
 
+
 def down_train(downstream_model, train_loader, timesteps_in, timesteps_out, optimizer, epoch, batch_size):
-    #TODO: THIS METHOD
+    # TODO: THIS METHOD
     downstream_model.train()
     total_loss = torch.tensor(0.0).cuda()
     total_acc = torch.tensor(0.0).cuda()
@@ -74,20 +78,21 @@ def down_train(downstream_model, train_loader, timesteps_in, timesteps_out, opti
     cpc_latents = []
     cpc_contexts = []
     confusion_pred, confusion_y = [], []
-    for batch_idx, data_and_labels in enumerate(train_loader): #TODO: Custom collate fn
-        data, patient_finished, labels = data_and_labels # add channel dimension
-        #print('here', patient_finished, labels)
+    for batch_idx, data_and_labels in enumerate(train_loader):  # TODO: Custom collate fn
+        data, patient_finished, labels = data_and_labels  # add channel dimension
+        # print('here', patient_finished, labels)
 
         data = data.float().cuda()
-        labels = labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
+        labels = labels.float().squeeze(1).cuda()  # do not squeeze batch dim (0)
         if not cpc_hidden is None:
             cpc_hidden = downstream_model.init_hidden(len(data), use_gpu=True)
         optimizer.zero_grad()
         cpc_latent, cpc_context, cpc_hidden = downstream_model(data, None, None, cpc_hidden, y=None, finished=False)
         cpc_latents.append(cpc_latent)
         cpc_contexts.append(cpc_context)
-        if patient_finished.any(): #If anyone is finished? TODO: Better: give finished vector to downstream
-            accs, loss, cpc_hidden, confuse = downstream_model(None, cpc_latents, cpc_contexts, cpc_hidden, y=labels, finished=True)
+        if patient_finished.any():  # If anyone is finished? TODO: Better: give finished vector to downstream
+            accs, loss, cpc_hidden, confuse = downstream_model(None, cpc_latents, cpc_contexts, cpc_hidden, y=labels,
+                                                               finished=True)
             if type(accs) == list:
                 acc = accs[0]
                 all_accs.append(accs)
@@ -110,14 +115,15 @@ def down_train(downstream_model, train_loader, timesteps_in, timesteps_out, opti
             count += 1
     total_loss /= count
     total_acc /= count
-    #cm = confusion_matrix(confusion_y, confusion_pred)
-    #plot_confusion_matrix(cm, 'train', ['CD', 'HYP', 'MI', 'NORM', 'STTC'])
+    # cm = confusion_matrix(confusion_y, confusion_pred)
+    # plot_confusion_matrix(cm, 'train', ['CD', 'HYP', 'MI', 'NORM', 'STTC'])
     total_accs = []
     for ac in zip(*all_accs):
         total_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
     print('===> Trainings set: Average loss: {:.4f}\tAccuracies: '.format(
         total_loss), *map("{:.4f}".format, total_accs))
     return total_acc, total_loss
+
 
 def down_validation(downstream_model, data_loader, timesteps_in, timesteps_out, batch_size):
     total_loss = torch.tensor(0.0).cuda()
@@ -141,8 +147,9 @@ def down_validation(downstream_model, data_loader, timesteps_in, timesteps_out, 
             cpc_contexts.append(cpc_context)
             if patient_finished.any():  # If anyone is finished? TODO: Better: give finished vector to downstream
 
-                accs, loss, cpc_hidden, confuse = downstream_model(None, cpc_latents, cpc_contexts, cpc_hidden, y=labels,
-                                                         finished=True)
+                accs, loss, cpc_hidden, confuse = downstream_model(None, cpc_latents, cpc_contexts, cpc_hidden,
+                                                                   y=labels,
+                                                                   finished=True)
                 if type(accs) == list:
                     acc = accs[0]
                     all_accs.append(accs)
@@ -154,19 +161,20 @@ def down_validation(downstream_model, data_loader, timesteps_in, timesteps_out, 
                 total_loss += loss
                 total_acc += acc
 
-                #confusion_pred += [*confuse[0].cpu().numpy().flatten()]
-                #confusion_y += [*confuse[1].cpu().numpy().flatten()]
+                # confusion_pred += [*confuse[0].cpu().numpy().flatten()]
+                # confusion_y += [*confuse[1].cpu().numpy().flatten()]
                 count += 1
         total_loss /= count
         total_acc /= count
-        #cm = confusion_matrix(confusion_y, confusion_pred)
-        #plot_confusion_matrix(cm, 'validation', ['CD', 'HYP', 'MI', 'NORM', 'STTC'])
+        # cm = confusion_matrix(confusion_y, confusion_pred)
+        # plot_confusion_matrix(cm, 'validation', ['CD', 'HYP', 'MI', 'NORM', 'STTC'])
         total_accs = []
         for ac in zip(*all_accs):
             total_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
         print('===> Validation set: Average loss: {:.4f}\tAccuracies: '.format(
             total_loss), *map("{:.4f}".format, total_accs))
         return total_acc, total_loss
+
 
 def baseline_train(model, train_loader, optimizer, epoch, args):
     start_time = time.time()
@@ -177,9 +185,9 @@ def baseline_train(model, train_loader, optimizer, epoch, args):
     count = 0
     add_data = None
     for batch_idx, data_and_labels in enumerate(train_loader):
-        data, labels = data_and_labels # add channel dimension
+        data, labels = data_and_labels  # add channel dimension
         data = data.float().cuda()
-        labels = labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
+        labels = labels.float().squeeze(1).cuda()  # do not squeeze batch dim (0)
         optimizer.zero_grad()
         out = model(data, y=labels)
         if len(out) == 1:
@@ -191,7 +199,7 @@ def baseline_train(model, train_loader, optimizer, epoch, args):
             else:
                 for i in range(len(add_data)):
                     add_data[i] += additional_data[i]
-                #TODO: workaround here (BARF)
+                # TODO: workaround here (BARF)
         else:
             accs, loss = out
         if type(accs) == list:
@@ -211,10 +219,12 @@ def baseline_train(model, train_loader, optimizer, epoch, args):
     total_acc /= count
     total_accs = []
     for ac in zip(*all_accs):
-        total_accs += [(torch.sum(torch.stack(ac))/len(ac)).item()]
+        total_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
     print('===> Trainings set: Average loss: {:.4f}\tAccuracies:'.format(
-        total_loss), *map("{:.4f}".format, total_accs), 'Elapsed time:', str(timedelta(seconds=time.time()-start_time)))
+        total_loss), *map("{:.4f}".format, total_accs), 'Elapsed time:',
+        str(timedelta(seconds=time.time() - start_time)))
     return total_acc, total_loss
+
 
 def baseline_validation(model, train_loader, optimizer, epoch, args):
     model.train()
@@ -224,9 +234,9 @@ def baseline_validation(model, train_loader, optimizer, epoch, args):
     count = 0
     with torch.no_grad():
         for batch_idx, data_and_labels in enumerate(train_loader):
-            data, labels = data_and_labels # add channel dimension
+            data, labels = data_and_labels  # add channel dimension
             data = data.float().cuda()
-            labels = labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
+            labels = labels.float().squeeze(1).cuda()  # do not squeeze batch dim (0)
             out = model(data, y=labels)
             if len(out) == 1:
                 logits = out
@@ -252,10 +262,11 @@ def baseline_validation(model, train_loader, optimizer, epoch, args):
         total_acc /= count
         all_accs = []
         for ac in zip(*total_accs):
-            all_accs += [(torch.sum(torch.stack(ac))/len(ac)).item()]
+            all_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
         print('===> Valditation set: Average loss: {:.4f}\tAccuracies: '.format(
             total_loss), *map("{:.4f}".format, all_accs))
         return total_acc, total_loss
+
 
 def decoder_train(model, train_loader, optimizer, epoch):
     model.train()
@@ -265,7 +276,7 @@ def decoder_train(model, train_loader, optimizer, epoch):
     count = 0
     for batch_idx, data in enumerate(train_loader):
         data = data.float().cuda()
-        labels = None #labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
+        labels = None  # labels.float().squeeze(1).cuda() #do not squeeze batch dim (0)
         optimizer.zero_grad()
         accs, loss = model(data, y=labels)
         if type(accs) == list:
@@ -285,10 +296,11 @@ def decoder_train(model, train_loader, optimizer, epoch):
     total_acc /= count
     total_accs = []
     for ac in zip(*all_accs):
-        total_accs += [(torch.sum(torch.stack(ac))/len(ac)).item()]
+        total_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
     print('===> Trainings set: Average loss: {:.4f}\tAccuracies: '.format(
         total_loss), *map("{:.4f}".format, total_accs))
     return total_acc, total_loss
+
 
 def decoder_validation(model, train_loader, optimizer, epoch):
     model.train()
@@ -312,18 +324,19 @@ def decoder_validation(model, train_loader, optimizer, epoch):
         total_acc /= count
         all_accs = []
         for ac in zip(*total_accs):
-            all_accs += [(torch.sum(torch.stack(ac))/len(ac)).item()]
+            all_accs += [(torch.sum(torch.stack(ac)) / len(ac)).item()]
         print('===> Valditation set: Average loss: {:.4f}\tAccuracies: '.format(
             total_loss), *map("{:.4f}".format, all_accs))
         return total_acc, total_loss
 
+
 def plot_confusion_matrix(cm, mode,
                           target_names=['angina', 'bundle branch block', 'cardiomyopathy', 'dysrhythmia',
-       'healthy control', 'hypertrophy', 'miscellaneous',
-       'myocardial infarction', 'myocarditis', 'valvular heart disease'],
+                                        'healthy control', 'hypertrophy', 'miscellaneous',
+                                        'myocardial infarction', 'myocarditis', 'valvular heart disease'],
                           title='Confusion matrix',
                           cmap=None,
-                          normalize=True): #https://www.kaggle.com/grfiv4/plot-a-confusion-matrix
+                          normalize=True):  # https://www.kaggle.com/grfiv4/plot-a-confusion-matrix
     """
     given a sklearn confusion matrix (cm), make a nice plot
 
@@ -379,7 +392,6 @@ def plot_confusion_matrix(cm, mode,
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-
     thresh = cm.max() / 1.5 if normalize else cm.max() / 2
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         if normalize:
@@ -391,9 +403,8 @@ def plot_confusion_matrix(cm, mode,
                      horizontalalignment="center",
                      color="white" if cm[i, j] > thresh else "black")
 
-
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label\naccuracy={:0.4f}; misclass={:0.4f}'.format(accuracy, misclass))
-    plt.savefig('images/'+mode+str(int(time.time()/1000))+"confusion.png")
+    plt.savefig('images/' + mode + str(int(time.time() / 1000)) + "confusion.png")
     plt.close(fig)

@@ -26,7 +26,6 @@ from util.visualize.timeseries_to_image_converter import timeseries_to_image
 
 
 def main(args):
-
     np.random.seed(args.seed)
 
     # TODO: Put these params in the arguments as well
@@ -48,7 +47,9 @@ def main(args):
     out_path = args.out_path
     Path(out_path).mkdir(parents=True, exist_ok=True)
     with open(os.path.join(out_path, 'params.txt'), 'w') as cfg:
-        cfg.write('\n'.join([str(pa) for pa in [timesteps_in, timesteps_out, number_of_latents, channels, train_batch_size, validation_batch_size, window_length, n_windows, args]]))
+        cfg.write('\n'.join([str(pa) for pa in
+                             [timesteps_in, timesteps_out, number_of_latents, channels, train_batch_size,
+                              validation_batch_size, window_length, n_windows, args]]))
 
     # train_dataset_peters = ecg_datasets2.ECGDataset(
     #     '/media/julian/Volume/data/ECG/st-petersburg-arrythmia-annotations/resampled/train', window_size=window_length,
@@ -103,7 +104,8 @@ def main(args):
         # model = cpc_base.CPC(enc, auto, predictor, args.latent_size, timesteps_in=timesteps_in, timesteps_out=timesteps_out)
         model = cpc_intersect.CPC(
             encoder=cpc_encoder_v0.Encoder(channels=channels, latent_size=args.latent_size),
-            autoregressive=cpc_autoregressive_v0.AutoRegressor(n_latents=args.latent_size, hidden_size=args.hidden_size),
+            autoregressive=cpc_autoregressive_v0.AutoRegressor(n_latents=args.latent_size,
+                                                               hidden_size=args.hidden_size),
             predictor=cpc_predictor_v0.Predictor(hidden_size, args.latent_size, timesteps_out),
             latent_size=args.latent_size, timesteps_in=timesteps_in, timesteps_out=timesteps_out, verbose=False)
 
@@ -125,7 +127,7 @@ def main(args):
             torch.save(model, os.path.join(out_path, "cpc_model_full.pt"))
         model.cuda()
 
-        #model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        # model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
         ## Start training
         best_acc = 0
@@ -137,7 +139,8 @@ def main(args):
         val_accuracies = []
         for epoch in range(starting_epoch, epochs + starting_epoch):
 
-            train_acc, train_loss = cpc_train(model, dataloader, timesteps_in, timesteps_out, optimizer, epoch, train_batch_size)
+            train_acc, train_loss = cpc_train(model, dataloader, timesteps_in, timesteps_out, optimizer, epoch,
+                                              train_batch_size)
             val_acc, val_loss = cpc_validation(model, valloader, timesteps_in, timesteps_out, validation_batch_size)
             val_losses.append(val_loss.item())
             train_losses.append(train_loss.item())
@@ -151,19 +154,19 @@ def main(args):
                 print("saving model")
                 torch.save(model.state_dict(), os.path.join(out_path, "cpc_model_validation.pt"))
             if epoch - best_epoch >= 5:
-                #update learning rate
+                # update learning rate
                 pass
             if epoch % 10 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer,
-                                      [train_accuracies, val_accuracies],
-                                      [train_losses, val_losses])
+                                 [train_accuracies, val_accuracies],
+                                 [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
-                              [train_accuracies, val_accuracies], [train_losses, val_losses])
+                         [train_accuracies, val_accuracies], [train_losses, val_losses])
 
-    #https://pytorch.org/tutorials/beginner/saving_loading_models.html
+    # https://pytorch.org/tutorials/beginner/saving_loading_models.html
     if args.train_mode == 'downstream':
 
-        #train_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/train', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
+        # train_dataset_ptb = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/train', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
         # train_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train', window_size=window_length, n_windows=n_windows, channels=slice(0,12), preload_windows=40, batch_size=train_batch_size, use_labels=True)
         # trainset_total = ecg_datasets2.ECGMultipleDatasets([train_dataset_ptbxl])
         # trainloader = DataLoader(trainset_total, batch_size=train_batch_size, drop_last=True, num_workers=1, collate_fn=ecg_datasets2.collate_fn)
@@ -202,8 +205,12 @@ def main(args):
             torch.save(model, os.path.join(out_path, "cpc_model_full.pt"))
         model.cuda()
         f_m = args.forward_mode
-        downstream_model = cpc_downstream_model_multitarget_v2.DownstreamLinearNet(cpc_model=model, latent_size=number_of_latents, context_size=hidden_size,
-                                                                                   out_classes=args.forward_classes, use_context=f_m == "context" or f_m == "all", use_latents=f_m == "latents" or f_m == "all",
+        downstream_model = cpc_downstream_model_multitarget_v2.DownstreamLinearNet(cpc_model=model,
+                                                                                   latent_size=number_of_latents,
+                                                                                   context_size=hidden_size,
+                                                                                   out_classes=args.forward_classes,
+                                                                                   use_context=f_m == "context" or f_m == "all",
+                                                                                   use_latents=f_m == "latents" or f_m == "all",
                                                                                    freeze=False, verbose=False)
         torch.save(downstream_model, os.path.join(out_path, "downstream_model_full.pt"))
         downstream_model.cuda()
@@ -242,13 +249,12 @@ def main(args):
                 best_epoch = epoch
             if epoch % 5 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer,
-                                      [train_accuracies, val_accuracies],
-                                      [train_losses, val_losses])
+                                 [train_accuracies, val_accuracies],
+                                 [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
-                              [train_accuracies, val_accuracies], [train_losses, val_losses])
+                         [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     if args.train_mode == 'test':
-
         test_dataset_ptb = ecg_datasets2.ECGDatasetBatching(
             '/media/julian/Volume/data/ECG/ptb-diagnostic-ecg-database-1.0.0/generated/normalized/test',
             window_size=window_length, n_windows=n_windows, channels=slice(0, 12), preload_windows=40,
@@ -271,27 +277,30 @@ def main(args):
         downstream_model.cuda()
         test_acc, test_loss = down_validation(downstream_model, testloader, timesteps_in, timesteps_out, None)
 
-
     if args.train_mode == 'baseline':
-        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',  #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
-                                                                    window_size=9500)
+        train_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+            '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/train',
+            window_size=9500)
 
         trainloader = DataLoader(train_dataset_ptbxl, batch_size=train_batch_size, drop_last=True, num_workers=1,
                                  collate_fn=ecg_datasets2.collate_fn)
 
-        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',  #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-                                                                  window_size=9500)
+        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+            '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            window_size=9500)
         valloader = DataLoader(val_dataset_ptbxl, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                collate_fn=ecg_datasets2.collate_fn)
 
-        model = baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False)
+        model = baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size,
+                                              out_classes=args.forward_classes, verbose=False)
 
         print(model)
         model.cuda()
         with open(os.path.join(args.out_path, 'model_arch.txt'), 'w') as f:
             print(fullname(model), file=f)
             print(model, file=f)
-
 
         optimizer = ScheduledOptim(
             optim.Adam(
@@ -314,7 +323,7 @@ def main(args):
 
         val_accuracies = []
 
-        for epoch in range(start_epoch+1, epochs + start_epoch + 1):
+        for epoch in range(start_epoch + 1, epochs + start_epoch + 1):
 
             train_acc, train_loss = baseline_train(model, trainloader, optimizer, epoch, args)
             val_acc, val_loss = baseline_validation(model, valloader, optimizer, epoch, args)
@@ -328,26 +337,29 @@ def main(args):
                 best_epoch = epoch
             if epoch - best_epoch >= 5:
                 pass
-                #optimizer.update_learning_rate()
-                #best_epoch = epoch
+                # optimizer.update_learning_rate()
+                # best_epoch = epoch
             if epoch % 10 == 0:
                 save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies],
-                                      [train_losses, val_losses])
+                                 [train_losses, val_losses])
         save_model_state(out_path, epochs, args.train_mode, model, optimizer,
-                              [train_accuracies, val_accuracies], [train_losses, val_losses])
+                         [train_accuracies, val_accuracies], [train_losses, val_losses])
 
     if args.train_mode == 'explain':
 
-        test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test',  #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
-                                                                   window_size=9500)
-        totalset = ChainDataset([test_dataset_ptbxl])#[train_dataset_ptbxl, val_dataset_ptbxl])
+        test_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti(
+            '/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/test',
+            # '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            window_size=9500)
+        totalset = ChainDataset([test_dataset_ptbxl])  # [train_dataset_ptbxl, val_dataset_ptbxl])
         dataloader = DataLoader(totalset, batch_size=validation_batch_size, drop_last=True, num_workers=1,
                                 collate_fn=ecg_datasets2.collate_fn)
 
-        bmodel, optimizer, epoch = load_model_state(os.path.join(os.path.split(args.saved_model)[0], 'downstream_model_full.pt'))
+        bmodel, optimizer, epoch = load_model_state(
+            os.path.join(os.path.split(args.saved_model)[0], 'downstream_model_full.pt'))
         optimizer = ScheduledOptim(
             optim.Adam(bmodel.parameters(),
-                betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
+                       betas=(0.9, 0.98), eps=1e-09, weight_decay=1e-4, amsgrad=True),
             args.warmup_steps)
 
         bmodel, optimizer, epoch = load_model_state(args.saved_model, bmodel, optimizer)
@@ -356,12 +368,13 @@ def main(args):
         model.eval()
         model.cuda()
 
-        ecg = PTBXLData(base_directory='/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/')
+        ecg = PTBXLData(
+            base_directory='/media/julian/data/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/')
         ecg.init_multilabel_encoder()
         print(ecg.code_list)
 
         print(model)
-        #vw = VideoWriter('images/ptbxl.mpeg', fps=2.0)
+        # vw = VideoWriter('images/ptbxl.mpeg', fps=2.0)
         model.train()
         for batch_idx, data_and_labels in enumerate(dataloader):
             data, labels = data_and_labels
@@ -370,7 +383,7 @@ def main(args):
             output, grad = model(data, y=None)
             output = output.detach().cpu()
             top3 = np.argsort(output)[:, -3:]
-            #TODO: Iterate over output != 0 and calc grad respectively
+            # TODO: Iterate over output != 0 and calc grad respectively
             pred_prob = []
             for i, t3 in enumerate(top3):
                 pred_prob.append(list(zip([ecg.code_list[t] for t in t3], output[i, t3])))
@@ -379,12 +392,12 @@ def main(args):
             ground_truth = []
             for i, t3 in enumerate(not0):
                 ground_truth.append(list(zip([ecg.code_list[t] for t in t3], labels[i, t3])))
-            img = timeseries_to_image(grad.cpu(), grad.cpu(), downsample_factor=5, convert_to_rgb=False, pred_classes=pred_prob, ground_truth=ground_truth, filename='images/ptbxl/gradient/ptbxl_timeseries_' + str(batch_idx), show=False)
-            #write_video('test.mkv', img, 1.0) broken
-            #vw.tensor_to_video_continuous(img)
-        #vw.close()
-
-
+            img = timeseries_to_image(grad.cpu(), grad.cpu(), downsample_factor=5, convert_to_rgb=False,
+                                      pred_classes=pred_prob, ground_truth=ground_truth,
+                                      filename='images/ptbxl/gradient/ptbxl_timeseries_' + str(batch_idx), show=False)
+            # write_video('test.mkv', img, 1.0) broken
+            # vw.tensor_to_video_continuous(img)
+        # vw.close()
 
     if args.train_mode == 'decoder':
         start_epoch = 1
@@ -397,10 +410,12 @@ def main(args):
         trainloader = DataLoader(train_dataset_ptbxl, batch_size=train_batch_size, drop_last=False,
                                  collate_fn=ecg_datasets2.collate_fn)
 
-        #val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+        # val_dataset_ptbxl = ecg_datasets2.ECGDatasetBaselineMulti('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', #'/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
         #    window_size=9500)
-        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching('/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val', window_size=args.window_length, n_windows=1, preload_windows=40)
-        
+        val_dataset_ptbxl = ecg_datasets2.ECGDatasetBatching(
+            '/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/generated/1000/normalized-labels/val',
+            window_size=args.window_length, n_windows=1, preload_windows=40)
+
         valloader = DataLoader(val_dataset_ptbxl, batch_size=validation_batch_size, drop_last=False,
                                collate_fn=ecg_datasets2.collate_fn)
 
@@ -445,8 +460,10 @@ def main(args):
                 optimizer.increase_delta()
                 best_epoch = epoch
             if epoch % 10 == 0:
-                save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
-        save_model_state(out_path, epochs, args.train_mode, model, optimizer, [train_accuracies, val_accuracies], [train_losses, val_losses])
+                save_model_state(out_path, epoch, args.train_mode, model, optimizer, [train_accuracies, val_accuracies],
+                                 [train_losses, val_losses])
+        save_model_state(out_path, epochs, args.train_mode, model, optimizer, [train_accuracies, val_accuracies],
+                         [train_losses, val_losses])
 
 
 if __name__ == "__main__":
@@ -455,9 +472,10 @@ if __name__ == "__main__":
     print(sys.argv)
 
     parser = argparse.ArgumentParser(description='Contrastive Predictive Coding')
-    parser.add_argument('--train_mode', type=str, choices=['cpc', 'downstream', 'baseline', 'decoder', 'explain'], help='Select mode. Possible: cpc, downstream, baseline, decoder')
-    #datapath
-    #Other params
+    parser.add_argument('--train_mode', type=str, choices=['cpc', 'downstream', 'baseline', 'decoder', 'explain'],
+                        help='Select mode. Possible: cpc, downstream, baseline, decoder')
+    # datapath
+    # Other params
     parser.add_argument('--saved_model', type=str,
                         help='Model path to load weights from. Has to be given for downstream mode.')
 
@@ -465,11 +483,14 @@ if __name__ == "__main__":
 
     parser.add_argument('--seed', type=int, help='The seed used', default=None)
 
-    parser.add_argument('--forward_mode', help="The forward mode to be used.", default='context', type=str) #, choices=['context, latents, all']
+    parser.add_argument('--forward_mode', help="The forward mode to be used.", default='context',
+                        type=str)  # , choices=['context, latents, all']
 
-    parser.add_argument('--out_path', help="The output directory for losses and models", default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
+    parser.add_argument('--out_path', help="The output directory for losses and models",
+                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
 
-    parser.add_argument('--forward_classes', type=int, default=41, help="The number of possible output classes (only relevant for downstream)")
+    parser.add_argument('--forward_classes', type=int, default=41,
+                        help="The number of possible output classes (only relevant for downstream)")
 
     parser.add_argument('--warmup_steps', type=int, default=0, help="The number of warmup steps")
 
@@ -478,13 +499,14 @@ if __name__ == "__main__":
     parser.add_argument('--latent_size', type=int, default=512,
                         help="The size of the latent encoding for one window")
 
-    parser.add_argument('--timesteps_in', type=int, default=6, help="The number of windows being used to form a context for prediction")
+    parser.add_argument('--timesteps_in', type=int, default=6,
+                        help="The number of windows being used to form a context for prediction")
 
     parser.add_argument('--timesteps_out', type=int, default=4,
                         help="The number of windows being predicted from the context (cpc task exclusive)")
 
     parser.add_argument('--channels', type=int, default=12,
-                        help="The number of channels the data will have") #TODO: auto detect
+                        help="The number of channels the data will have")  # TODO: auto detect
 
     parser.add_argument('--window_length', type=int, default=512,
                         help="The number of datapoints per channel per window")

@@ -59,7 +59,6 @@ if torch.cuda.is_available():
     if not args.cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-
 print(args)
 train_data, val_data, test_data, corpus = data_generator(args)
 
@@ -72,7 +71,7 @@ dropout = args.dropout
 emb_dropout = args.emb_dropout
 tied = args.tied
 
-model = TCN(args.emsize, n_words, num_chans, dropout=dropout, 
+model = TCN(args.emsize, n_words, num_chans, dropout=dropout,
             emb_dropout=emb_dropout, kernel_size=k_size, tied_weights=tied)
 
 if args.cuda:
@@ -90,7 +89,8 @@ def evaluate(data_source):
     correct = 0
     with torch.no_grad():
         for i in range(len(data_source)):
-            data, targets = torch.LongTensor(data_source[i]).view(1, -1), torch.LongTensor([data_source[i][-1]]).view(1, -1)
+            data, targets = torch.LongTensor(data_source[i]).view(1, -1), torch.LongTensor([data_source[i][-1]]).view(1,
+                                                                                                                      -1)
             data, targets = Variable(data), Variable(targets)
             if args.cuda:
                 data, targets = data.cuda(), targets.cuda()
@@ -132,7 +132,7 @@ def train():
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.5f} | ms/batch {:5.5f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch_idx, train_data.size(1) // args.validseqlen, lr,
-                elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
+                                  elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             reg_loss = 0
             start_time = time.time()
@@ -142,15 +142,15 @@ if __name__ == "__main__":
     best_vloss = 1e8
     try:
         all_vloss = []
-        for epoch in range(1, args.epochs+1):
+        for epoch in range(1, args.epochs + 1):
             epoch_start_time = time.time()
             train()
             val_loss = evaluate(val_data)
             test_loss = evaluate(test_data)
             print('-' * 89)
             print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                    'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                               val_loss, math.exp(val_loss)))
+                  'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
+                                             val_loss, math.exp(val_loss)))
             print('| end of epoch {:3d} | time: {:5.2f}s | test loss {:5.2f} | '
                   'test ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                             test_loss, math.exp(test_loss)))

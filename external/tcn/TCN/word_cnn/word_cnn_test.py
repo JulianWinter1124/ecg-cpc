@@ -66,7 +66,6 @@ train_data = batchify(corpus.train, args.batch_size, args)
 val_data = batchify(corpus.valid, eval_batch_size, args)
 test_data = batchify(corpus.test, eval_batch_size, args)
 
-
 n_words = len(corpus.dictionary)
 
 num_chans = [args.nhid] * (args.levels - 1) + [args.emsize]
@@ -74,7 +73,8 @@ k_size = args.ksize
 dropout = args.dropout
 emb_dropout = args.emb_dropout
 tied = args.tied
-model = TCN(args.emsize, n_words, num_chans, dropout=dropout, emb_dropout=emb_dropout, kernel_size=k_size, tied_weights=tied)
+model = TCN(args.emsize, n_words, num_chans, dropout=dropout, emb_dropout=emb_dropout, kernel_size=k_size,
+            tied_weights=tied)
 
 if args.cuda:
     model.cuda()
@@ -144,7 +144,7 @@ def train():
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.5f} | ms/batch {:5.5f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch_idx, train_data.size(1) // args.validseqlen, lr,
-                elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
+                                  elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     # At any point you can hit Ctrl + C to break out of training early.
     try:
         all_vloss = []
-        for epoch in range(1, args.epochs+1):
+        for epoch in range(1, args.epochs + 1):
             epoch_start_time = time.time()
             train()
             val_loss = evaluate(val_data)
@@ -163,8 +163,8 @@ if __name__ == "__main__":
 
             print('-' * 89)
             print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                    'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                               val_loss, math.exp(val_loss)))
+                  'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
+                                             val_loss, math.exp(val_loss)))
             print('| end of epoch {:3d} | time: {:5.2f}s | test loss {:5.2f} | '
                   'test ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
                                             test_loss, math.exp(test_loss)))

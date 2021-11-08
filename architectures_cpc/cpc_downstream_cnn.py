@@ -14,9 +14,9 @@ class DownstreamLinearNet(nn.Module):
         if self.use_context and self.use_latents:
             self.classifier = nn.Sequential(
                 nn.ReLU(),
-                nn.Conv1d(in_channels=context_size*2, out_channels=out_classes, kernel_size=1, stride=1),
+                nn.Conv1d(in_channels=context_size * 2, out_channels=out_classes, kernel_size=1, stride=1),
             )
-        else: #if not both are getting used, normal classifier is enough for each (in_channels*1)
+        else:  # if not both are getting used, normal classifier is enough for each (in_channels*1)
             self.classifier = nn.Sequential(
                 nn.ReLU(),
                 nn.Conv1d(in_channels=context_size, out_channels=out_classes, kernel_size=1, stride=1),
@@ -25,7 +25,6 @@ class DownstreamLinearNet(nn.Module):
             self.rnn = nn.GRU(input_size=latent_size, hidden_size=context_size, num_layers=1, batch_first=False)
 
         self.activation = nn.Sigmoid()
-
 
     def forward(self, latents=None, context=None, y=None):
         if self.verbose and latents: print('latents', latents.shape)
@@ -37,9 +36,9 @@ class DownstreamLinearNet(nn.Module):
             x, c = self.rnn(latents)
             context = x[-1, :]
         pred = self.classifier(context.unsqueeze(-1))
-        output = self.activation(pred).squeeze(-1) #do not squeeze on batch?
-        #print('pred shape', pred.shape)
+        output = self.activation(pred).squeeze(-1)  # do not squeeze on batch?
+        # print('pred shape', pred.shape)
         if y is None:  #
             return output
-        else: #Training mode return loss instead of prediction
+        else:  # Training mode return loss instead of prediction
             raise NotImplementedError

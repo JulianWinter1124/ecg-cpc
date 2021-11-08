@@ -1,12 +1,14 @@
 import torch
 from torch import nn
-#Time Series Classification from Scratch with Deep
-#Neural Networks: A Strong Baseline https://arxiv.org/pdf/1611.06455.pdf
+
+
+# Time Series Classification from Scratch with Deep
+# Neural Networks: A Strong Baseline https://arxiv.org/pdf/1611.06455.pdf
 class BaselineNet(nn.Module):
 
     def __init__(self, in_channels, out_channels, out_classes=94, verbose=False) -> None:
         super(BaselineNet, self).__init__()
-        self.verbose= verbose
+        self.verbose = verbose
         self.features = nn.Sequential(
             nn.Conv1d(in_channels=in_channels, out_channels=128, kernel_size=8),
             nn.BatchNorm1d(num_features=128),
@@ -25,11 +27,11 @@ class BaselineNet(nn.Module):
 
     def forward(self, x: torch.Tensor, y=None) -> torch.Tensor:
         if self.verbose: print(x.shape)
-        x = x.transpose(1,2)
+        x = x.transpose(1, 2)
         if self.verbose: print(x.shape)
         x = self.features(x)
         if self.verbose: print(x.shape)
-        x = torch.mean(x, dim=-1) #Global everage pooling
+        x = torch.mean(x, dim=-1)  # Global everage pooling
         if self.verbose: print(x.shape)
         x = self.activation(x)
         if self.verbose: print(x.shape)

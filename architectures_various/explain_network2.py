@@ -10,7 +10,7 @@ class ExplainLabel(nn.Module):
         self.model = model
         self.class_weights = class_weights
 
-    def forward(self, X1:torch.tensor, y=None):
+    def forward(self, X1: torch.tensor, y=None):
         if y is None:
             return self.model(X1)
             # output = self.model(X)
@@ -28,18 +28,19 @@ class ExplainLabel(nn.Module):
             # return output, grad
         else:
             grads = []
-            X = torch.tensor(X1, requires_grad=True, device=X1.device) # X1.clone().detach().requires_grad_(True)
+            X = torch.tensor(X1, requires_grad=True, device=X1.device)  # X1.clone().detach().requires_grad_(True)
             X.retain_grad()
-            pred = self.model(X, y=None) # makes model return prediction instead of loss
-            if len(pred.shape) == 1: #hack for squeezed batch dimension
+            pred = self.model(X, y=None)  # makes model return prediction instead of loss
+            if len(pred.shape) == 1:  # hack for squeezed batch dimension
                 pred = pred.unsqueeze(0)
-            loss = bl.binary_cross_entropy(pred=pred, y=y, weight=self.class_weights) #bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
+            loss = bl.binary_cross_entropy(pred=pred, y=y,
+                                           weight=self.class_weights)  # bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
             loss.backward()
-            #grad = autograd.grad(loss, X, create_graph=True, retain_graph=True, allow_unused=True)#
-            #print(grad)
-            #print('################################3')
-            #print(X)
+            # grad = autograd.grad(loss, X, create_graph=True, retain_graph=True, allow_unused=True)#
+            # print(grad)
+            # print('################################3')
+            # print(X)
             grad = X.grad
-            #grad = torch.abs(grad) #in Heat map distance is important not specific direction
-            X.grad=None
+            # grad = torch.abs(grad) #in Heat map distance is important not specific direction
+            X.grad = None
             return pred, grad

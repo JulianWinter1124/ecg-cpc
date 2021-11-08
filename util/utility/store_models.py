@@ -10,17 +10,19 @@ from util.utility.full_class_name import fullname
 def save_model_checkpoint(output_path, epoch, model, optimizer=None, name=""):
     print("saving model at epoch:", epoch)
     checkpoint = {
-        'epoch':epoch,
+        'epoch': epoch,
         'model_state_dict': model.state_dict()
     }
     if not optimizer is None:
         checkpoint['optimizer_state_dict'] = optimizer.state_dict()
-    torch.save(checkpoint, os.path.join(output_path, name+'_checkpoint_epoch_{}.pt'.format(epoch)))
+    torch.save(checkpoint, os.path.join(output_path, name + '_checkpoint_epoch_{}.pt'.format(epoch)))
+
 
 def save_model_architecture(output_path, model, name=""):
     print("Saving full model...")
-    torch.save(model, os.path.join(output_path, name+'_full_model.pt'))
+    torch.save(model, os.path.join(output_path, name + '_full_model.pt'))
     save_model_architecture_text_only(output_path, model, name)
+
 
 def save_model_architecture_text_only(output_path, model, name=""):
     with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
@@ -28,19 +30,22 @@ def save_model_architecture_text_only(output_path, model, name=""):
         print(fullname(model), file=f)
         print(model, file=f)
 
+
 def save_model_variables_text_only(output_path, model, name=""):
     with open(os.path.join(output_path, 'model_variables.txt'), 'w') as f:
         print(name, file=f)
         print(fullname(model), file=f)
         print(json.dumps(extract_params_from_model(model), sort_keys=True, indent=2), file=f)
 
-def load_model_architecture(full_model_file, device_id='cuda:0'): #
+
+def load_model_architecture(full_model_file, device_id='cuda:0'):  #
     try:
         model = torch.load(full_model_file, map_location=device_id)
     except ModuleNotFoundError as e:
         print(e)
         return None
     return model
+
 
 def load_model_checkpoint(model_checkpoint_file, model, optimizer=None, device_id='cuda:0'):
     checkpoint = torch.load(model_checkpoint_file, map_location=device_id)
@@ -50,6 +55,7 @@ def load_model_checkpoint(model_checkpoint_file, model, optimizer=None, device_i
     epoch = checkpoint['epoch']
     model.eval()
     return model, optimizer, epoch
+
 
 def load_model(full_model_file, model_checkpoint_file, optimizer):
     model = load_model_architecture(full_model_file)
@@ -70,6 +76,7 @@ def extract_model_files_from_dir(directory):
             files.append((fm_temp, ch_temp, root))
     return files
 
+
 def extract_params_from_model(obj, prefix=''):
     if issubclass(type(obj), torch.nn.Module):
         return extract_params_from_model(obj.__dict__, fullname(obj))
@@ -77,8 +84,8 @@ def extract_params_from_model(obj, prefix=''):
         params = {}
         for k, v in obj.items():
             if not k.startswith('_') or k == '_modules':
-                params.update({k:extract_params_from_model(v)})
-        return {prefix:params} if params else {}
+                params.update({k: extract_params_from_model(v)})
+        return {prefix: params} if params else {}
     elif issubclass(type(obj), list):
         return [extract_params_from_model(l) for l in obj]
     elif not hasattr(obj, '__dict__'):
@@ -88,7 +95,8 @@ def extract_params_from_model(obj, prefix=''):
 
 
 @DeprecationWarning
-def save_model_state(output_path, epoch, name=None, model=None, optimizer=None, accuracies=None, losses=None, full=False):
+def save_model_state(output_path, epoch, name=None, model=None, optimizer=None, accuracies=None, losses=None,
+                     full=False):
     if name is None:
         name = fullname(model)
     with open(os.path.join(output_path, 'model_arch.txt'), 'w') as f:
@@ -109,12 +117,13 @@ def save_model_state(output_path, epoch, name=None, model=None, optimizer=None, 
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()
-                }, os.path.join(output_path, name))
+            }, os.path.join(output_path, name))
         if not (accuracies is None and losses is None):
             with open(os.path.join(output_path, 'losses.pkl'), 'wb') as pickle_file:
                 pickle.dump(losses, pickle_file)
             with open(os.path.join(output_path, 'accuracies.pkl'), 'wb') as pickle_file:
                 pickle.dump(accuracies, pickle_file)
+
 
 @DeprecationWarning
 def load_model_state(model_path, model=None, optimizer=None):

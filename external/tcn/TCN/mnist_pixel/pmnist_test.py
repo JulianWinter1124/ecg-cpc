@@ -91,7 +91,7 @@ def train(ep):
         if batch_idx > 0 and batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tSteps: {}'.format(
                 ep, batch_idx * batch_size, len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), train_loss.item()/args.log_interval, steps))
+                    100. * batch_idx / len(train_loader), train_loss.item() / args.log_interval, steps))
             train_loss = 0
 
 
@@ -120,7 +120,7 @@ def test():
 
 
 if __name__ == "__main__":
-    for epoch in range(1, epochs+1):
+    for epoch in range(1, epochs + 1):
         train(epoch)
         test()
         if epoch % 10 == 0:

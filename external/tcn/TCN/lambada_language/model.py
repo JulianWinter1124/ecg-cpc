@@ -35,4 +35,3 @@ class TCN(nn.Module):
         y = self.tcn(emb.transpose(1, 2)).transpose(1, 2)
         y = self.decoder(y)
         return y.contiguous()
-

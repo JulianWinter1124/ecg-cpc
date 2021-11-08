@@ -10,10 +10,9 @@ from TCN.char_cnn.model import TCN
 import time
 import math
 
-
 import warnings
-warnings.filterwarnings("ignore")   # Suppress the RunTimeWarning on unicode
 
+warnings.filterwarnings("ignore")  # Suppress the RunTimeWarning on unicode
 
 parser = argparse.ArgumentParser(description='Sequence Modeling - Character Level Language Model')
 parser.add_argument('--batch_size', type=int, default=32, metavar='N',
@@ -58,7 +57,6 @@ if torch.cuda.is_available():
     if not args.cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-
 print(args)
 file, file_len, valfile, valfile_len, testfile, testfile_len, corpus = data_generator(args)
 
@@ -68,17 +66,14 @@ val_data = batchify(char_tensor(corpus, valfile), 1, args)
 test_data = batchify(char_tensor(corpus, testfile), 1, args)
 print("Corpus size: ", n_characters)
 
-
 num_chans = [args.nhid] * (args.levels - 1) + [args.emsize]
 k_size = args.ksize
 dropout = args.dropout
 emb_dropout = args.emb_dropout
 model = TCN(args.emsize, n_characters, num_chans, kernel_size=k_size, dropout=dropout, emb_dropout=emb_dropout)
 
-
 if args.cuda:
     model.cuda()
-
 
 criterion = nn.CrossEntropyLoss()
 lr = args.lr
@@ -138,8 +133,8 @@ def train(epoch):
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.5f} | ms/batch {:5.2f} | '
                   'loss {:5.3f} | bpc {:5.3f}'.format(
-                epoch, batch_idx, int((source_len-0.5) / args.validseqlen), lr,
-                              elapsed * 1000 / args.log_interval, cur_loss, cur_loss / math.log(2)))
+                epoch, batch_idx, int((source_len - 0.5) / args.validseqlen), lr,
+                elapsed * 1000 / args.log_interval, cur_loss, cur_loss / math.log(2)))
             total_loss = 0
             start_time = time.time()
 
@@ -188,6 +183,7 @@ def main():
     print('| End of training | test loss {:5.3f} | test bpc {:8.3f}'.format(
         test_loss, test_loss / math.log(2)))
     print('=' * 89)
+
 
 # train_by_random_chunk()
 if __name__ == "__main__":

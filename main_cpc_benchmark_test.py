@@ -19,10 +19,9 @@ from util.data import ecg_datasets2
 from util.utility.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
 
-
 def main(args):
     np.random.seed(args.seed)
-    #os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+    # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     torch.cuda.set_device(args.gpu_device)
     print(f'Device set to : {torch.cuda.current_device()}. Selected was {args.gpu_device}')
     torch.cuda.manual_seed(args.seed)
@@ -37,7 +36,8 @@ def main(args):
     # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
     georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
-                                                                  window_size=args.crop_size, pad_to_size=args.crop_size,
+                                                                  window_size=args.crop_size,
+                                                                  pad_to_size=args.crop_size,
                                                                   return_labels=True, return_filename=True,
                                                                   normalize_fn=ecg_datasets2.normalize_feature_scaling)
     cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
@@ -53,23 +53,33 @@ def main(args):
                                                                 return_labels=True, return_filename=True,
                                                                 normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
-
-
     a1, b1, ptbxl_test = ptbxl_challenge.generate_datasets_from_split_file()
     a2, b2, georgia_test = georgia_challenge.generate_datasets_from_split_file()
     a3, b3, cpsc_test = cpsc_challenge.generate_datasets_from_split_file()
     a4, b4, cpsc2_test = cpsc2_challenge.generate_datasets_from_split_file()
 
-
-    classes = ecg_datasets2.filter_update_classes_by_count([a1, b1, ptbxl_test, a2, b2, georgia_test, a3, b3, cpsc_test, a4, b4, cpsc2_test], 1) #Set classes if specified in split files (filter out classes with no occurence)
+    classes = ecg_datasets2.filter_update_classes_by_count(
+        [a1, b1, ptbxl_test, a2, b2, georgia_test, a3, b3, cpsc_test, a4, b4, cpsc2_test],
+        1)  # Set classes if specified in split files (filter out classes with no occurence)
     print(classes)
-    print(classes=={'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164867002': 5, '164873001': 6, '164884008': 7, '164889003': 8, '164890007': 9, '164909002': 10, '164917005': 11, '164930006': 12, '164931005': 13, '164934002': 14, '164947007': 15, '164951009': 16, '17338001': 17, '195042002': 18, '195080001': 19, '195126007': 20, '233917008': 21, '251120003': 22, '251146004': 23, '251180001': 24, '251200008': 25, '251266004': 26, '251268003': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31, '284470004': 32, '39732003': 33, '413844008': 34, '425419005': 35, '425623009': 36, '426177001': 37, '426434006': 38, '426627000': 39, '426761007': 40, '426783006': 41, '427084000': 42, '427172004': 43, '427393009': 44, '428417006': 45, '428750005': 46, '429622005': 47, '445118002': 48, '445211001': 49, '446358003': 50, '446813000': 51, '47665007': 52, '54329005': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57, '6374002': 58, '67198005': 59, '67741000119109': 60, '698252002': 61, '713422000': 62, '713426002': 63, '713427006': 64, '74390002': 65, '89792004': 66})
+    print(classes == {'10370003': 0, '11157007': 1, '111975006': 2, '164861001': 3, '164865005': 4, '164867002': 5,
+                      '164873001': 6, '164884008': 7, '164889003': 8, '164890007': 9, '164909002': 10, '164917005': 11,
+                      '164930006': 12, '164931005': 13, '164934002': 14, '164947007': 15, '164951009': 16,
+                      '17338001': 17, '195042002': 18, '195080001': 19, '195126007': 20, '233917008': 21,
+                      '251120003': 22, '251146004': 23, '251180001': 24, '251200008': 25, '251266004': 26,
+                      '251268003': 27, '253352002': 28, '266249003': 29, '270492004': 30, '27885002': 31,
+                      '284470004': 32, '39732003': 33, '413844008': 34, '425419005': 35, '425623009': 36,
+                      '426177001': 37, '426434006': 38, '426627000': 39, '426761007': 40, '426783006': 41,
+                      '427084000': 42, '427172004': 43, '427393009': 44, '428417006': 45, '428750005': 46,
+                      '429622005': 47, '445118002': 48, '445211001': 49, '446358003': 50, '446813000': 51,
+                      '47665007': 52, '54329005': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57,
+                      '6374002': 58, '67198005': 59, '67741000119109': 60, '698252002': 61, '713422000': 62,
+                      '713426002': 63, '713427006': 64, '74390002': 65, '89792004': 66})
 
-
-    train_dataset_challenge = ChainDataset([a1,a2,a3,a4])
-    val_dataset_challenge = ChainDataset([b1,b2,b3,b4])
+    train_dataset_challenge = ChainDataset([a1, a2, a3, a4])
+    val_dataset_challenge = ChainDataset([b1, b2, b3, b4])
     test_dataset_challenge = ChainDataset([ptbxl_test, georgia_test, cpsc_test, cpsc2_test])
-    #all_dataset_challenge = ChainDataset[ptbxl_challenge, georgia_challenge, cpsc_challenge, cpsc2_challenge]
+    # all_dataset_challenge = ChainDataset[ptbxl_challenge, georgia_challenge, cpsc_challenge, cpsc2_challenge]
     model_folders = [
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/14_05_21-15-train|(8x)cpc',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/19_05_21-16-train|cpc',
@@ -89,7 +99,7 @@ def main(args):
 /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-13_51-train|(4x)cpc'''.split('\n')
 
     ]
-    #infer class from model-arch file
+    # infer class from model-arch file
     model_dicts = []
     for train_folder in model_folders:
         model_files = extract_model_files_from_dir(train_folder)
@@ -101,8 +111,9 @@ def main(args):
             if model is None:
                 continue
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
-            print(f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
-            model_dicts.append({'model':model, 'model_folder':root})
+            print(
+                f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
+            model_dicts.append({'model': model, 'model_folder': root})
     if len(model_dicts) == 0:
         print(f"Could not find any models in {model_folders}.")
     loaders = [
@@ -114,7 +125,7 @@ def main(args):
         #            collate_fn=ecg_datasets2.collate_fn), #Train usually not required
 
     ]
-    metric_functions = [ #Functions that take two tensors as argument and give score or list of score
+    metric_functions = [  # Functions that take two tensors as argument and give score or list of score
         training_metrics.micro_avg_precision_score,
         training_metrics.micro_avg_recall_score,
     ]
@@ -150,7 +161,7 @@ def main(args):
                     data, labels, filenames = dataset_tuple
                     data = data.float().cuda()
                     labels = labels.float().cuda()
-                    #print(torch.any(torch.isnan(data)), data.shape, torch.any(torch.isnan(labels)), labels.shape)
+                    # print(torch.any(torch.isnan(data)), data.shape, torch.any(torch.isnan(labels)), labels.shape)
                     # if first:
                     #     dummy = torch.randn_like(data, requires_grad=True)
                     #     dummy_p = model(dummy)
@@ -158,11 +169,11 @@ def main(args):
                     #     first = False
                     optimizer.zero_grad()
                     pred = model(data, y=None)  # makes model return prediction instead of loss
-                    #print(pred.shape)
-                    if len(pred.shape) == 1: #hack for squeezed batch dimension
+                    # print(pred.shape)
+                    if len(pred.shape) == 1:  # hack for squeezed batch dimension
                         pred = pred.unsqueeze(0)
                     if torch.any(torch.isnan(pred)):
-                        print('nan encountered' )
+                        print('nan encountered')
                         print('nan in data:', torch.any(torch.isnan(data)))
                         print(pred)
                     pred = pred.detach().cpu()
@@ -171,8 +182,10 @@ def main(args):
                     labels_numpy = parse_tensor_to_numpy_or_scalar(labels)
                     pred_numpy = parse_tensor_to_numpy_or_scalar(pred)
                     pred_dataframe = pred_dataframe.append(pd.DataFrame(pred_numpy, columns=classes, index=filenames))
-                    label_dataframe = label_dataframe.append(pd.DataFrame(labels_numpy, columns=classes, index=filenames))
-                    helper_code.save_challenge_predictions(output_path, filenames, classes=classes, scores=pred_numpy, labels=labels_numpy)
+                    label_dataframe = label_dataframe.append(
+                        pd.DataFrame(labels_numpy, columns=classes, index=filenames))
+                    helper_code.save_challenge_predictions(output_path, filenames, classes=classes, scores=pred_numpy,
+                                                           labels=labels_numpy)
                     with torch.no_grad():
                         for i, fn in enumerate(metric_functions):
                             metrics[epoch]['acc_' + str(i)].append(
@@ -203,12 +216,13 @@ def main(args):
         del model  # delete and free
         torch.cuda.empty_cache()
 
+
 def save_dict_to_csv_file(filepath, data, column_names=None):
     with open(filepath) as f:
         if not column_names is None:
-            f.write(','.join(column_names)+'\n')
+            f.write(','.join(column_names) + '\n')
         for dc in data:
-            f.write(','.join(dc)+'\n')
+            f.write(','.join(dc) + '\n')
 
 
 def parse_tensor_to_numpy_or_scalar(input_tensor):
@@ -218,6 +232,7 @@ def parse_tensor_to_numpy_or_scalar(input_tensor):
             return arr.item()
         return arr
     return input_tensor
+
 
 if __name__ == "__main__":
     import sys

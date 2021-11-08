@@ -19,12 +19,14 @@ class AutoRegressor(nn.Module):
         self.apply(_weights_init)
 
     def init_hidden(self, batch_size, use_gpu=True):
-        if use_gpu: return torch.zeros(self.layers, batch_size, self.hidden_size).cuda()
-        else: return torch.zeros(self.layers, batch_size, self.hidden_size).cpu()
+        if use_gpu:
+            return torch.zeros(self.layers, batch_size, self.hidden_size).cuda()
+        else:
+            return torch.zeros(self.layers, batch_size, self.hidden_size).cpu()
 
     def forward(self, x, hidden):
-        #Input is (seq, batch, latents) maybe (13, 8, 128)
-        #print('regressor input shape:', x.shape, hidden.shape)
+        # Input is (seq, batch, latents) maybe (13, 8, 128)
+        # print('regressor input shape:', x.shape, hidden.shape)
         x, hidden = self.gru(x, hidden)
-        #print('regressor output shape:', x.shape, hidden.shape)
+        # print('regressor output shape:', x.shape, hidden.shape)
         return x, hidden

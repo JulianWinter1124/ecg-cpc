@@ -8,7 +8,7 @@ class DownstreamLinearNet(nn.Module):
         super().__init__()
         self.latent_size = latent_size
         self.n_out_classes = out_classes
-        self.use_context = False #use_context
+        self.use_context = False  # use_context
         self.use_latents = use_latents
         self.verbose = verbose
         self.classifier = nn.Sequential(
@@ -16,15 +16,14 @@ class DownstreamLinearNet(nn.Module):
         )
         self.activation = nn.Sigmoid()
 
-
     def forward(self, latents=None, context=None, y=None):
-        if self.verbose and latents: print('latents', latents.shape) #steps, batch, ldim
+        if self.verbose and latents: print('latents', latents.shape)  # steps, batch, ldim
         if self.verbose and latents: print('context', context.shape)
-        x = self.classifier(latents) #outshape, batch, steps, outshape
+        x = self.classifier(latents)  # outshape, batch, steps, outshape
         x = torch.max(x, dim=0).values
         output = self.activation(x)
-        #print('pred shape', pred.shape)
+        # print('pred shape', pred.shape)
         if y is None:  #
             return output
-        else: #Training mode return loss instead of prediction
+        else:  # Training mode return loss instead of prediction
             raise NotImplementedError

@@ -1,5 +1,4 @@
-
-#author: https://github.com/geekfeiw/Multi-Scale-1D-ResNet
+# author: https://github.com/geekfeiw/Multi-Scale-1D-ResNet
 import torch
 # author: https://github.com/geekfeiw/Multi-Scale-1D-ResNet
 import torch
@@ -11,14 +10,15 @@ def conv3x3(in_planes, out_planes, stride=1):
     return nn.Conv1d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
 
+
 def conv5x5(in_planes, out_planes, stride=1):
     return nn.Conv1d(in_planes, out_planes, kernel_size=5, stride=stride,
                      padding=1, bias=False)
 
+
 def conv7x7(in_planes, out_planes, stride=1):
     return nn.Conv1d(in_planes, out_planes, kernel_size=7, stride=stride,
                      padding=1, bias=False)
-
 
 
 class BasicBlock3x3(nn.Module):
@@ -80,12 +80,11 @@ class BasicBlock5x5(nn.Module):
             residual = self.downsample(x)
 
         d = residual.shape[2] - out.shape[2]
-        out1 = residual[:,:,0:-d] + out
+        out1 = residual[:, :, 0:-d] + out
         out1 = self.relu(out1)
         # out += residual
 
         return out1
-
 
 
 class BasicBlock7x7(nn.Module):
@@ -122,8 +121,6 @@ class BasicBlock7x7(nn.Module):
         return out1
 
 
-
-
 class MSResNet(nn.Module):
     def __init__(self, input_channel, layers=[1, 1, 1, 1], num_classes=10):
         self.inplanes3 = 64
@@ -146,13 +143,11 @@ class MSResNet(nn.Module):
         # maxplooing kernel size: 16, 11, 6
         self.maxpool3 = nn.AvgPool1d(kernel_size=16, stride=1, padding=0)
 
-
         self.layer5x5_1 = self._make_layer5(BasicBlock5x5, 64, layers[0], stride=2)
         self.layer5x5_2 = self._make_layer5(BasicBlock5x5, 128, layers[1], stride=2)
         self.layer5x5_3 = self._make_layer5(BasicBlock5x5, 256, layers[2], stride=2)
         # self.layer5x5_4 = self._make_layer5(BasicBlock5x5, 512, layers[3], stride=2)
         self.maxpool5 = nn.AvgPool1d(kernel_size=11, stride=1, padding=0)
-
 
         self.layer7x7_1 = self._make_layer7(BasicBlock7x7, 64, layers[0], stride=2)
         self.layer7x7_2 = self._make_layer7(BasicBlock7x7, 128, layers[1], stride=2)
@@ -160,11 +155,9 @@ class MSResNet(nn.Module):
         # self.layer7x7_4 = self._make_layer7(BasicBlock7x7, 512, layers[3], stride=2)
         self.maxpool7 = nn.AvgPool1d(kernel_size=6, stride=1, padding=0)
 
-        self.downsample = nn.Conv1d(126, 1, 1) #added myself
+        self.downsample = nn.Conv1d(126, 1, 1)  # added myself
         # self.drop = nn.Dropout(p=0.2)
-        self.fc = nn.Linear(256*3, num_classes)
-
-
+        self.fc = nn.Linear(256 * 3, num_classes)
 
         # todo: modify the initialization
         # for m in self.modules():
@@ -209,7 +202,6 @@ class MSResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-
     def _make_layer7(self, block, planes, blocks, stride=2):
         downsample = None
         if stride != 1 or self.inplanes7 != planes * block.expansion:
@@ -253,17 +245,10 @@ class MSResNet(nn.Module):
 
         out = torch.cat([x, y, z], dim=1)
 
-        out = self.downsample(out.transpose(1,2)) #added myself
+        out = self.downsample(out.transpose(1, 2))  # added myself
         # out = self.drop(out)
-        #print(out.shape)
-        #print(out.shape)
+        # print(out.shape)
+        # print(out.shape)
         out1 = self.fc(out.squeeze(1))
-        #print(out1.shape)
+        # print(out1.shape)
         return out1, out
-
-
-
-
-
-
-

@@ -13,11 +13,11 @@ class DownstreamLinearNet(nn.Module):
         self.verbose = verbose
         if self.use_context and self.use_latents:
             self.classifier = nn.Sequential(
-                nn.Linear(context_size*2, context_size*2),
+                nn.Linear(context_size * 2, context_size * 2),
                 nn.ReLU(),
-                nn.Linear(context_size*2, out_classes)
+                nn.Linear(context_size * 2, out_classes)
             )
-        else: #if not both are getting used, normal classifier is enough for each
+        else:  # if not both are getting used, normal classifier is enough for each
             self.classifier = nn.Sequential(
                 nn.Linear(context_size, context_size),
                 nn.ReLU(),
@@ -27,7 +27,6 @@ class DownstreamLinearNet(nn.Module):
             self.rnn = nn.GRU(input_size=latent_size, hidden_size=context_size, num_layers=1, batch_first=False)
 
         self.activation = nn.Sigmoid()
-
 
     def forward(self, latents=None, context=None, y=None):
         if self.verbose and latents: print('latents', latents.shape)
@@ -39,11 +38,10 @@ class DownstreamLinearNet(nn.Module):
             x, c = self.rnn(latents)
             context = x[-1, :]
 
-
         pred = self.classifier(context)
         output = self.activation(pred)
-        #print('pred shape', pred.shape)
+        # print('pred shape', pred.shape)
         if y is None:  #
             return output
-        else: #Training mode return loss instead of prediction
+        else:  # Training mode return loss instead of prediction
             raise NotImplementedError

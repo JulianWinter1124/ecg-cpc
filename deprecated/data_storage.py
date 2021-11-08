@@ -9,7 +9,7 @@ class DataStorage():
         self.data_dict = {}
         self.save_path = save_path
 
-    def append(self, key:str, data:object):
+    def append(self, key: str, data: object):
         if key in self.data_dict:
             v = self.data_dict[key]
             if isinstance(data, torch.Tensor):
@@ -17,7 +17,7 @@ class DataStorage():
         else:
             self.data_dict[key] = data
 
-    def add(self, key:str, data:object):
+    def add(self, key: str, data: object):
         if key in self.data_dict:
             v = self.data_dict[key]
             if isinstance(data, torch.Tensor):
@@ -35,8 +35,10 @@ class DataStorage():
             elif isinstance(v, np.Array):
                 np.save(p, v)
 
+
 def load_np_array(p):
     return np.load(p)
+
 
 def load_torch_tensor(p):
     return torch.load(p)

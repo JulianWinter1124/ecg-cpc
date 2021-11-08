@@ -16,7 +16,8 @@ from sklearn.preprocessing import normalize, OneHotEncoder
 
 
 class PTBXLData():
-    def __init__(self, base_directory='/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/'):
+    def __init__(self,
+                 base_directory='/media/julian/Volume/data/ECG/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.1/'):
         self.BASE_DIR = base_directory
         self.label_encoder = None
         self.pca = None
@@ -27,7 +28,7 @@ class PTBXLData():
             file_endings = ['.dat', '.hea', '.xyz']
         record_files = []
         for fe in file_endings:
-            record_files += list(glob.glob(os.path.join(root, '*'+fe)))
+            record_files += list(glob.glob(os.path.join(root, '*' + fe)))
         if relative:
             record_files = [os.path.basename(f) for f in record_files]
         record_files = list(set([os.path.splitext(f)[0] for f in record_files]))
@@ -37,7 +38,7 @@ class PTBXLData():
 
     def read_signal(self, record_path, physical=True):
         print(record_path)
-        record = wfdb.rdrecord(record_path, physical=physical)#
+        record = wfdb.rdrecord(record_path, physical=physical)  #
         if physical:
             data = record.p_signal
         else:
@@ -48,7 +49,8 @@ class PTBXLData():
         record = wfdb.rdheader(record_path)
         return record.comments
 
-    def convert_dat_to_h5(self, storage_path, dat_file_paths, channels=None, normalize_data=False, pca_components=0, use_labels=False, verbose=True):
+    def convert_dat_to_h5(self, storage_path, dat_file_paths, channels=None, normalize_data=False, pca_components=0,
+                          use_labels=False, verbose=True):
         if not os.path.exists(storage_path):
             os.makedirs(storage_path)
         if use_labels:
@@ -67,20 +69,21 @@ class PTBXLData():
                 print('performing pca with:', data.shape)
                 cov = np.cov(data.T)
                 eig, ev = np.linalg.eigh(cov)
-                evecs = ev[::-1][:, 0:pca_components] #order is ascending, so descend, then take first two
+                evecs = ev[::-1][:, 0:pca_components]  # order is ascending, so descend, then take first two
                 data = np.dot(data, evecs)
                 print('output shape pca:', data.shape)
-            target = os.path.join(storage_path, f.replace('/', '-') +'.h5')
+            target = os.path.join(storage_path, f.replace('/', '-') + '.h5')
             fail = False
             with h5py.File(target, 'w') as wf:
-                wf['data'] = data #TODO: Make this a parameter (drop last 3 channels)
+                wf['data'] = data  # TODO: Make this a parameter (drop last 3 channels)
                 if use_labels:
                     temp = self.read_label(ptbxl_database_dataframe, spc_codes_dataframe, f)
                     if len(temp) > 0:
-                        labels, likelihoods = zip(*temp[0:1]) #TODO: more than 1 label
+                        labels, likelihoods = zip(*temp[0:1])  # TODO: more than 1 label
                         onehot = self.label_encoder.transform([labels]).toarray()
                         wf['label'] = onehot
-                        wf['label'].attrs.create('names', [np.array(o, dtype=str) for o in self.label_encoder.categories_])
+                        wf['label'].attrs.create('names',
+                                                 [np.array(o, dtype=str) for o in self.label_encoder.categories_])
                         wf['multilabel'] = self.file_codes_onehot[f]
                         wf['multilabel'].attrs.create('names', [np.array(o, dtype=str) for o in self.code_list])
                     else:
@@ -153,7 +156,7 @@ class PTBXLData():
 
     def train_test_split(self, record_files, relative=True):
         if not relative:
-            record_files = {os.path.basename(f):f for f in record_files}
+            record_files = {os.path.basename(f): f for f in record_files}
         df = self.read_ptbxl_database()
         selection = df[['strat_fold', 'filename_hr', 'filename_lr']]
         print('Files found in DB:', len(selection))
@@ -164,7 +167,7 @@ class PTBXLData():
             flr = os.path.basename(flr)
             if fhr in rfrset:
                 fhr = fhr
-                if fold <= 8: #https://physionet.org/content/ptb-xl/1.0.1/ #Cross-validation Folds
+                if fold <= 8:  # https://physionet.org/content/ptb-xl/1.0.1/ #Cross-validation Folds
                     train.append(fhr)
                 elif fold == 9:
                     val.append(fhr)
@@ -172,7 +175,7 @@ class PTBXLData():
                     test.append(fhr)
             if flr in rfrset:
                 flr = flr
-                if fold <= 8: #https://physionet.org/content/ptb-xl/1.0.1/ #Cross-validation Folds
+                if fold <= 8:  # https://physionet.org/content/ptb-xl/1.0.1/ #Cross-validation Folds
                     train.append(flr)
                 elif fold == 9:
                     val.append(flr)
@@ -185,7 +188,7 @@ class PTBXLData():
         df = ptbxl_database_dataframe
         scp_df = spc_codes_dataframe
         rf = filename
-        temp = rf #If you need to match files put it here
+        temp = rf  # If you need to match files put it here
 
         row = df.loc[(df['filename_hr'].str.contains(temp)) | (df['filename_lr'].str.contains(temp))]
         if len(row) < 1:
@@ -193,7 +196,8 @@ class PTBXLData():
             return
         code = row['scp_codes'].values[0]
 
-        labels = [(c.split(':')[0].replace('{', '').replace("'", '').strip(), c.split(':')[1].replace('}', '').strip()) for c in code.split(',')]
+        labels = [(c.split(':')[0].replace('{', '').replace("'", '').strip(), c.split(':')[1].replace('}', '').strip())
+                  for c in code.split(',')]
         print(labels)
         diagnostic_classes = []
         for l, p in labels:
@@ -203,6 +207,6 @@ class PTBXLData():
                     print(l, 'not found in scp_statements')
                     break
                 v = scp_row['diagnostic_class'].values[0]
-                if not(type(v) == float and math.isnan(v)):
+                if not (type(v) == float and math.isnan(v)):
                     diagnostic_classes.append((v, p))
         return sorted(diagnostic_classes, key=lambda x: x[1], reverse=True)

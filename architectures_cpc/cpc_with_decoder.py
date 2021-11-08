@@ -22,27 +22,25 @@ class SimpleCPC(nn.Module):
     def forward(self, X):
         batch, n_windows, channels, length = X.shape
         assert n_windows >= self.timesteps_in + self.timesteps_out
-        x = X.reshape((batch*n_windows, channels, length)) #squash into batch dimension
+        x = X.reshape((batch * n_windows, channels, length))  # squash into batch dimension
         encoded_x = self.encoder(x)
-        encoded_x = encoded_x.reshape((batch, n_windows, -1)) #reshape into original
+        encoded_x = encoded_x.reshape((batch, n_windows, -1))  # reshape into original
         # if self.autoregressive.uses_hidden_state():
         #     if hidden is None:
         #         hidden = self.autoregressive.init_hidden(batch, use_gpu=False)
         #     predicted, hidden = self.autoregressive(encoded_x[:self.timesteps_in], hidden)
         # else:
-        encoded_x = encoded_x.transpose(1, 2) #new shape is (batch, latents, steps)
+        encoded_x = encoded_x.transpose(1, 2)  # new shape is (batch, latents, steps)
         predicted = self.autoregressive(encoded_x[:, :, :self.timesteps_in])
-        predicted_timesteps_out = predicted[:, :, -self.timesteps_out:].transpose(1, 2).reshape((batch*self.timesteps_out, -1))
-        #encoded_x_timesteps_out = encoded_x[:, :, -self.timesteps_out:].transpose(1, 2).reshape((batch*self.timesteps_out, -1))
+        predicted_timesteps_out = predicted[:, :, -self.timesteps_out:].transpose(1, 2).reshape(
+            (batch * self.timesteps_out, -1))
+        # encoded_x_timesteps_out = encoded_x[:, :, -self.timesteps_out:].transpose(1, 2).reshape((batch*self.timesteps_out, -1))
         decoded_pred = self.decoder(predicted_timesteps_out).reshape((batch, self.timesteps_out, channels, length))
         if self.training:
-            loss = torch.sum(torch.square(decoded_pred-X[:, -self.timesteps_out:]))/(batch*self.timesteps_out)
+            loss = torch.sum(torch.square(decoded_pred - X[:, -self.timesteps_out:])) / (batch * self.timesteps_out)
             return loss
         else:
             return decoded_pred
-
-
-
 
 
 if __name__ == '__main__':
@@ -50,13 +48,13 @@ if __name__ == '__main__':
     timesteps_out = 6
     latents = 64
     enc = cpc_encoder_v2.Encoder(12, latents)
-    auto = TemporalConvNet(latents, [latents]*3, kernel_size=3)
+    auto = TemporalConvNet(latents, [latents] * 3, kernel_size=3)
     decoder = cpc_encoder_decoder_v2.Decoder(12, latents)
     scpc = SimpleCPC(enc, decoder, auto, timesteps_in, timesteps_out, latents)
     train = ecg_datasets2.ECGChallengeDatasetBatching('/media/julian/data/data/ECG/ptbxl_challenge',
-                                                      window_size=140, n_windows=timesteps_in+timesteps_out)
+                                                      window_size=140, n_windows=timesteps_in + timesteps_out)
     val = ecg_datasets2.ECGChallengeDatasetBatching('/media/julian/data/data/ECG/ptbxl_challenge',
-                                                    window_size=140, n_windows=timesteps_in+timesteps_out)
+                                                    window_size=140, n_windows=timesteps_in + timesteps_out)
     dataloader = DataLoader(train, batch_size=128, drop_last=True, num_workers=1)
     valloader = DataLoader(val, batch_size=128, drop_last=True, num_workers=1)
     optimizer = Adam(scpc.parameters())
@@ -68,9 +66,9 @@ if __name__ == '__main__':
             loss = scpc(data.float())
             loss.backward()
             optimizer.step()
-            avg_train_loss = (avg_train_loss*batch_idx+loss.item())/(batch_idx+1)
+            avg_train_loss = (avg_train_loss * batch_idx + loss.item()) / (batch_idx + 1)
             print("loss {}".format(loss.item()))
-        print('EPOCH {} finished. Average train loss {}'.format(i+1, avg_train_loss))
+        print('EPOCH {} finished. Average train loss {}'.format(i + 1, avg_train_loss))
         # for batch_idx, data in enumerate(dataloader):
         #     loss = scpc(data.float())
         #     avg_test_loss = (avg_test_loss*batch_idx+loss.item())/(batch_idx+1)

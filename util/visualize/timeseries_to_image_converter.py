@@ -9,10 +9,13 @@ from PIL import Image
 from torchvision.io import write_video
 import seaborn as sns
 import matplotlib.patches as mpatches
-#from torch.nn.functional import relu
+
+
+# from torch.nn.functional import relu
 
 class VideoWriter():
-    def __init__(self, filename: str, fps: float, video_codec: str = "libx264", options: Optional[Dict[str, Any]] = None):
+    def __init__(self, filename: str, fps: float, video_codec: str = "libx264",
+                 options: Optional[Dict[str, Any]] = None):
         self.filename = filename
         self.fps = fps
         if isinstance(fps, float):
@@ -50,14 +53,18 @@ class VideoWriter():
         self._container.close()
         self.is_open = False
 
+
 def tensor_to_video(filename: str,
-                video_array: torch.Tensor,
-                fps: float,
-                video_codec: str = "libx264",
-                options: Optional[Dict[str, Any]] = None):
+                    video_array: torch.Tensor,
+                    fps: float,
+                    video_codec: str = "libx264",
+                    options: Optional[Dict[str, Any]] = None):
     return write_video(filename, video_array, fps, video_codec, options)
 
-def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_classes: list = None, ground_truth:list=None, downsample_factor=2, color=(0.1, 0.2, 0.5), convert_to_rgb=False, filename :str=None, verbose = True, show=False, save=True):
+
+def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_classes: list = None,
+                        ground_truth: list = None, downsample_factor=2, color=(0.1, 0.2, 0.5), convert_to_rgb=False,
+                        filename: str = None, verbose=True, show=False, save=True):
     batch, n, channels = data.shape
     rgba_colors = np.zeros((n, 4))
     for i in range(len(color)):
@@ -65,22 +72,26 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
     rgba_colors[:, 3] = 1.0
     images = []
     for p, b in enumerate(data):
-        fig, axs = plt.subplots(channels, 1, sharex='all', gridspec_kw={'hspace': 0}, figsize=(n/100/downsample_factor, channels*300/100/downsample_factor), dpi=100) #dpi=100)
+        fig, axs = plt.subplots(channels, 1, sharex='all', gridspec_kw={'hspace': 0},
+                                figsize=(n / 100 / downsample_factor, channels * 300 / 100 / downsample_factor),
+                                dpi=100)  # dpi=100)
         fig.tight_layout(pad=0, rect=[0.03, 0.03, 1, 0.90])
         x = np.arange(0, n)
         for i, ax in enumerate(axs):
             y = b[:, i]
             if not grad is None:
                 alpha = grad[p, :, i]
-                alpha = (alpha-grad[p, :, :].min())/(grad[p, :, :].max()-grad[p, :, :].min()) #TODO: consider normalizing this channelwise
-                rgba_colors[:, 3] = alpha #alpha channel is gradient
-                ax.scatter(x, y, label='channel_'+str(i), color=rgba_colors, s=1.0)
+                alpha = (alpha - grad[p, :, :].min()) / (
+                        grad[p, :, :].max() - grad[p, :, :].min())  # TODO: consider normalizing this channelwise
+                rgba_colors[:, 3] = alpha  # alpha channel is gradient
+                ax.scatter(x, y, label='channel_' + str(i), color=rgba_colors, s=1.0)
             else:
-                ax.plot(x, y, label='channel_'+str(i), )
+                ax.plot(x, y, label='channel_' + str(i), )
         plt.xlabel('Time (500 steps = 1 second)', fontsize=30)
-            #ax.label_outer()
+        # ax.label_outer()
         if not pred_classes is None:
-            plt.figtext(0.5, 0.01, ",".join([str(st) for st in pred_classes[p]]), wrap=True, horizontalalignment='center', fontsize=12)
+            plt.figtext(0.5, 0.01, ",".join([str(st) for st in pred_classes[p]]), wrap=True,
+                        horizontalalignment='center', fontsize=12)
         if not ground_truth is None:
             fig.suptitle("\n".join([str(st) for st in ground_truth[p]]), fontsize=40)
         plt.legend()
@@ -101,14 +112,17 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
         images.append(img_arr)
         plt.close()
         if verbose:
-            print("image {} of {} images complete".format(p+1, batch), flush=True)
+            print("image {} of {} images complete".format(p + 1, batch), flush=True)
         if show:
             plt.imshow(img_arr)
             plt.show()
 
     return np.stack(images)
 
-def timeseries_to_image_with_gradient(data: torch.Tensor, labels:torch.Tensor, grad: torch.Tensor, pred:torch.Tensor=None, model_tresholds=None, grad_alteration='none', title=None, class_name=None, filenames :list=None, show=False, save=True):
+
+def timeseries_to_image_with_gradient(data: torch.Tensor, labels: torch.Tensor, grad: torch.Tensor,
+                                      pred: torch.Tensor = None, model_tresholds=None, grad_alteration='none',
+                                      title=None, class_name=None, filenames: list = None, show=False, save=True):
     batches, width, height = data.shape
     for batch in range(batches):
         cmap_green = sns.light_palette("seagreen", as_cmap=True)
@@ -120,8 +134,8 @@ def timeseries_to_image_with_gradient(data: torch.Tensor, labels:torch.Tensor, g
         elif grad_alteration == 'abs':
             gradient = grad[batch].abs()
         elif grad_alteration == 'relu':
-            gradient = torch.nn.functional.relu(grad[batch])**2 #all values >= 0
-        grad_norm = (gradient-gradient.min())/(gradient.max()-gradient.min())
+            gradient = torch.nn.functional.relu(grad[batch]) ** 2  # all values >= 0
+        grad_norm = (gradient - gradient.min()) / (gradient.max() - gradient.min())
         title = title or f'Gradient visualization for class:{class_name} as label\n'
 
         if not labels is None:
@@ -137,24 +151,30 @@ def timeseries_to_image_with_gradient(data: torch.Tensor, labels:torch.Tensor, g
             ax.set_ylim((-0.1, 1.1))
             ax.axis('off')
             d = data[batch, :, i]
-            g = grad_norm[:, i:i+1].T
+            g = grad_norm[:, i:i + 1].T
             ax.plot(range(width), d, color='red')
             ax.autoscale(False)
             ax.imshow(g, extent=[0, width, -0.1, 1.1], aspect='auto', cmap=cmap_green)
         if save:
-            plt.savefig(filenames[batch]+'-class:'+ str(class_name) + '-alt:'+ grad_alteration +'-gradient-vis.png', dpi=fig.dpi)
+            plt.savefig(
+                filenames[batch] + '-class:' + str(class_name) + '-alt:' + grad_alteration + '-gradient-vis.png',
+                dpi=fig.dpi)
         if show:
             plt.show()
         plt.close()
 
-def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels:torch.Tensor, grad_list: List[torch.Tensor], pred:torch.Tensor=None, model_tresholds=None, grad_alteration='none', cutoff=0.2, title=None, class_name_list=None, filenames :list=None, show=False, save=True):
+
+def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels: torch.Tensor, grad_list: List[torch.Tensor],
+                                             pred: torch.Tensor = None, model_tresholds=None, grad_alteration='none',
+                                             cutoff=0.2, title=None, class_name_list=None, filenames: list = None,
+                                             show=False, save=True):
     batches, width, height = data.shape
     n_preds = len(grad_list)
     base_colors = sns.color_palette("hls", n_preds)
     cmaps = [sns.light_palette(c, as_cmap=True) for c in base_colors]
     for i in range(len(cmaps)):
         cmaps[i].set_gamma(1.)
-        cmaps[i]._lut[0, :] = 0. #Set all initial values to transparent
+        cmaps[i]._lut[0, :] = 0.  # Set all initial values to transparent
     for batch in range(batches):
         fig, axs = plt.subplots(data.shape[-1], 1, figsize=(30, 20))
         plt.xlim((0, width))
@@ -169,11 +189,11 @@ def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels:torch.Te
         fig.suptitle(title)
         fig.tight_layout()
         for i, ax in enumerate(axs):
-                ax.set_xlim((0, width))
-                ax.set_ylim((-0.1, 1.1))
-                ax.axis('off')
-                d = data[batch, :, i]
-                ax.plot(range(width), d, color='red')
+            ax.set_xlim((0, width))
+            ax.set_ylim((-0.1, 1.1))
+            ax.axis('off')
+            d = data[batch, :, i]
+            ax.plot(range(width), d, color='red')
         legend_handles = []
         grad_norms = []
         gradients = []
@@ -182,16 +202,16 @@ def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels:torch.Te
             if grad_alteration == 'abs':
                 gradient = grad_list[n][batch].abs()
             elif grad_alteration == 'relu':
-                gradient = torch.nn.functional.relu(grad_list[n][batch]) #all values >= 0
+                gradient = torch.nn.functional.relu(grad_list[n][batch])  # all values >= 0
             elif grad_alteration == 'abs_neg':
                 gradient = grad_list[n][batch].abs()
             elif grad_alteration == 'relu_neg':
-                gradient = torch.nn.functional.relu(-grad_list[n][batch]) #all values >= 0
+                gradient = torch.nn.functional.relu(-grad_list[n][batch])  # all values >= 0
             else:
                 gradient = grad_list[n][batch]
             gradients.append(gradient.numpy())
-            grad_norm = (gradient-gradient.min())/(gradient.max()-gradient.min()).numpy()
-            grad_norm[grad_norm<cutoff]=0.
+            grad_norm = (gradient - gradient.min()) / (gradient.max() - gradient.min()).numpy()
+            grad_norm[grad_norm < cutoff] = 0.
             grad_norms.append(grad_norm)
             color_values.append(cmaps[n](grad_norm))
             legend_handles.append(mpatches.Patch(color=base_colors[n], label=f"Class: {class_name_list[n]}"))
@@ -199,36 +219,40 @@ def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels:torch.Te
         grad_norms = np.stack(grad_norms)
         gradients = np.stack(gradients)
         color_values = np.stack(color_values)
-        #ix = np.argmax(grad_norms, axis=0)
+        # ix = np.argmax(grad_norms, axis=0)
         ix = np.argmax(gradients, axis=0)
 
         print(grad_norms.shape, ix.shape, color_values.shape)
         for i, ax in enumerate(axs):
-            g = color_values[ix[:, i], np.arange(width), i][np.newaxis, :] # grad_norm[:, i:i+1].T
+            g = color_values[ix[:, i], np.arange(width), i][np.newaxis, :]  # grad_norm[:, i:i+1].T
             ax.autoscale(False)
             ax.imshow(g, extent=[0, width, -0.1, 1.1], aspect='auto', alpha=1, interpolation='none')
         fig.legend(handles=legend_handles)
         if save:
-            plt.savefig(filenames[batch] +'-class:' + str(class_name_list) + '-alt:' + grad_alteration + '-gradient-vis.png', dpi=fig.dpi)
+            plt.savefig(
+                filenames[batch] + '-class:' + str(class_name_list) + '-alt:' + grad_alteration + '-gradient-vis.png',
+                dpi=fig.dpi)
         if show:
             plt.show()
         plt.close()
 
-def kernel_to_image(layer_name, layer_weights:torch.Tensor):
+
+def kernel_to_image(layer_name, layer_weights: torch.Tensor):
     out_channels, in_channels, kernel_size = layer_weights.shape
 
-    fig, axs = plt.subplots(1, in_channels, figsize=(out_channels//2, in_channels//2))
+    fig, axs = plt.subplots(1, in_channels, figsize=(out_channels // 2, in_channels // 2))
     fig.suptitle(layer_name)
     mins = layer_weights.min(dim=2)[0].unsqueeze(2)
     maxs = layer_weights.max(dim=2)[0].unsqueeze(2)
-    layer_weights=(layer_weights-mins)/(maxs-mins)
+    layer_weights = (layer_weights - mins) / (maxs - mins)
     for index, ax in enumerate(axs):
         ax.imshow(layer_weights[:, index, :], cmap='gray')
         ax.set_xticks([])
         ax.set_yticks([])
     plt.show()
 
-if __name__ == '__main__': #Usage example
+
+if __name__ == '__main__':  # Usage example
     model_f = '../models/18_01_21-14/baseline_modelstate_epoch200.pt'
     model_state_dict = torch.load(model_f)['model_state_dict']
     print(model_state_dict.keys())

@@ -11,11 +11,10 @@ class CPCCombined(nn.Module):
         self.requires_grad_(True)
         self._unfreeze_cpc()
 
-
     def forward(self, X, y=None):
         print(self.freeze_cpc)
         if self.cpc_model.cpc_train_mode:
-            self.cpc_model.cpc_train_mode=False
+            self.cpc_model.cpc_train_mode = False
         if self.freeze_cpc:
             if not self.is_frozen:
                 self._freeze_cpc()

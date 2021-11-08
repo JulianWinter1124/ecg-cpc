@@ -16,6 +16,6 @@ def data_generator(N, seq_length):
         positions = np.random.choice(seq_length, size=2, replace=False)
         X_mask[i, 0, positions[0]] = 1
         X_mask[i, 0, positions[1]] = 1
-        Y[i,0] = X_num[i, 0, positions[0]] + X_num[i, 0, positions[1]]
+        Y[i, 0] = X_num[i, 0, positions[0]] + X_num[i, 0, positions[1]]
     X = torch.cat((X_num, X_mask), dim=1)
     return Variable(X), Variable(Y)

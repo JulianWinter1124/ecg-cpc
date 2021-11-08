@@ -1,4 +1,3 @@
-
 def count_key_in_dict(dictionary, search_key, decision_fn=None):
     count = 0
     if type(dictionary) == dict:
@@ -9,6 +8,7 @@ def count_key_in_dict(dictionary, search_key, decision_fn=None):
                 count += decision_fn(k, search_key)
             count += count_key_in_dict(v, search_key)
     return count
+
 
 def extract_values_for_key_in_dict(dictionary, search_key, decision_fn=None):
     values = []

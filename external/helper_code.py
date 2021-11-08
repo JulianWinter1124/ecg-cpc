@@ -12,15 +12,17 @@ twelve_leads = ('I', 'II', 'III', 'aVR', 'aVL', 'aVF', 'V1', 'V2', 'V3', 'V4', '
 six_leads = ('I', 'II', 'III', 'aVR', 'aVL', 'aVF')
 two_leads = ('II', 'V5')
 
+
 # Check if a variable is an integer or represents an integer.
 def is_integer(x):
     try:
-        if int(x)==float(x):
+        if int(x) == float(x):
             return True
         else:
             return False
     except (ValueError, TypeError):
         return False
+
 
 # Find header and recording files.
 def find_challenge_files(data_directory):
@@ -28,7 +30,7 @@ def find_challenge_files(data_directory):
     recording_files = list()
     for f in os.listdir(data_directory):
         root, extension = os.path.splitext(f)
-        if not root.startswith('.') and extension=='.hea':
+        if not root.startswith('.') and extension == '.hea':
             header_file = os.path.join(data_directory, root + '.hea')
             recording_file = os.path.join(data_directory, root + '.mat')
             if os.path.isfile(header_file) and os.path.isfile(recording_file):
@@ -36,11 +38,13 @@ def find_challenge_files(data_directory):
                 recording_files.append(recording_file)
     return header_files, recording_files
 
+
 # Load header file as a string.
 def load_header(header_file):
     with open(header_file, 'r') as f:
         header = f.read()
     return header
+
 
 # Load recording file as an array.
 def load_recording(recording_file, header=None, leads=None, key='val'):
@@ -48,18 +52,20 @@ def load_recording(recording_file, header=None, leads=None, key='val'):
     recording = np.asarray(x, dtype=np.float32)
     return recording
 
+
 # Get leads from header.
 def get_leads(header):
     leads = list()
     for i, l in enumerate(header.split('\n')):
         entries = l.split(' ')
-        if i==0:
+        if i == 0:
             num_leads = int(entries[1])
-        elif i<=num_leads:
+        elif i <= num_leads:
             leads.append(entries[-1])
         else:
             break
     return leads
+
 
 # Get age from header.
 def get_age(header):
@@ -72,6 +78,7 @@ def get_age(header):
                 age = float('nan')
     return age
 
+
 # Get age from header.
 def get_sex(header):
     sex = None
@@ -83,11 +90,12 @@ def get_sex(header):
                 pass
     return sex
 
+
 # Get frequency from header.
 def get_frequency(header):
     frequency = None
     for i, l in enumerate(header.split('\n')):
-        if i==0:
+        if i == 0:
             try:
                 frequency = float(l.split(' ')[2])
             except:
@@ -96,14 +104,15 @@ def get_frequency(header):
             break
     return frequency
 
+
 # Get amplitudes from header.
 def get_amplitudes(header, leads):
     amplitudes = np.zeros(len(leads), dtype=np.float32)
     for i, l in enumerate(header.split('\n')):
         entries = l.split(' ')
-        if i==0:
+        if i == 0:
             num_leads = int(entries[1])
-        elif i<=num_leads:
+        elif i <= num_leads:
             current_lead = entries[-1]
             if current_lead in leads:
                 j = leads.index(current_lead)
@@ -115,14 +124,15 @@ def get_amplitudes(header, leads):
             break
     return amplitudes
 
+
 # Get baselines from header.
 def get_baselines(header, leads):
     baselines = np.zeros(len(leads), dtype=np.float32)
     for i, l in enumerate(header.split('\n')):
         entries = l.split(' ')
-        if i==0:
+        if i == 0:
             num_leads = int(entries[1])
-        elif i<=num_leads:
+        elif i <= num_leads:
             current_lead = entries[-1]
             if current_lead in leads:
                 j = leads.index(current_lead)
@@ -134,6 +144,7 @@ def get_baselines(header, leads):
             break
     return baselines
 
+
 # Get labels from header.
 def get_labels(header):
     labels = list()
@@ -143,6 +154,7 @@ def get_labels(header):
             for entry in entries:
                 labels.append(entry.strip())
     return labels
+
 
 # Save outputs from model.
 def save_outputs(output_file, classes, labels, probabilities):
@@ -166,13 +178,14 @@ def save_outputs(output_file, classes, labels, probabilities):
 def get_classes(files_without_ext):
     classes = set()
     for filename in files_without_ext:
-        with open(filename+'.hea', 'r') as f:
+        with open(filename + '.hea', 'r') as f:
             for l in f:
                 if l.startswith('#Dx'):
                     tmp = l.split(':')[1].split(',')
                     for c in tmp:
                         classes.add(c.strip())
     return dict(zip(sorted(classes), range(len(classes))))
+
 
 def encode_header_labels(header, classes, onerror_class='426783006'):
     labels_act = np.zeros(len(classes))
@@ -190,13 +203,14 @@ def encode_header_labels(header, classes, onerror_class='426783006'):
                 labels_act[class_index] = 1
     return labels_act
 
+
 def save_challenge_predictions(output_directory, filenames, classes, scores, labels):
     for i in range(0, len(filenames)):
         filename = filenames[i]
         sc = scores[i]
         ls = labels[i]
         recording = os.path.splitext(filename)[0]
-        new_file = filename.replace('.mat','') + '.csv'
+        new_file = filename.replace('.mat', '') + '.csv'
 
         output_file = os.path.join(output_directory, new_file)
 

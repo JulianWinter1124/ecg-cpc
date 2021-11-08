@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 
-class LibriDataset(torch.utils.data.IterableDataset): #TODO: Implement random offset
+class LibriDataset(torch.utils.data.IterableDataset):  # TODO: Implement random offset
     def __init__(self, BASE_DIR, window_size, n_windows, files=None):
         super(LibriDataset).__init__()
         self.BASE_DIR = BASE_DIR
@@ -18,7 +18,7 @@ class LibriDataset(torch.utils.data.IterableDataset): #TODO: Implement random of
         self.print_file_attributes()
 
     def __iter__(self):
-        #multiple workers?
+        # multiple workers?
         file_index = 0
         while file_index < len(self.files):
             self.current_file = self.files[file_index]
@@ -26,7 +26,7 @@ class LibriDataset(torch.utils.data.IterableDataset): #TODO: Implement random of
             file_index += 1
 
     def __len__(self):
-        return 1 #Whatever
+        return 1  # Whatever
 
     def search_files(self):
         data_files = []
@@ -55,22 +55,26 @@ class ECGLabelDataset(torch.utils.data.IterableDataset):
         self.print_file_attributes()
 
     def __iter__(self):
-        #multiple workers?
+        # multiple workers?
         file_index = 0
         while file_index < len(self.files):
             self.current_file = self.files[file_index]
             with h5py.File(self.current_file, 'r') as f:
                 index = 0
-                offset = np.random.randint(self.window_size) #Use a random offset
+                offset = np.random.randint(self.window_size)  # Use a random offset
                 data = f.get('data')
-                labels = f.get('labels') #Uses data and labels group in .h5py file. make sure those exist
-                while (index+1)*self.window_size*self.n_windows <= len(data):
-                    #tmp_data = data[index*self.window_size*self.n_windows:(index+1)*self.window_size*self.n_windows]
-                    yield np.swapaxes(data[index*self.window_size*self.n_windows+offset : (index+1)*self.window_size*self.n_windows+offset].reshape((self.n_windows, self.window_size, -1)), 1, 2),\
-                          np.swapaxes(labels[index*self.window_size*self.n_windows+offset : (index+1)*self.window_size*self.n_windows+offset].reshape((self.n_windows, self.window_size, -1)), 1, 2)#labels[self.n_windows:(index+1)*self.window_size*self.n_windows] #TODO: Try returning as list
+                labels = f.get('labels')  # Uses data and labels group in .h5py file. make sure those exist
+                while (index + 1) * self.window_size * self.n_windows <= len(data):
+                    # tmp_data = data[index*self.window_size*self.n_windows:(index+1)*self.window_size*self.n_windows]
+                    yield np.swapaxes(data[index * self.window_size * self.n_windows + offset: (
+                                                                                                           index + 1) * self.window_size * self.n_windows + offset].reshape(
+                        (self.n_windows, self.window_size, -1)), 1, 2), \
+                          np.swapaxes(labels[index * self.window_size * self.n_windows + offset: (
+                                                                                                             index + 1) * self.window_size * self.n_windows + offset].reshape(
+                              (self.n_windows, self.window_size, -1)), 1,
+                                      2)  # labels[self.n_windows:(index+1)*self.window_size*self.n_windows] #TODO: Try returning as list
                     index += 1
             file_index += 1
-
 
     def search_files(self):
         record_files = []
@@ -84,7 +88,7 @@ class ECGLabelDataset(torch.utils.data.IterableDataset):
 
     def print_file_attributes(self):
         print('Printing attributes for dataset at dir:', self.BASE_DIR)
-        with h5py.File(self.files[0], 'r') as f: #only look at first file
+        with h5py.File(self.files[0], 'r') as f:  # only look at first file
             print('looking at file', f)
             print('Keys contained in dataset:', f.keys())
             for k in f.keys():

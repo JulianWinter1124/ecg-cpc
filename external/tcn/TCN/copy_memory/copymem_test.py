@@ -10,7 +10,6 @@ from TCN.copy_memory.utils import data_generator
 from TCN.copy_memory.model import TCN
 import time
 
-
 parser = argparse.ArgumentParser(description='Sequence Modeling - Copying Memory Task')
 parser.add_argument('--batch_size', type=int, default=32, metavar='N',
                     help='batch size (default: 32)')
@@ -49,9 +48,8 @@ if torch.cuda.is_available():
     if not args.cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
-
 batch_size = args.batch_size
-seq_len = args.seq_len    # The size to memorize
+seq_len = args.seq_len  # The size to memorize
 epochs = args.epochs
 iters = args.iters
 T = args.blank_len
@@ -64,7 +62,6 @@ print(args)
 print("Preparing data...")
 train_x, train_y = data_generator(T, seq_len, n_train)
 test_x, test_y = data_generator(T, seq_len, n_test)
-
 
 channel_sizes = [args.nhid] * args.levels
 kernel_size = args.ksize
@@ -109,7 +106,7 @@ def train(ep):
 
         x = train_x[start_ind:end_ind]
         y = train_y[start_ind:end_ind]
-        
+
         optimizer.zero_grad()
         out = model(x.unsqueeze(1).contiguous())
         loss = criterion(out.view(-1, n_classes), y.view(-1))
@@ -127,7 +124,7 @@ def train(ep):
             elapsed = time.time() - start_time
             print('| Epoch {:3d} | {:5d}/{:5d} batches | lr {:2.5f} | ms/batch {:5.2f} | '
                   'loss {:5.8f} | accuracy {:5.4f}'.format(
-                ep, batch_idx, n_train // batch_size+1, args.lr, elapsed * 1000 / args.log_interval,
+                ep, batch_idx, n_train // batch_size + 1, args.lr, elapsed * 1000 / args.log_interval,
                 avg_loss, 100. * correct / counter))
             start_time = time.time()
             total_loss = 0
