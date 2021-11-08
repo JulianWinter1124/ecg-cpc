@@ -2,7 +2,6 @@ from torch import nn
 #Idea: Make a bug receptive field using dilations
 #Do not use strides to not miss any information
 #Use maxpool instead of strides to select a window where activation is biggest
-from util.print_layer import PrintLayer
 
 
 class Encoder(nn.Module):

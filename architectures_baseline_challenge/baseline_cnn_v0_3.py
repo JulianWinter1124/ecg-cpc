@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from util.metrics import training_metrics as acm
-from old.data_storage import DataStorage
+from deprecated.data_storage import DataStorage
 
 
 class BaselineNet(nn.Module):

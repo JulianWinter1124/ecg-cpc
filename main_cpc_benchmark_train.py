@@ -11,20 +11,14 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
 
-from architectures_baseline_challenge import baseline_FCN, baseline_MLP, baseline_alex_v2, baseline_TCN_down, \
-    baseline_TCN_last, baseline_TCN_flatten, baseline_TCN_block, baseline_cnn_v15, \
-    baseline_cnn_v2, baseline_cnn_v3, baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v8, \
-    baseline_cnn_v9, baseline_resnet, baseline_rnn_simplest_gru, baseline_rnn_simplest_lstm
-
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_downstream_only, cpc_encoder_v0, cpc_intersect, \
-    cpc_predictor_v0, cpc_downstream_latent_maximum, cpc_downstream_twolinear, cpc_downstream_cnn, \
-    cpc_encoder_as_strided
+    cpc_predictor_v0, cpc_encoder_as_strided
 
-from util import store_models
+from util.utility import store_models
 from util.data import ecg_datasets2
-from util.full_class_name import fullname
+from util.utility.full_class_name import fullname
 from util.metrics import training_metrics, baseline_losses as bl
-from util.store_models import save_model_architecture, save_model_checkpoint, save_model_variables_text_only
+from util.utility.store_models import save_model_architecture, save_model_checkpoint, save_model_variables_text_only
 
 
 def main(args):

@@ -28,7 +28,7 @@ def create_timeseries_image():
     ecg_datasets2.filter_update_classes_by_count([ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train, cpsc2_val, t4], 1)
     counts_all, counted_classes_all = ecg_datasets2.count_merged_classes([ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train, cpsc2_val, t4])
     print(counted_classes_all)
-    with open('/home/julian/Downloads/Github/contrastive-predictive-coding/snomed_data.json', 'r') as f:
+    with open('/experiments/snomed_data.json', 'r') as f:
         snomed_data = json.load(f)
     inverted_named_counted_classes = {v:snomed_data[k]['pt']['term'] for k,v in counted_classes_all.items()}
     dl = DataLoader(ChainDataset([t1,t2,t3,t4]), batch_size=1)

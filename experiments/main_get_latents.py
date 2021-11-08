@@ -3,24 +3,14 @@ import datetime
 import os
 import pickle
 import time
-from collections import defaultdict
 from pathlib import Path
-import pandas as pd
 
 import numpy as np
 import torch
-from torch.optim import Adam
 from torch.utils.data import DataLoader, ChainDataset
-from torchviz import make_dot
 
-import cpc_combined
-from util import store_models
-from util.data.dataframe_factory import DataFrameFactory
-from util.metrics import training_metrics
-from external import helper_code
-from util.data import ecg_datasets2, ptbxl_data
-from util.full_class_name import fullname
-from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
+from util.data import ecg_datasets2
+from util.utility.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
 def main(args):
     np.random.seed(args.seed)
