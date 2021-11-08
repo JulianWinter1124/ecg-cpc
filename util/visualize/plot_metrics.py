@@ -6,6 +6,7 @@ import numpy as np
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import seaborn
+import torch
 from matplotlib.font_manager import FontProperties
 from numpy import interp
 from sklearn.metrics import auc, ConfusionMatrixDisplay
@@ -241,3 +242,55 @@ def export_legend(legend, save_to, filename="legend.png"):
     fig.canvas.draw()
     bbox  = legend.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     fig.savefig(os.path.join(save_to, filename), dpi="figure", bbox_inches=bbox)
+
+def plot_prediction_scatterplots(labels, pred, model_thresholds, filename=None, save=False, show=True):
+    binary_pred = pred[0] >= model_thresholds
+    diff = (pred[0] - model_thresholds).numpy()
+    x = np.arange(len(model_thresholds))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, figsize=(15, 5))
+    title = "Correct classes: " + ", ".join(map(str, np.nonzero(labels)[:, 1].numpy()))
+    #title += "\n Predicted classes (binary): " + ", ".join(map(str, np.nonzero(binary_pred.numpy())[0]))
+
+    fig.suptitle(title)
+    ##First plot
+    ax1.set_aspect='equal'
+    ax1.scatter(x[binary_pred], pred[0][binary_pred], c='yellow', label='true')
+    ax1.scatter(x[~binary_pred], pred[0][~binary_pred], c='purple', label='false')
+    ax1.set_xlabel('Class Nr.')
+
+    ax1.set_ylabel('Model output')
+    for class_i in x:
+        ax1.annotate(str(class_i), (class_i, pred[0][class_i]))
+    ax1.legend()
+    ##Second Plot
+    ax2.set_aspect='equal'
+    ax2.scatter(x[binary_pred], diff[binary_pred], c='yellow', label='true')
+    ax2.scatter(x[~binary_pred], diff[~binary_pred], c='purple', label='false')
+    ax2.set_xlabel('Class Nr.')
+    ax2.set_ylabel('model output minus specific class thresholds')
+    for class_i in x:
+        ax2.annotate(str(class_i), (class_i, diff[class_i]))
+    ax2.legend()
+    ##Third Plot
+    normed_pos = diff/(1-model_thresholds)
+    normed_neg = diff/model_thresholds
+    #probs =
+    probs = (np.where(diff>=0, normed_pos, normed_neg)+1)/2
+    ax3.scatter(x[binary_pred], probs[binary_pred], c='yellow', label='true')
+    ax3.scatter(x[~binary_pred], probs[~binary_pred], c='purple', label='false')
+    ax3.set_ylim(top=1.05)
+
+
+    ax3.set_aspect='equal'
+    ax3.set_xlabel('Class Nr.')
+    ax3.set_ylabel(r'"Probabilties" obtained by weighting output with threshold$^{-1}$')
+    for class_i in x:
+        ax3.annotate(str(class_i), (class_i, probs[class_i]))
+    ax3.legend()
+    filename = filename or ""
+    fig.tight_layout()
+    if save:
+        plt.savefig(filename + 'scatterplot-predictions(combined).png', dpi=fig.dpi)
+    if show:
+        plt.show()
+    plt.close(fig)

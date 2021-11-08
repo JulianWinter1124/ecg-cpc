@@ -28,7 +28,7 @@ class ExplainLabel(nn.Module):
             # return output, grad
         else:
             grads = []
-            X = torch.tensor(X1, requires_grad=True, device=X1.device)
+            X = torch.tensor(X1, requires_grad=True, device=X1.device) # X1.clone().detach().requires_grad_(True)
             X.retain_grad()
             pred = self.model(X, y=None) # makes model return prediction instead of loss
             if len(pred.shape) == 1: #hack for squeezed batch dimension

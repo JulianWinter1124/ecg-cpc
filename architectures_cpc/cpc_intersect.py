@@ -34,7 +34,7 @@ class CPC(nn.Module):
         elif len(X.shape) == 3: #uses basline dataset, shape: (batch, length, channels)
             X = X.transpose(1, 2)
         batch, channels, length = X.shape #assume baseline dataset shape
-        encoded_x = self.encoder(X) #encode whole data: shape: (batch, latent_size, length->out_length) #THIS IS NOT HOW ITS SHOWN IN THE PAPER
+        encoded_x = self.encoder(X) #encode whole data: shape: (batch, latent_size, length->out_length)
         encoded_x = encoded_x.permute(2, 0, 1) #shape outlength, batch, latent_size
         if self.verbose: print('encoder_x', encoded_x.shape)
         encoded_x_steps, _, _  = encoded_x.shape
@@ -74,12 +74,12 @@ class CPC(nn.Module):
         if self.sampling_mode == 'all':
             encoded_latent = encoded_x.transpose(0, 1) #output shape: Batch, latents, latent_size
             #TODO: maybe also use all timesteps instead of random
-            t = np.random.randint(low=self.timesteps_in, high=encoded_x_steps-self.timesteps_out-self.timesteps_ignore)  #Select current timestep at random
-
+            #t = np.random.randint(low=self.timesteps_in, high=encoded_x_steps-self.timesteps_out-self.timesteps_ignore)  #Select current timestep at random
+            t = encoded_x_steps-self.timesteps_out-self.timesteps_ignore
             if self.normalize_latents:
                 encoded_latent = batch*encoded_latent/torch.norm(encoded_latent, p=2, dim=-1, keepdim=True)
-            for k in range(self.timesteps_ignore, self.timesteps_out):
-                pred_latent = self.predictor(context[t, :, :], k).squeeze(0)
+            for k in range(self.timesteps_ignore, self.timesteps_ignore+self.timesteps_out):
+                pred_latent = self.predictor(context[t-1, :, :], k).squeeze(0)
                   # shape is batch, n_latents, latent_size
                 if self.normalize_latents:
                     pred_latent = batch*pred_latent/torch.norm(pred_latent, p=2, dim=-1, keepdim=True) #Multiplying with batch so softmax stable

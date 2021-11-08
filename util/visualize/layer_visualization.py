@@ -27,6 +27,13 @@ def plot_receptivefield_plot(kernel_weights, name=''):
     plt.plot(np.arange(len(kernel_weights)), kernel_weights) #height=h, align='center'
     plt.show()
 
+def plot_receptivefield_plot_repeated(kernel_weights, name='', repeat_shift:list=None):
+    if not repeat_shift is None:
+        plt.title(name)
+        for i in range(len(repeat_shift)+1):
+            plt.plot(np.arange(len(kernel_weights))+sum(repeat_shift[0:i]), kernel_weights) #height=h, align='center'
+        plt.show()
+
 def plot_multiple_receptivefield_plot(kernel_weights_list: list, name=''):
     plt.title(name)
     for kw in kernel_weights_list:

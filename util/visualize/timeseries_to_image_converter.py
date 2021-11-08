@@ -1,5 +1,5 @@
 import io
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 import av
 import matplotlib.pyplot as plt
@@ -7,7 +7,9 @@ import numpy as np
 import torch
 from PIL import Image
 from torchvision.io import write_video
-
+import seaborn as sns
+import matplotlib.patches as mpatches
+#from torch.nn.functional import relu
 
 class VideoWriter():
     def __init__(self, filename: str, fps: float, video_codec: str = "libx264", options: Optional[Dict[str, Any]] = None):
@@ -105,6 +107,112 @@ def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_clas
             plt.show()
 
     return np.stack(images)
+
+def timeseries_to_image_with_gradient(data: torch.Tensor, labels:torch.Tensor, grad: torch.Tensor, pred:torch.Tensor=None, model_tresholds=None, grad_alteration='none', title=None, class_name=None, filenames :list=None, show=False, save=True):
+    batches, width, height = data.shape
+    for batch in range(batches):
+        cmap_green = sns.light_palette("seagreen", as_cmap=True)
+        fig, axs = plt.subplots(data.shape[-1], 1, figsize=(30, 20))
+        plt.xlim((0, width))
+        plt.ylim((0, 1))
+        if grad_alteration is None or grad_alteration == 'none':
+            gradient = grad[batch]
+        elif grad_alteration == 'abs':
+            gradient = grad[batch].abs()
+        elif grad_alteration == 'relu':
+            gradient = torch.nn.functional.relu(grad[batch])**2 #all values >= 0
+        grad_norm = (gradient-gradient.min())/(gradient.max()-gradient.min())
+        title = title or f'Gradient visualization for class:{class_name} as label\n'
+
+        if not labels is None:
+            title += "Correct classes: " + ", ".join(map(str, np.nonzero(labels[batch].numpy())[0])) + ". "
+        if not (pred is None or model_tresholds is None):
+            binary_pred = pred[batch] >= model_tresholds
+            title += "Predicted classes: " + ", ".join(map(str, np.nonzero(binary_pred.numpy())[0])) + ". "
+        fig.suptitle(title)
+        fig.tight_layout()
+
+        for i, ax in enumerate(axs):
+            ax.set_xlim((0, width))
+            ax.set_ylim((-0.1, 1.1))
+            ax.axis('off')
+            d = data[batch, :, i]
+            g = grad_norm[:, i:i+1].T
+            ax.plot(range(width), d, color='red')
+            ax.autoscale(False)
+            ax.imshow(g, extent=[0, width, -0.1, 1.1], aspect='auto', cmap=cmap_green)
+        if save:
+            plt.savefig(filenames[batch]+'-class:'+ str(class_name) + '-alt:'+ grad_alteration +'-gradient-vis.png', dpi=fig.dpi)
+        if show:
+            plt.show()
+        plt.close()
+
+def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels:torch.Tensor, grad_list: List[torch.Tensor], pred:torch.Tensor=None, model_tresholds=None, grad_alteration='none', cutoff=0.2, title=None, class_name_list=None, filenames :list=None, show=False, save=True):
+    batches, width, height = data.shape
+    n_preds = len(grad_list)
+    base_colors = sns.color_palette("hls", n_preds)
+    cmaps = [sns.light_palette(c, as_cmap=True) for c in base_colors]
+    for i in range(len(cmaps)):
+        cmaps[i].set_gamma(1.)
+        cmaps[i]._lut[0, :] = 0. #Set all initial values to transparent
+    for batch in range(batches):
+        fig, axs = plt.subplots(data.shape[-1], 1, figsize=(30, 20))
+        plt.xlim((0, width))
+        plt.ylim((0, 1))
+        title = title or f'Gradient visualization for class:{class_name_list} as label\n'
+        title += f"Gradient Alteration: '{grad_alteration}'\n"
+        if not labels is None:
+            title += "Correct classes: " + ", ".join(map(str, np.nonzero(labels[batch].numpy())[0])) + ". "
+        if not (pred is None or model_tresholds is None):
+            binary_pred = pred[batch] >= model_tresholds
+            title += "Predicted classes: " + ", ".join(map(str, np.nonzero(binary_pred.numpy())[0])) + ". "
+        fig.suptitle(title)
+        fig.tight_layout()
+        for i, ax in enumerate(axs):
+                ax.set_xlim((0, width))
+                ax.set_ylim((-0.1, 1.1))
+                ax.axis('off')
+                d = data[batch, :, i]
+                ax.plot(range(width), d, color='red')
+        legend_handles = []
+        grad_norms = []
+        gradients = []
+        color_values = []
+        for n in range(n_preds):
+            if grad_alteration == 'abs':
+                gradient = grad_list[n][batch].abs()
+            elif grad_alteration == 'relu':
+                gradient = torch.nn.functional.relu(grad_list[n][batch]) #all values >= 0
+            elif grad_alteration == 'abs_neg':
+                gradient = grad_list[n][batch].abs()
+            elif grad_alteration == 'relu_neg':
+                gradient = torch.nn.functional.relu(-grad_list[n][batch]) #all values >= 0
+            else:
+                gradient = grad_list[n][batch]
+            gradients.append(gradient.numpy())
+            grad_norm = (gradient-gradient.min())/(gradient.max()-gradient.min()).numpy()
+            grad_norm[grad_norm<cutoff]=0.
+            grad_norms.append(grad_norm)
+            color_values.append(cmaps[n](grad_norm))
+            legend_handles.append(mpatches.Patch(color=base_colors[n], label=f"Class: {class_name_list[n]}"))
+            ####NEXT IDEA: use custom color map (choose depending on argmax over n_preds)
+        grad_norms = np.stack(grad_norms)
+        gradients = np.stack(gradients)
+        color_values = np.stack(color_values)
+        #ix = np.argmax(grad_norms, axis=0)
+        ix = np.argmax(gradients, axis=0)
+
+        print(grad_norms.shape, ix.shape, color_values.shape)
+        for i, ax in enumerate(axs):
+            g = color_values[ix[:, i], np.arange(width), i][np.newaxis, :] # grad_norm[:, i:i+1].T
+            ax.autoscale(False)
+            ax.imshow(g, extent=[0, width, -0.1, 1.1], aspect='auto', alpha=1, interpolation='none')
+        fig.legend(handles=legend_handles)
+        if save:
+            plt.savefig(filenames[batch] +'-class:' + str(class_name_list) + '-alt:' + grad_alteration + '-gradient-vis.png', dpi=fig.dpi)
+        if show:
+            plt.show()
+        plt.close()
 
 def kernel_to_image(layer_name, layer_weights:torch.Tensor):
     out_channels, in_channels, kernel_size = layer_weights.shape

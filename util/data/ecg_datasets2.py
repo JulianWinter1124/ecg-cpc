@@ -441,7 +441,7 @@ class ECGChallengeDatasetBatching(torch.utils.data.IterableDataset):
 
 
 class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
-    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, return_labels=False, return_filename=False, classes=None, normalize_fn=None, verbose=False):
+    def __init__(self, BASE_DIR, window_size, pad_to_size=None, files=None, channels=None, return_labels=False, return_filename=False, classes=None, normalize_fn=None, verbose=False, randomize_order=True):
         super(ECGDataset).__init__()
         self.BASE_DIR = BASE_DIR
         self.window_size = window_size
@@ -455,13 +455,14 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         self.return_labels = return_labels
         self.return_filename = return_filename
         self.normalize_fn = normalize_fn if not normalize_fn is None else lambda x: x
+        self.randomize_order = randomize_order
 
     def generate_datasets_from_split_file(self, ttsfile='train-test-splits.txt'):
         splits = load_train_test_split(os.path.join(self.BASE_DIR, ttsfile))
         return tuple(ECGChallengeDatasetBaseline(self.BASE_DIR, self.window_size, self.pad_to_size, files=s,
                                                  channels=self.channels, return_labels=self.return_labels,
                                                  return_filename=self.return_filename, classes=self.classes,
-                                                 normalize_fn=self.normalize_fn)
+                                                 normalize_fn=self.normalize_fn, randomize_order=self.randomize_order)
                      for s in splits)
 
     def generate_datasets_from_split_list(self, trainf, valf, testf):
@@ -469,12 +470,13 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
         return tuple(ECGChallengeDatasetBaseline(self.BASE_DIR, self.window_size, self.pad_to_size, files=s,
                                                  channels=self.channels, return_labels=self.return_labels,
                                                  return_filename=self.return_filename, classes=self.classes,
-                                                 normalize_fn=self.normalize_fn)
+                                                 normalize_fn=self.normalize_fn, randomize_order=self.randomize_order)
                      for s in splits)
 
     def __iter__(self):
         file_index = 0
-        shuffle(self.files)
+        if self.randomize_order:
+            shuffle(self.files)
         while file_index < len(self.files):
             current_file = self.files[file_index]
             data = self.normalize_fn(self._read_recording_file(current_file))
@@ -483,7 +485,10 @@ class ECGChallengeDatasetBaseline(torch.utils.data.IterableDataset):
             if self.return_labels:
                 labels = self._read_header_labels(current_file)
             if len(data) - self.window_size > 0:
-                offset = np.random.randint(len(data) - self.window_size)  # Random offset
+                if self.randomize_order:
+                    offset = np.random.randint(len(data) - self.window_size)  # Random offset
+                else:
+                    offset = 0
                 data = data[offset:self.window_size+offset]
             else:
                 offset = 0

@@ -108,13 +108,18 @@ if __name__ == '__main__':
     #To quickly run calculations:
     # print(calc_conv1ds_output_length(512, kernel_sizes=[3,3,3,3,3,3], dilations=[1,3,9,27,27*3,27*3*3], paddings=[3,3,3,3,3,3]))
     # print(calc_conv1ds_output_length(465, kernel_sizes=[10, 8, 4, 4, 4], strides = [5, 4, 2, 2, 2]))
-    # print(calc_conv1ds_input_length(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    print(calc_conv1ds_output_length(4500, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    print(calc_conv1ds_output_length(20480, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    print(calc_conv1ds_input_length(27, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     # print(calc_conv1ds_input_length(1, kernel_sizes = [8, 6, 3, 3, 3], strides = [4, 2, 1, 1, 1], dilations = [1, 1, 1, 3, 9]))
     # print(calc_conv1ds_input_length(1,kernel_sizes = [7, 3, 3, 3, 3], strides = [2, 1, 1, 1, 1], dilations = [1, 1, 3, 9, 27]))
     # print(calc_conv1ds_output_length(9500, kernel_sizes=[7, 3, 3, 3, 3], strides=[2, 1, 1, 1, 1], dilations=[1, 1, 3, 9, 27]))
-    print(calc_conv1ds_output_length(900000, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+    print(calc_conv1ds_output_length(4625, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_output_length(5000, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_input_length(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
+
+    rf = calc_conv1d_input_receptive_field(1, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2], weights='balanced')
+    lv.plot_receptivefield_plot_repeated(rf, 'standard1', repeat_shift=[160])
 
     print('experiment', calc_conv1ds_output_length(4500, kernel_sizes=[7, 3, 2, 2, 2], strides=[1,1,1,2,2], dilations=[1, 7, 7*3, 7*3*2, 7*3*2*2]))
     rf = calc_conv1d_input_receptive_field(4333, kernel_sizes=[7, 3, 2, 2, 2], strides=[1,1,1,1,1], dilations=[1, 7, 7*3, 7*3*2, 7*3*2*2],

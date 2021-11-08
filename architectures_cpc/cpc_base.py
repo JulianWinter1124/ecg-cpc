@@ -75,14 +75,14 @@ class CPC(nn.Module):
         batch_dim , rows = targets . shape [ : - 1 ]
         targets = reshape(targets , [ - 1 , target_dim ] )
         for i in range(steps_to_ignore , steps_to_predict) :
-            total_elements = batch_dim ∗ rows
+            total_elements = batch_dim * rows
             preds_i = Conv2D(output_channels=target_dim , kernel_shape= ( 1 , 1 ) ) (context)
-            preds_i = preds_i [ : , : - (i+ 1 ) , : , : ] ∗ emb_scale
+            preds_i = preds_i [ : , : - (i+ 1 ) , : , : ] * emb_scale
             preds_i = reshape(preds_i , [ - 1 , target_dim ] )
             logits = matmul(preds_i , targets , transp_b=True)
             b = range(total_elements) / (rows)
             col = range(total_elements) % (rows)
-            labels = b ∗ rows + (i+1) ∗ rows + col
+            labels = b * rows + (i+1) * rows + col
             loss += cross_entropy_with_logits(logits , labels)
         return loss
         """
