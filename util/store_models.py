@@ -64,6 +64,7 @@ def load_model(full_model_file, model_checkpoint_file, optimizer):
 
 
 def extract_model_files_from_dir(directory):
+    print("Looking for model in abs path:", os.path.abspath(directory))
     files = []
     for root, dirs, dir_files in os.walk(directory, followlinks=True):
         fm_temp, ch_temp = [], []

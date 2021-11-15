@@ -11,7 +11,7 @@ class Predictor(nn.Module):
 
         def _weights_init(m):
             if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
 
         self.apply(_weights_init)
 

@@ -475,9 +475,9 @@ if __name__ == '__main__':
 
     # move_folders_to_old(folders=incorrect_age)
     #
-    # clean_remove_dry_run()
+    clean_remove_dry_run()
     clean_rename()
-    clean_categorize()
+    #clean_categorize()
     # print(torch.version.__version__)
     # cpc_folders = train_folders - baseline_folders
     # rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])

@@ -21,7 +21,7 @@ from training import cpc_train, cpc_validation, down_validation, baseline_train,
     decoder_validation, decoder_train
 from util.utility.full_class_name import fullname
 from util.data.ptbxl_data import PTBXLData
-from util.utility.store_models import save_model_state, load_model_state
+from util.store_models import save_model_state, load_model_state
 from util.visualize.timeseries_to_image_converter import timeseries_to_image
 
 

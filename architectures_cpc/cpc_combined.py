@@ -12,7 +12,6 @@ class CPCCombined(nn.Module):
         self._unfreeze_cpc()
 
     def forward(self, X, y=None):
-        print(self.freeze_cpc)
         if self.cpc_model.cpc_train_mode:
             self.cpc_model.cpc_train_mode = False
         if self.freeze_cpc:

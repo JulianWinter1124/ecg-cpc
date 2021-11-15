@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, ChainDataset
 from architectures_various.explain_network2 import ExplainLabel
 from main_produce_plots_for_tested_models import calculate_best_thresholds
 from util.data import ecg_datasets2
-from util.utility.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
+from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
 from util.visualize.timeseries_to_image_converter import timeseries_to_image_with_gradient_joined
 

@@ -10,7 +10,7 @@ import torch
 from torch.utils.data import DataLoader, ChainDataset
 
 from util.data import ecg_datasets2
-from util.utility.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
+from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
 
 def main(args):

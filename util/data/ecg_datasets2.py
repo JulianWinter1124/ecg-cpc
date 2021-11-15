@@ -802,5 +802,5 @@ def collate_fn(batch):  # https://github.com/pytorch/pytorch/blob/master/torch/u
 def normalize_feature_scaling(data, low: int = 0, high: int = 1):
     mini = np.min(data, axis=1)[:, np.newaxis]
     maxi = np.max(data, axis=1)[:, np.newaxis]
-    dif = np.where(maxi - mini == 0, 1, maxi - mini)
+    dif = np.where((maxi - mini) == 0, 1, maxi - mini)
     return (data - mini) / (dif) * high - low

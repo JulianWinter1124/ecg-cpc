@@ -520,7 +520,8 @@ if __name__ == '__main__':
     VAL_SET = 1;
     TRAIN_SET = 2
     paths = [
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits-fewer-labels60|use_weights|unfrozen|C|m:all|cpc_downstream_cnn'
+        'models/15_11_21-13-25-test|cpc'
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits-fewer-labels60|use_weights|unfrozen|C|m:all|cpc_downstream_cnn'
         ]
     model_folders = [a for p in paths for a in auto_find_tested_models_recursive(p)]
 
@@ -552,7 +553,7 @@ if __name__ == '__main__':
 
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)
-    # create_paper_plots(model_folders, data_loader_index=TEST_SET)
+    create_paper_plots(model_folders, data_loader_index=TEST_SET)
     # create_model_attribute_table(model_folders, 'baseline-attributes-full', skip_cpc=True, skip_baseline=False)
     # create_model_attribute_table(model_folders, 'cpc-attributes', skip_cpc=False, skip_baseline=True)
     # create_parallel_plots(model_folders, '/home/julian/Desktop/cpc-attributes-parallelcoords', skip_cpc=False, skip_baseline=True)
