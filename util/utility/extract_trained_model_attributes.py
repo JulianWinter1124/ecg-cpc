@@ -1,6 +1,7 @@
 import itertools
 import json
 import os
+import glob
 
 import matplotlib
 import numpy as np
@@ -10,7 +11,9 @@ from matplotlib import ticker
 from pandas.plotting import parallel_coordinates
 import plotly.express as px
 from scipy.interpolate import make_interp_spline
-
+from util.metrics import metrics as m
+import util.visualize.plot_metrics as plotm
+import seaborn as sns
 from util.utility.dict_utils import count_key_in_dict, extract_values_for_key_in_dict
 
 
@@ -81,6 +84,73 @@ def extract_baseline_model_attributes(train_folders, extract_baselines=True, ext
                         del model_descriptions[name]
     return model_descriptions
 
+def extract_cpc_model_attributes_from_test(test_folders, exclude_models=[], check_collision=False):
+    model_descriptions = []
+    for f in test_folders:
+        print(f"Checking {f}...")
+        if '-test' in f:
+            for root, dirs, files in os.walk(f, followlinks=True):
+                print(root)
+                if len(dirs) == 0 and len(files) == 0:
+                    continue
+                if len(dirs) > 0 and len(files) > 0:  # Contains auc?
+                    continue
+                if len(dirs) == 0 and len(files) > 0:  # leaf dir (model?)
+                    name = os.path.basename(root).split('|')[0]
+                    print(root)
+                    if 'BaselineNet' in name:  # its a baseline model so dont extract
+                        continue
+                    if any([em in name for em in exclude_models]):  # exclude this model
+                        continue
+                    name = name.replace('architectures_baseline_challenge.', '')
+                    name = name.replace('architectures_cpc.', '')
+                    name = ''.join([i for i in name if not i.isdigit()])
+                    print(name)
+                    model_description = {}
+                    try:
+                        binary_labels, classes = m.read_binary_label_csv_from_model_folder(root,
+                                                                                   data_loader_index=0)
+                        predictions, pred_classes = m.read_output_csv_from_model_folder(root,
+                                                                                data_loader_index=0)
+                        model_description['micro-auc'] = m.auc_scores(binary_labels, predictions, average='micro')
+                        model_description['macro-auc'] = m.auc_scores(binary_labels, predictions, average='macro')
+                    except FileNotFoundError:
+                        print(root, "Model wasnt really tested!")
+                        continue
+                    if 'model_arch.txt' in files:
+                        with open(os.path.join(root, 'model_arch.txt'), 'r') as file:
+                            content = file.read()
+                        # print(content)
+
+                    if 'model_variables.txt' in files:
+                        with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
+                            content = file.readlines()
+                            for i, line in enumerate(content):
+                                if '{' in line:
+                                    content = '\n'.join(content[i:])
+                                    break
+                        data = json.loads(content)
+                        model_description['weights frozen'] = '"freeze_cpc": true' in content
+                        model_description['use context'] = '"use_context": true' in content
+                        model_description['use latents'] = '"use_latents": true' in content
+                        model_description['normalized latents'] = '"normalize_latents": true' in content
+
+                        if "sampling_mode" in content:
+                            model_description['sampling mode'] = content.split('"sampling_mode": ')[1].split(',')[0][
+                                                                        1:-1]
+                        else:
+                            model_description['sampling mode'] = 'same'
+                        if '"downstream_model":' in content:
+                            model_description['downstream model'] = \
+                                content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[
+                                    -2]
+                        else:
+                            model_description['downstream model'] = 'none'
+                        model_description['strided'] = 'cpc_encoder_as_strided.StridedEncoder' in content
+
+                    if len(model_description.keys()) > 2:
+                        model_descriptions.append(model_description)
+    return model_descriptions
 
 def extract_cpc_model_attributes(train_folders, exclude_models=[]):
     model_descriptions = {}
@@ -250,7 +320,7 @@ def factorize_dataframe(df, column):
 
 
 # https://github.com/jraine/parallel-coordinates-plot-dataframe/blob/master/parallel_plot.py
-def parallel_plot(df, cols, rank_attr, cmap='Spectral', spread=None, curved=False, curvedextend=0.1):
+def parallel_plot(df, cols, rank_attr, cmap='magma', spread=None, curved=False, curvedextend=0.1, save=None):
     '''Produce a parallel coordinates plot from pandas dataframe with line colour with respect to a column.
     Required Arguments:
         df: dataframe
@@ -263,16 +333,16 @@ def parallel_plot(df, cols, rank_attr, cmap='Spectral', spread=None, curved=Fals
         curvedextend: Fraction extension in y axis, adjust to contain curvature
     Returns:
         x coordinates for axes, y coordinates of all lines'''
-    colmap = matplotlib.cm.get_cmap(cmap)
+    colmap = sns.color_palette(cmap, as_cmap=True)
     cols = cols + [rank_attr]
 
-    fig, axes = plt.subplots(1, len(cols) - 1, sharey=False, figsize=(3 * len(cols) + 3, 5))
+    fig, axes = plt.subplots(1, len(cols) - 1, sharey=False, figsize=(3 * len(cols) + 3, 5), dpi=800)
     valmat = np.ndarray(shape=(len(cols), len(df)))
     x = np.arange(0, len(cols), 1)
     ax_info = {}
     for i, col in enumerate(cols):
         vals = df[col]
-        if (vals.dtype == float) & (len(np.unique(vals)) > 20):
+        if (vals.dtype == float) and (len(np.unique(vals)) > 20):
             minval = np.min(vals)
             maxval = np.max(vals)
             rangeval = maxval - minval
@@ -322,30 +392,42 @@ def parallel_plot(df, cols, rank_attr, cmap='Spectral', spread=None, curved=Fals
 
     plt.subplots_adjust(wspace=0)
     norm = matplotlib.colors.Normalize(0, 1)  # *axes[-1].get_ylim())
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm = plt.cm.ScalarMappable(cmap=colmap, norm=norm)
     cbar = plt.colorbar(sm, pad=0, ticks=ax_info[rank_attr][1], extend='both', extendrect=True, extendfrac=extendfrac)
     if curved:
         cbar.ax.set_ylim(0 - curvedextend, 1 + curvedextend)
     cbar.ax.set_yticklabels(ax_info[rank_attr][0])
     cbar.ax.set_xlabel(rank_attr)
-    plt.show()
+    if save:
+        fig.savefig(save, bbox_inches='tight', dpi=fig.dpi)
+    else:
+        plt.show()
 
     return x, valmat
 
 
 if __name__ == '__main__':
-    model_descriptions = extract_baseline_model_attributes(
-        ['/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train'],
-        exclude_models=['v14'])
+    # model_descriptions = extract_baseline_model_attributes(
+    #     ['/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train'],
+    #     exclude_models=['v14'])
+    #model_descriptions = extract_cpc_model_attributes_from_test(glob.glob('/home/julian/Downloads/Github/contrastive-predictive-coding/models/*'))
+    #df = pd.DataFrame(model_descriptions)
     # model_descriptions = extract_cpc_model_attributes(['/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/correct-age/no_class_weights/cpc'])
-    df = pd.DataFrame.from_dict(model_descriptions).transpose()
+    df = pd.read_csv('/home/julian/Desktop/cpc-descriptions.csv')
+    df = df.dropna()
+    #df.to_csv('/home/julian/Desktop/cpc-descriptions.csv', index=False)
     df.index.name = "Model"
     cols = list(df.columns)
-    df['micro auc'] = np.random.randn(len(df))
-    parallel_plot(df.reset_index(), list(set(df.columns) - {'micro auc'}), 'micro auc', curved=True)
-    plt.show()
+    #df['micro auc'] = np.random.randn(len(df))
+    parallel_plot(df.reset_index(), list(set(df.columns) - {'micro-auc', 'macro-auc'}), 'micro-auc', curved=True, save='/home/julian/Desktop/parallel-cpc-micro.png')
+    parallel_plot(df.reset_index(), list(set(df.columns) - {'macro-auc', 'micro-auc'}), 'macro-auc', curved=True, save='/home/julian/Desktop/parallel-cpc-macro.png')
+    #plt.show()
+    savepath = '/home/julian/Desktop/'
+    # plotm.plot_parallel_coordinates(df, 'micro-auc', savepath + 'micro.png',
+    #                                 drop_columns=['use_class_weights'], put_last_columns=['micro-auc'])
+    # plotm.plot_parallel_coordinates(df, 'macro-auc', savepath + 'macro.png',
+    #                                 drop_columns=['use_class_weights'], put_last_columns=['macro-auc'])
     # plot_parallel_coordinates(df.reset_index(), 'Model')
     # parallel_coordinates_custom(df.reset_index(), 'Model')
-    # df.to_csv('/home/julian/Desktop/descriptions.csv')
     # fig = px.parallel_coordinates(df.reset_index(), color_continuous_scale=px.colors.diverging.Tealrose, color_continuous_midpoint=2)
     # fig.write_image('tmp.png')

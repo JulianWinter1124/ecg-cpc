@@ -12,21 +12,21 @@ def create_timeseries_image():
     georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                                   window_size=crop_size, pad_to_size=crop_size,
                                                                   return_labels=True, return_filename=True,
-                                                                  normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                  normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
                                                                window_size=crop_size, pad_to_size=crop_size,
                                                                return_labels=True, return_filename=True,
-                                                               normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                               normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
                                                                 window_size=crop_size,
                                                                 pad_to_size=crop_size, return_labels=True,
                                                                 return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
                                                                 window_size=crop_size,
                                                                 pad_to_size=crop_size, return_labels=True,
                                                                 return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     ptbxl_train, ptbxl_val, t1 = ptbxl_challenge.generate_datasets_from_split_file()
     georgia_train, georgia_val, t2 = georgia_challenge.generate_datasets_from_split_file()
     cpsc_train, cpsc_val, t3 = cpsc_challenge.generate_datasets_from_split_file()

@@ -39,19 +39,19 @@ def main(args):
                                                                   window_size=args.crop_size,
                                                                   pad_to_size=args.crop_size,
                                                                   return_labels=True, return_filename=True,
-                                                                  normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                  normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                return_labels=True, return_filename=True,
-                                                               normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                               normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
 
     a1, b1, ptbxl_test = ptbxl_challenge.generate_datasets_from_split_file()
     a2, b2, georgia_test = georgia_challenge.generate_datasets_from_split_file()
@@ -98,8 +98,9 @@ def main(args):
 # /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-14_12-train|(4x)cpc
 # /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-13_51-train|(4x)cpc'''.split('\n')
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc'
-        'models/15_11_21-13-train|cpc'
-    ]
+        #*['/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-16-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-13-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-11-train|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-15-train|(4x)cpc']
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/03_12_21-11-train|bl_TCN_down+bl_cnn_v14+bl_cnn_v2'
+]
     # infer class from model-arch file
     model_dicts = []
     for train_folder in model_folders:

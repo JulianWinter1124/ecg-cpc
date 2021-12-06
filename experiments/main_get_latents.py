@@ -33,19 +33,19 @@ def main(args):
                                                                   window_size=args.crop_size,
                                                                   pad_to_size=args.crop_size,
                                                                   return_labels=True, return_filename=True,
-                                                                  normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                  normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                return_labels=True, return_filename=True,
-                                                               normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                               normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
     ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_feature_scaling)
+                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
 
     a1, b1, ptbxl_test = ptbxl_challenge.generate_datasets_from_split_file()
     a2, b2, georgia_test = georgia_challenge.generate_datasets_from_split_file()

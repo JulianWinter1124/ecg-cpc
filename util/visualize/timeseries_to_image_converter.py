@@ -9,6 +9,7 @@ from PIL import Image
 from torchvision.io import write_video
 import seaborn as sns
 import matplotlib.patches as mpatches
+from matplotlib.colors import Normalize
 
 
 # from torch.nn.functional import relu
@@ -166,7 +167,7 @@ def timeseries_to_image_with_gradient(data: torch.Tensor, labels: torch.Tensor, 
 
 def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels: torch.Tensor, grad_list: List[torch.Tensor],
                                              pred: torch.Tensor = None, model_tresholds=None, grad_alteration='none',
-                                             cutoff=0.2, title=None, class_name_list=None, filenames: list = None,
+                                             cutoff=0.1, title=None, class_name_list=None, filenames: list = None,
                                              show=False, save=True):
     batches, width, height = data.shape
     n_preds = len(grad_list)
@@ -235,6 +236,57 @@ def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels: torch.T
         if show:
             plt.show()
         plt.close()
+
+def timeseries_to_image_with_gradient_cam(data: torch.Tensor, labels: torch.Tensor, grad_list: List[torch.Tensor],
+                                             pred: torch.Tensor = None, model_tresholds=None, title=None, class_name_list=None, filenames: list = None,
+                                             show=False, save=True):
+    batches, width, height = data.shape
+    n_preds = len(grad_list)
+    base_colors = sns.color_palette("hls", n_preds)
+    cmaps = [sns.light_palette(c, as_cmap=True) for c in base_colors]
+    for batch in range(batches):
+        fig, axs = plt.subplots(data.shape[-1], 1, figsize=(30, 20))
+        plt.xlim((0, width))
+        plt.ylim((0, 1))
+        title = title or f'Gradient visualization for class:{class_name_list} as label\n'
+        if not labels is None:
+            title += "Correct classes: " + ", ".join(map(str, np.nonzero(labels[batch].numpy())[0])) + ". "
+        if not (pred is None or model_tresholds is None):
+            binary_pred = pred[batch] >= model_tresholds
+            title += "Predicted classes: " + ", ".join(map(str, np.nonzero(binary_pred.numpy())[0])) + ". "
+        fig.suptitle(title)
+        fig.tight_layout()
+        for i, ax in enumerate(axs):
+            ax.set_xlim((0, width))
+            ax.axis('off')
+            d = data[batch, :, i]
+            ax.set_ylim((d.min()-0.1, d.max()+0.1))
+            ax.plot(range(width), d, color='red')
+        legend_handles = []
+        for n in range(n_preds):
+            legend_handles.append(mpatches.Patch(color=base_colors[n], label=f"Class: {class_name_list[n]}"))
+            for i, ax in enumerate(axs):
+                ax.autoscale(False)
+                bottom, top = ax.get_ylim()
+                r = (top-bottom)/n_preds
+                if len(grad_list[n][batch].shape) == 1:
+                    g = grad_list[n][batch][np.newaxis, :]
+                    ax.imshow(g, extent=[0, width, top-r*(n+1), top-r*n], cmap=cmaps[n], aspect='auto', alpha=0.8, interpolation='bilinear')
+                elif len(grad_list[n][batch].shape) == 2:
+                    g = grad_list[n][batch][:, i:i+1].T
+                    g[g<0.4]=0
+                    ax.imshow(g, extent=[0, width, top-r*(n+1), top-r*n], cmap=cmaps[n], norm=Normalize(vmin=0, vmax=1), aspect='auto', alpha=1, interpolation='bilinear')
+                else:
+                    print("Wrong shape for gradient:", grad_list[n][batch].shape)
+        fig.legend(handles=legend_handles)
+        if save:
+            plt.savefig(
+                filenames[batch] + '-class:' + str(class_name_list) + '-gradient-cam.png',
+                dpi=fig.dpi)
+        if show:
+            plt.show()
+        plt.close()
+        print('Finished')
 
 
 def kernel_to_image(layer_name, layer_weights: torch.Tensor):

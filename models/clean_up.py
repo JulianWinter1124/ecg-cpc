@@ -8,6 +8,8 @@ from pathlib import Path
 import numpy as np
 from collections import Counter
 
+from importlib_resources import files
+
 from util.utility.dict_utils import count_key_in_dict, extract_values_for_key_in_dict
 
 
@@ -17,6 +19,8 @@ def move_incomplete_training_folders(base='.'):
     move_to_old_base = os.path.join(base, 'old')
     folders = glob(os.path.join(base, "*", ""))
     for f in folders:
+        if 'explain' in f:
+            continue
         if Path(f) == Path(move_to_base) or Path(f) == Path(move_to_old_base):
             continue
         for root, dirs, files in os.walk(f):
@@ -161,6 +165,41 @@ def filter_folders_model_variables(base='.', model_variables_filter='normalize_l
         if len(checks) > 0 and any(checks):  # Found a test dir
             print(f"{f} Train session used {model_variables_filter} param.")
             filtered += [f]
+    return filtered
+
+def filter_folders_universal(base='.', file_content_filter_fnlist_dict={}, file_filter_fnlist=[], check_all=True):
+    folders = glob(os.path.join(base, "*_*_*", ""))
+    filtered = []
+    for f in folders:
+        content_checks = {}
+        for k,v in file_content_filter_fnlist_dict.items():
+            content_checks[k]=[False]*len(v)
+        file_checks = [False]*len(file_filter_fnlist)
+        for root, dirs, files in os.walk(f):
+            if len(dirs) == 0 and len(files) == 0:
+                continue
+            if len(dirs) > 0:  # Traverse more
+                continue
+            if len(dirs) == 0 and len(files) > 0:  # leaf dir
+                for checkfile, checkfns in file_content_filter_fnlist_dict.items():
+                    if checkfile in files:
+                        with open(os.path.join(root, checkfile), 'r') as file:
+                            content = file.read()
+                        for i, checkfn in enumerate(checkfns):
+                            if callable(checkfn):
+                                content_checks[checkfile][i] = checkfn(content)
+                            else:
+                                content_checks[checkfile][i] = checkfn
+
+                for i, filefn in enumerate(file_filter_fnlist):
+                    if filefn(files):
+                        file_checks[i]=True
+        if check_all:
+            if all(file_checks) and all([x for v in content_checks.values() for x in v]):
+                filtered += [os.path.abspath(f)]
+        else:
+            if any(file_checks) and any([x for v in content_checks.values() for x in v]):  # Found a test dir
+                filtered += [os.path.abspath(f)]
     return filtered
 
 
@@ -477,7 +516,11 @@ if __name__ == '__main__':
     #
     clean_remove_dry_run()
     clean_rename()
-    #clean_categorize()
+    # clean_categorize(test=True)
+    print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
+        file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
+    # print(filter_folders_universal( #Find all models that normalize latents and have NOT trained downstream (and not test)
+    #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x]}, file_filter_fnlist=[lambda x: not any([y.endswith("_checkpoint_epoch_20.pt") for y in x]), lambda x: not "labels-dataloader-0.csv" in x]))
     # print(torch.version.__version__)
     # cpc_folders = train_folders - baseline_folders
     # rename_folders_into_models(folders=['models/23_06_21-20-train|+(4x)cpc'])

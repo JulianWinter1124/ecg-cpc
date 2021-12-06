@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import random
 import functools
 import os
 from pathlib import Path
@@ -20,6 +21,7 @@ from util.visualize.timeseries_to_image_converter import timeseries_to_image_wit
 
 def main(args):
     np.random.seed(args.seed)
+    random.seed(args.seed)
     torch.cuda.set_device(args.gpu_device)
     print(f'Device set to : {torch.cuda.current_device()}. Selected was {args.gpu_device}')
     torch.cuda.manual_seed(args.seed)
@@ -81,19 +83,21 @@ def main(args):
     model_train_folders = [
         #v14
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_08_21-14_42-train|bl_TCN_down+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v8/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|train-test-splits-fewer-labels60|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
+        #cpc
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits-fewer-labels60|use_weights|frozen|C|m:all|cpc_downstream_cnn'
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/21_05_21-11-train|bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet12|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'# v14
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_08_21-14_42-train|bl_TCN_down+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v8/architectures_baseline_challenge.baseline_cnn_v15.BaselineNet4|train-test-splits-fewer-labels60|use_weights|ConvLyrs:5|MaxPool|Linear|BatchNorm|stride_sum:14|dilation_sum:96|padding_sum:0|krnls_sum:26'#v15
-        #new v14
+        #new CPC
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-10-train|(12x)cpc/architectures_cpc.cpc_combined.CPCCombined9|use_weights|strided|frozen|L|m:same|cpc_downstream_cnn'
+        #new bl14
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-18-train|bl_cnn_v14/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet0|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
-        #newtcn
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
-        #newtcn
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
+        #new blvtcn
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
     ]
     model_test_folders = [
         #v14
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8/10_08_21-14_42-train|bl_TCN_down+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v8/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|train-test-splits-fewer-labels60|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
+        #cpc
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits-fewer-labels60|use_weights|frozen|C|m:all|cpc_downstream_cnn'
         # v14
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_06_21-15-test|(2x)bl_MLP+bl_FCN+bl_TCN_block+bl_TCN_down+bl_TCN_flatten+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v7+bl_cnn_v8+bl_cnn/21_05_21-11-train|bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet12|dte:120'
@@ -101,13 +105,13 @@ def main(args):
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-10-47-test|(80x)cpc/11_08_21-19_56-train|(8x)cpc/architectures_cpc.cpc_combined.CPCCombined6|train-test-splits-fewer-labels60|use_weights|frozen|L|m:all|cpc_downstream_cnn'
         #v15
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8/10_08_21-14_42-train|bl_TCN_down+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v8/architectures_baseline_challenge.baseline_cnn_v15.BaselineNet4|train-test-splits-fewer-labels60|use_weights|ConvLyrs:5|MaxPool|Linear|BatchNorm|stride_sum:14|dilation_sum:96|padding_sum:0|krnls_sum:26'
-        #new v14
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-20-25-test|bl_cnn_v14/30_11_21-18-train|bl_cnn_v14/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet0|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
-        #new tcn
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-14-58-test|bl_TCN_down+bl_cnn_v2/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
         #new cpc
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-17-56-test|(4x)cpc/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
-    ]
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-12-48-test|(12x)cpc/01_12_21-10-train|(12x)cpc/architectures_cpc.cpc_combined.CPCCombined9|use_weights|strided|frozen|L|m:same|cpc_downstream_cnn'
+        #new bl14
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-20-25-test|bl_cnn_v14/30_11_21-18-train|bl_cnn_v14/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet0|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
+        #new bltcn
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-14-58-test|bl_TCN_down+bl_cnn_v2/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        ]
     # infer class from model-arch file
     model_dicts = []
     for train_folder, test_folder in zip(model_train_folders, model_test_folders):
@@ -126,7 +130,7 @@ def main(args):
             print(thresholds)
             print(
                 f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
-            explain_model = ExplainLabel(model, class_weights=class_weights)
+            explain_model = ExplainLabelLayer(model, class_weights=class_weights, layer=('tcn.network.2.net.4'))#'convs.16''msresnet.maxpool7''msresnet.layer7x7_3.0.conv2' #'cpc_model.encoder.convolutionals.8''cpc_model.encoder.cpc_encoder.convolutionals.8'
             model_dicts.append({'model': explain_model, 'model_folder': root, 'thresholds': thresholds,
                                 'name': train_folder.split(os.path.sep)[-1].split('|')[0].split('.')[-1]})
     if len(model_dicts) == 0:
@@ -168,91 +172,30 @@ def main(args):
                     # for
                     # NORMAL GRADIENT
                     optimizer.zero_grad()
-                    pred, _ = model(data, y=labels)  # obtain pred once
+                    pred = model(data, y=labels)  # obtain pred once
                     pred = pred.detach()
                     optimizer.zero_grad()
                     # _, grad1 = model(data, y=labels)# explain_class=
                     # timeseries_to_image_with_gradient(data.detach().cpu(), labels.detach().cpu(), grad1.detach().cpu(), pred.detach().cpu(), model_tresholds=thresholds, title='Gradient for actual label\n', filenames=filenames, save=True, show=True)
                     filenames = list(
                         map(lambda x: os.path.join(output_dir, x), map(os.path.basename, filenames)))
-                    # plot_prediction_scatterplots(labels.detach().cpu(), pred.detach().cpu(), model_thresholds=thresholds, filename=filenames[0], save=True, show=False)
-                    # print(labels)
-                    # with open('temp-grad.pickle', 'wb') as f:
-                    #     pickle.dump([data.detach().cpu(), labels.detach().cpu(), grad1.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
-                    #     print("saved")
 
-                    # INVERSE GRADIENT
-                    # optimizer.zero_grad()
-                    # _, grad2 = model(data, y=1-labels)# explain_class=
-                    # # print(1-labels)
-                    # # with open('temp-grad-inverse.pickle', 'wb') as f:
-                    # #     pickle.dump([data.detach().cpu(), (1-labels).detach().cpu(), grad2.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
-                    # #     print("done")
-                    # timeseries_to_image_with_gradient(data.detach().cpu(), labels.detach().cpu(), grad2.detach().cpu(), pred.detach().cpu(), model_tresholds=thresholds, title='Gradient for inversed label\n', save=False, show=True)
-
-                    # for class_i in torch.nonzero(labels, as_tuple=False): #only do for first image in batch
-                    #     optimizer.zero_grad()
-                    #     l = labels.clone() #torch.zeros_like(labels, device=labels.device)
-                    #     l[tuple(class_i)] = 0.
-                    #     _, gradi = model(data, y=l)
-                    #     class_name = class_i[1].item()
-                    #     timeseries_to_image_with_gradient(data.detach().cpu(), labels.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu(), model_tresholds=thresholds, title=f'Gradient for class:{class_name} as label\n', save=False, show=True)
-                    # with open(f'temp-grad{class_i}.pickle', 'wb') as f:
-                    #     pickle.dump([data.detach().cpu(), l.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
-                    #     print("saved")
                     grads = []
                     class_names = []
                     for class_i in torch.nonzero(labels, as_tuple=False):  # only do for first image in batch
                         optimizer.zero_grad()
                         l = torch.zeros_like(labels, device=labels.device)  # pred.clone()
                         l[tuple(class_i)] = 1.
-                        _, gradi = model(data, y=l)
-                        gradi = gradi.abs()
-                        #gradi[gradi < 0] = 0#comment out after
-                        gradi = gradi - gradi.min(keepdim=True, dim=1)[0]
-                        gradi = gradi / (1e-7 + gradi.max(keepdim=True, dim=1)[0])
+                        _ = model(data, y=l)
+                        gradi = model.get_gradcam(target_size=None, scale=False)
                         print('data shape', data.shape, 'grad shape', gradi.shape)
                         class_names.append(class_i[1].item())
-                        grads.append(gradi.detach().cpu())
+                        grads.append(gradi)
                     timeseries_to_image_with_gradient_cam(data.detach().cpu(), labels.detach().cpu(), grads,
                                                              pred.detach().cpu(), model_tresholds=thresholds,
                                                              class_name_list=class_names,
                                                              filenames=filenames, save=True, show=False)
-                    # timeseries_to_image_with_gradient_joined(data.detach().cpu(), labels.detach().cpu(), grads,
-                    #                                          pred.detach().cpu(), model_tresholds=thresholds,
-                    #                                          grad_alteration='abs', class_name_list=class_names,
-                    #                                          filenames=filenames, save=True, show=False)
-                    # timeseries_to_image_with_gradient_joined(data.detach().cpu(), labels.detach().cpu(), grads,
-                    #                                          pred.detach().cpu(), model_tresholds=thresholds,
-                    #                                          grad_alteration='relu', class_name_list=class_names,
-                    #                                          filenames=filenames, save=True, show=False)
-                    # timeseries_to_image_with_gradient_joined(data.detach().cpu(), labels.detach().cpu(), grads,
-                    #                                          pred.detach().cpu(), model_tresholds=thresholds,
-                    #                                          grad_alteration='relu_neg', class_name_list=class_names,
-                    #                                          filenames=filenames, save=True, show=False)
-                    # with open(f'temp-grad{class_i}.pickle', 'wb') as f:
-                    #     pickle.dump([data.detach().cpu(), l.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
-                    #     print("saved")
 
-                    # for class_i in range(labels.shape[1]):
-                    #     optimizer.zero_grad()
-                    #     l = pred.clone() #torch.zeros_like(labels, device=labels.device)
-                    #     l[:, class_i] = 1
-                    #     _, gradi = model(data, y=l)# explain_class=
-                    #     print(l)
-                    #     timeseries_to_image_with_gradient(data.detach().cpu(), labels.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu(), model_treshholds=thresholds, save=False, show=True)
-                    #     with open(f'temp-grad{class_i}.pickle', 'wb') as f:
-                    #         pickle.dump([data.detach().cpu(), l.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
-                    #         print("saved")
-                    # for class_i in range(labels.shape[1]):
-                    #     optimizer.zero_grad()
-                    #     l = pred.clone()
-                    #     l[:, class_i] = 0
-                    #     _, gradi = model(data, y=l)# explain_class=
-                    #     print(l)
-                    #     with open(f'temp-grad-inverse{class_i}.pickle', 'wb') as f:
-                    #         pickle.dump([data.detach().cpu(), labels.detach().cpu(), gradi.detach().cpu(), pred.detach().cpu()], f, protocol=pickle.HIGHEST_PROTOCOL)
-                    #         print("saved")
                     if args.dry_run:
                         break
                     del data, pred, labels
@@ -298,7 +241,7 @@ if __name__ == "__main__":
                         type=str)  # , choices=['context, latents, all']
 
     parser.add_argument('--out_path', help="The output directory for losses and models",
-                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")) + '-explain', type=str)
+                        default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")) + '-gradcam-explain', type=str)
 
     parser.add_argument('--forward_classes', type=int, default=52,
                         help="The number of possible output classes (only relevant for downstream)")

@@ -206,11 +206,14 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
                                   -2:]) if '.' in model_name else model_name  # fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
             model_name = long_to_shortname(model_name)
             print(model_name)
+            with open(os.path.join(model_folder, 'thresholds.txt'), 'w+') as f:
+                f.write(','.join(map(str, model_thresholds[mi].values())))
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder,
                                                                                data_loader_index=data_loader_index)
             predictions, pred_classes = m.read_output_csv_from_model_folder(model_folder,
                                                                             data_loader_index=data_loader_index)
             binary_predictions = m.convert_pred_to_binary(predictions, model_thresholds[mi])
+            print(model_thresholds[mi])
             # scores with binary
             f1_dff.append(
                 create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.f1_scores, model_name,
@@ -520,7 +523,7 @@ if __name__ == '__main__':
     VAL_SET = 1;
     TRAIN_SET = 2
     paths = [
-        'models/15_11_21-13-25-test|cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/03_12_21-15-05-test|bl_TCN_down+bl_cnn_v14+bl_cnn_v2'
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits-fewer-labels60|use_weights|unfrozen|C|m:all|cpc_downstream_cnn'
         ]
     model_folders = [a for p in paths for a in auto_find_tested_models_recursive(p)]
@@ -548,7 +551,7 @@ if __name__ == '__main__':
 
     # model_folders = auto_find_tested_models_recursive('/home/julian/Downloads/Github/contrastive-predictive-coding/models/')
 
-    create_paper_metrics(model_folders, root_path='', data_loader_index=TEST_SET, average_only=False,
+    create_paper_metrics(model_folders, root_path='', data_loader_index=TEST_SET, average_only=True,
                          save_to_all_dirs=True)  # On Testset
 
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset

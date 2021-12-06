@@ -799,8 +799,15 @@ def collate_fn(batch):  # https://github.com/pytorch/pytorch/blob/master/torch/u
         return [collate_fn(samples) for samples in transposed]
 
 
-def normalize_feature_scaling(data, low: int = 0, high: int = 1):
-    mini = np.min(data, axis=1)[:, np.newaxis]
-    maxi = np.max(data, axis=1)[:, np.newaxis]
-    dif = np.where((maxi - mini) == 0, 1, maxi - mini)
-    return (data - mini) / (dif) * high - low
+def normalize_minmax_scaling(data, low: int = 0, high: int = 1, axis=0):
+    data = data - data.min(axis=axis, keepdims=True)
+    data = data / np.maximum(data.max(axis=axis, keepdims=True), 1e-12)
+    data = data * (high-low)
+    data = data + low
+    return data
+
+def normalize_mean_scaling(data, axis=0):
+    data = data - data.mean(axis=axis, keepdims=True)
+    data = data / np.maximum(data.std(axis=axis, keepdims=True), 1e-12)
+    return data
+

@@ -67,8 +67,8 @@ class CPC(nn.Module):
                                  :, :]  # shape is batch, latent_size
                 if self.verbose: print(pred_latent.shape, encoded_latent.shape)
                 if self.normalize_latents:
-                    pred_len = torch.clamp(torch.norm(pred_latent, p=2, dim=-1, keepdim=True), min=1e-6)
-                    enc_len = torch.clamp(torch.norm(encoded_latent, p=2, dim=-1, keepdim=True), min=1e-6)
+                    pred_len = torch.clamp(torch.norm(pred_latent, p=2, dim=-1, keepdim=True), min=1e-10)
+                    enc_len = torch.clamp(torch.norm(encoded_latent, p=2, dim=-1, keepdim=True), min=1e-10)
                     pred_latent = pred_latent / pred_len
                     encoded_latent = encoded_latent / enc_len
                 for step in range(pred_latent.shape[0]):  # TODO: can this be broadcasted?
