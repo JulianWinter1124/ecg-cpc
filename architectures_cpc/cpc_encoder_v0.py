@@ -12,7 +12,7 @@ class Encoder(nn.Module):
             *[e for t in [
                 (nn.Conv1d(in_channels=n_channels[i], out_channels=n_channels[i + 1], kernel_size=filters[i],
                            stride=strides[i], padding=0),
-                 # nn.BatchNorm1d(n_channels[i + 1]),
+                 (nn.BatchNorm1d(n_channels[i + 1])),
                  (nn.ReLU())
                  ) for i in range(len(filters))] for e in t]
         )

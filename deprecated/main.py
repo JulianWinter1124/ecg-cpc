@@ -10,7 +10,8 @@ from torch.utils.data import DataLoader, ChainDataset
 
 from architectures_various import explain_network
 from util.data import ecg_datasets2
-from architectures_baseline import baseline_convencoder, baseline_cnn_v0_3
+import baseline_convencoder
+import baseline_cnn_v0_3
 # from cardio_model_small import CPC, Predictor, AutoRegressor, Encoder
 # from architectures_cpc.cpc_encoder_vresnet import CPC, Predictor, AutoRegressor, Encoder
 from architectures_cpc import cpc_encoder_v0, cpc_autoregressive_v0, cpc_predictor_v0, cpc_intersect, \

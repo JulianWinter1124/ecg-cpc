@@ -12,14 +12,21 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, ChainDataset
 
-from architectures_baseline_challenge import baseline_cnn_v14, baseline_cnn_v15, baseline_cnn_v8, baseline_TCN_down, baseline_cnn_v2
+import cpc_downstream_latent_average
+import cpc_downstream_latent_maximum
+import cpc_downstream_twolinear_v2
+from architectures_baseline_challenge import baseline_cnn_v14, baseline_cnn_v15, baseline_cnn_v8, baseline_TCN_down, baseline_cnn_v2, \
+    baseline_FCN, baseline_MLP, baseline_TCN_block, baseline_TCN_flatten, baseline_TCN_last, baseline_alex_v2, baseline_cnn_v0, baseline_cnn_v0_1, \
+    baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1, baseline_cnn_v3, baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, \
+    baseline_cnn_v9, baseline_resnet
+
 import cpc_downstream_cnn
 import cpc_downstream_only
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_encoder_v0, cpc_intersect, \
     cpc_predictor_v0, cpc_encoder_as_strided
 
 from util import store_models
-from util.data import ecg_datasets2
+from util.data import ecg_datasets2, ecg_datasets3
 from util.utility.full_class_name import fullname
 from util.metrics import training_metrics, baseline_losses as bl
 from util.store_models import save_model_architecture, save_model_checkpoint, save_model_variables_text_only
@@ -50,26 +57,26 @@ def main(args):
     #                                                   pad_to_size=args.crop_size, return_labels=True,
     #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
 
-    georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+    georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                                   window_size=args.crop_size,
                                                                   pad_to_size=args.crop_size, return_labels=True,
-                                                                  normalize_fn=ecg_datasets2.normalize_minmax_scaling)
-    cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+                                                                  normalize_fn=ecg_datasets2.normalize_mean_scaling)
+    cpsc_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                return_labels=True,
-                                                               normalize_fn=ecg_datasets2.normalize_minmax_scaling)
-    cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
+                                                               normalize_fn=ecg_datasets2.normalize_mean_scaling)
+    cpsc2_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
                                                                 window_size=args.crop_size,
                                                                 pad_to_size=args.crop_size, return_labels=True,
-                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
-    ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
+                                                                normalize_fn=ecg_datasets2.normalize_mean_scaling)
+    ptbxl_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
                                                                 window_size=args.crop_size,
                                                                 pad_to_size=args.crop_size, return_labels=True,
-                                                                normalize_fn=ecg_datasets2.normalize_minmax_scaling)
-    nature = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database',
+                                                                normalize_fn=ecg_datasets2.normalize_mean_scaling)
+    nature = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database',
                                                        window_size=args.crop_size,
                                                        pad_to_size=args.crop_size, return_labels=True,
-                                                       normalize_fn=ecg_datasets2.normalize_minmax_scaling)
+                                                       normalize_fn=ecg_datasets2.normalize_mean_scaling)
 
     if args.redo_splits:
         ecg_datasets2.filter_update_classes_by_count(
@@ -98,6 +105,18 @@ def main(args):
     else:
         class_weights = None
 
+
+    if getattr(ptbxl_train, 'preload'):
+        print("Preloading data...")
+        ptbxl_train.preload(1./1.)
+        ptbxl_val.preload(1./1.)
+        georgia_train.preload(1./1.)
+        georgia_val.preload(1./1.)
+        cpsc_train.preload(1./1.)
+        cpsc_val.preload(1./1.)
+        cpsc2_train.preload(1./1.)
+        cpsc2_val.preload(1./1.)
+
     pretrain_train_dataset = ChainDataset([nature, ptbxl_train, georgia_train, cpsc_train, cpsc2_train])  # CPC TRAIN
     pretrain_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val])  # CPC VAL
     downstream_train_dataset = ChainDataset([ptbxl_train, georgia_train, cpsc_train, cpsc2_train])
@@ -121,7 +140,7 @@ def main(args):
         cpc_intersect.CPC(
             cpc_encoder_v0.Encoder(args.channels, args.latent_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
         ),
@@ -129,14 +148,14 @@ def main(args):
             cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
                                                   args.window_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
             args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
         ),
         cpc_intersect.CPC(
             cpc_encoder_v0.Encoder(args.channels, args.latent_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
@@ -144,7 +163,7 @@ def main(args):
             cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
                                                   args.window_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in//4),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
             args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
@@ -169,18 +188,38 @@ def main(args):
         #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
         #     use_latents=True, use_context=True, verbose=False
         # ),
-        # cpc_downstream_twolinear.DownstreamLinearNet(
-        #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-        #     use_latents=True, use_context=True, verbose=False
-        # ),
         cpc_downstream_cnn.DownstreamLinearNet(
             latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
             use_latents=True, use_context=False, verbose=False
         ),
-        # cpc_downstream_latent_maximum.DownstreamLinearNet(
-        #     latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
-        #     use_latents=True, use_context=True, verbose=False
-        # ),
+        cpc_downstream_latent_maximum.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=True, verbose=False
+        ),
+        cpc_downstream_latent_average.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=True, verbose=False
+        ),
+        cpc_downstream_latent_maximum.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=False, verbose=False
+        ),
+        cpc_downstream_latent_average.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=False, verbose=False
+        ),
+        cpc_downstream_twolinear_v2.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=True, verbose=False
+        ),
+        cpc_downstream_twolinear_v2.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=True, use_context=False, verbose=False
+        ),
+        cpc_downstream_twolinear_v2.DownstreamLinearNet(
+            latent_size=args.latent_size, context_size=args.hidden_size, out_classes=args.forward_classes,
+            use_latents=False, use_context=True, verbose=False
+        ),
     ]
     trained_model_dicts = [  # continue training for these in some way
         # {
@@ -200,11 +239,11 @@ def main(args):
         #     'model': None  # Model will be loaded by method below
         #     },
         {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-20-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|use_weights|frozen|C|m:same|cpc_downstream_only',
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_12_21-17-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|use_weights|frozen|C|m:all|cpc_downstream_only',
             'model': None  # Model will be loaded by method below
             },
         { #normalized latents
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-20-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|use_weights|strided|frozen|C|m:same|cpc_downstream_only',
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_12_21-17-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|use_weights|strided|frozen|C|m:all|cpc_downstream_only',
             'model': None  # Model will be loaded by method below
             },
         {
@@ -216,7 +255,7 @@ def main(args):
             'model': None  # Model will be loaded by method below
             },
         {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-18-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|use_weights|frozen|C|m:same|cpc_downstream_only',
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_12_21-20-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|use_weights|frozen|C|m:all|cpc_downstream_only',
             'model': None  # Model will be loaded by method below
             },
 
@@ -245,13 +284,17 @@ def main(args):
         #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[4]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[3], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[5]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-2], freeze_cpc=True),
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-1], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[4]['model'].cpc_model, downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[4]['model'].cpc_model, downstream_models[0], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[0], freeze_cpc=True), 'will_pretrain': False, 'will_downtrain': True},
@@ -266,31 +309,28 @@ def main(args):
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # baseline_FCN.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_alex_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
+        baseline_alex_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_resnet.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=True),
-        # #         baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        #         baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_TCN_last.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        # baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_TCN_last.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_TCN_flatten.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_TCN_down.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_TCN_block.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_TCN_block.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain':False, 'will_downtrain':True},
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[0], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=True), 'will_pretrain':False, 'will_downtrain':True},
@@ -359,7 +399,7 @@ def main(args):
         model.cuda()
         model.train()
         # init optimizer
-        optimizer = Adam(model.parameters(), lr=2.5e-4)#3e-4
+        optimizer = Adam(model.parameters(), lr=3e-3)#3e-4
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5, min_lr=3e-10, verbose=True)
         metrics = defaultdict(lambda: defaultdict(list))
         for epoch in range(1, args.pretrain_epochs + 1):
@@ -454,9 +494,9 @@ def main(args):
                         for i, fn in enumerate(metric_functions):
                             metrics[epoch]['acc_' + str(i)].append(
                                 parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                    del data, pred, labels, loss
                     if args.dry_run:
                         break
-                    del data, pred, labels, loss
                 print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
                                                                                len(downstream_train_loaders)))
 
@@ -474,11 +514,12 @@ def main(args):
                         for i, fn in enumerate(metric_functions):
                             metrics[epoch]['val_acc_' + str(i)].append(
                                 parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                        del data, pred, labels, loss
                         if args.dry_run:
                             break
                     print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
                                                                                      len(downstream_val_loaders)))
-                    del data, pred, labels, loss
+
             scheduler.step(np.mean(metrics[epoch]['valloss']))
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)

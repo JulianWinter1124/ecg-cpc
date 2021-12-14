@@ -22,6 +22,7 @@ class DownstreamLinearNet(nn.Module):
                 nn.Linear(in_features=context_size, out_features=out_classes),
             )
 
+
         self.activation = nn.Sigmoid()
 
     def forward(self, latents=None, context=None, y=None):
@@ -30,11 +31,11 @@ class DownstreamLinearNet(nn.Module):
         if self.use_context and self.use_latents:
             predc = self.classifier_c(context)
             predl = self.classifier_l(latents)
-            predl = torch.max(predl, dim=0).values
+            predl = torch.mean(predl, dim=0)
             pred = (predc+predl)/2
         elif self.use_latents:
             pred = self.classifier_l(latents)
-            pred = torch.max(pred, dim=0).values
+            pred = torch.mean(pred, dim=0)
         else:
             pred = self.classifier_c(context)
         output = self.activation(pred)  # do not squeeze on batch?

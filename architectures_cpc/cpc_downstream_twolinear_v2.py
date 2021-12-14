@@ -11,15 +11,19 @@ class DownstreamLinearNet(nn.Module):
         self.use_context = use_context
         self.use_latents = use_latents
         self.verbose = verbose
+        if self.use_context:
+            self.classifier_c = nn.Sequential(
+                nn.ReLU(),
+                nn.Linear(context_size, context_size*2),
+                nn.ReLU(),
+                nn.Linear(context_size*2, out_classes)
+            )
         if self.use_latents:
             self.classifier_l = nn.Sequential(
                 nn.ReLU(),
-                nn.Linear(in_features=latent_size, out_features=out_classes)
-            )
-        if self.use_context:  # if not both are getting used, normal classifier is enough for each (in_channels*1)
-            self.classifier_c = nn.Sequential(
+                nn.Linear(latent_size, latent_size*2),
                 nn.ReLU(),
-                nn.Linear(in_features=context_size, out_features=out_classes),
+                nn.Linear(latent_size*2, out_classes)
             )
 
         self.activation = nn.Sigmoid()

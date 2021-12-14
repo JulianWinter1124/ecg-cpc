@@ -523,7 +523,7 @@ if __name__ == '__main__':
     VAL_SET = 1;
     TRAIN_SET = 2
     paths = [
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/03_12_21-15-05-test|bl_TCN_down+bl_cnn_v14+bl_cnn_v2'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-16-48-test|cpc'
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits-fewer-labels60|use_weights|unfrozen|C|m:all|cpc_downstream_cnn'
         ]
     model_folders = [a for p in paths for a in auto_find_tested_models_recursive(p)]
