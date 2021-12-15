@@ -12,21 +12,18 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, ChainDataset
 
-import cpc_downstream_latent_average
-import cpc_downstream_latent_maximum
-import cpc_downstream_twolinear_v2
 from architectures_baseline_challenge import baseline_cnn_v14, baseline_cnn_v15, baseline_cnn_v8, baseline_TCN_down, baseline_cnn_v2, \
     baseline_FCN, baseline_MLP, baseline_TCN_block, baseline_TCN_flatten, baseline_TCN_last, baseline_alex_v2, baseline_cnn_v0, baseline_cnn_v0_1, \
     baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1, baseline_cnn_v3, baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, \
     baseline_cnn_v9, baseline_resnet
 
-import cpc_downstream_cnn
-import cpc_downstream_only
+
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_encoder_v0, cpc_intersect, \
-    cpc_predictor_v0, cpc_encoder_as_strided
+    cpc_predictor_v0, cpc_encoder_as_strided, cpc_downstream_cnn, cpc_downstream_only, \
+    cpc_downstream_latent_maximum, cpc_downstream_twolinear_v2, cpc_downstream_latent_average
 
 from util import store_models
-from util.data import ecg_datasets2, ecg_datasets3
+from util.data import ecg_datasets3
 from util.utility.full_class_name import fullname
 from util.metrics import training_metrics, baseline_losses as bl
 from util.store_models import save_model_architecture, save_model_checkpoint, save_model_variables_text_only
@@ -41,63 +38,69 @@ def main(args):
 
     print(f'Model outputpath: {args.out_path}')
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
-    # georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB',
-    #                                                     window_size=args.crop_size, pad_to_size=args.crop_size, return_labels=True,
-    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    # cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train/',
-    #                                                        window_size=args.crop_size, pad_to_size=args.crop_size, return_labels=True,
-    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    # cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=args.crop_size,
-    #                                                  pad_to_size=args.crop_size, return_labels=True,
-    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    # ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=args.crop_size,
-    #                                                   pad_to_size=args.crop_size, return_labels=True,
-    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
-    # nature = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/nature', window_size=args.crop_size,
-    #                                                   pad_to_size=args.crop_size, return_labels=True,
-    #                                                     normalize_fn=ecg_datasets2.normalize_feature_scaling)
-
-    georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+    georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB',
                                                                   window_size=args.crop_size,
                                                                   pad_to_size=args.crop_size, return_labels=True,
-                                                                  normalize_fn=ecg_datasets2.normalize_mean_scaling)
-    cpsc_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+                                                                  normalize_fn=ecg_datasets3.normalize_mean_scaling)
+    cpsc_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train/',
                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                return_labels=True,
-                                                               normalize_fn=ecg_datasets2.normalize_mean_scaling)
-    cpsc2_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
+                                                               normalize_fn=ecg_datasets3.normalize_mean_scaling)
+    cpsc2_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc',
                                                                 window_size=args.crop_size,
                                                                 pad_to_size=args.crop_size, return_labels=True,
-                                                                normalize_fn=ecg_datasets2.normalize_mean_scaling)
-    ptbxl_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
+                                                                normalize_fn=ecg_datasets3.normalize_mean_scaling)
+    ptbxl_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB',
                                                                 window_size=args.crop_size,
                                                                 pad_to_size=args.crop_size, return_labels=True,
-                                                                normalize_fn=ecg_datasets2.normalize_mean_scaling)
-    nature = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database',
+                                                                normalize_fn=ecg_datasets3.normalize_mean_scaling)
+    nature = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/nature',
                                                        window_size=args.crop_size,
                                                        pad_to_size=args.crop_size, return_labels=True,
-                                                       normalize_fn=ecg_datasets2.normalize_mean_scaling)
+                                                       normalize_fn=ecg_datasets3.normalize_mean_scaling)
+
+#     georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+#                                                                   window_size=args.crop_size,
+#                                                                   pad_to_size=args.crop_size, return_labels=True,
+#                                                                   normalize_fn=ecg_datasets3.normalize_mean_scaling)
+#     cpsc_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+#                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
+#                                                                return_labels=True,
+#                                                                normalize_fn=ecg_datasets3.normalize_mean_scaling)
+#     cpsc2_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
+#                                                                 window_size=args.crop_size,
+#                                                                 pad_to_size=args.crop_size, return_labels=True,
+#                                                                 normalize_fn=ecg_datasets3.normalize_mean_scaling)
+#     ptbxl_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
+#                                                                 window_size=args.crop_size,
+#                                                                 pad_to_size=args.crop_size, return_labels=True,
+#                                                                 normalize_fn=ecg_datasets3.normalize_mean_scaling)
+#     nature = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/nature_database',
+#                                                        window_size=args.crop_size,
+#                                                        pad_to_size=args.crop_size, return_labels=True,
+#                                                        normalize_fn=ecg_datasets3.normalize_mean_scaling)
 
     if args.redo_splits:
-        ecg_datasets2.filter_update_classes_by_count(
+        ecg_datasets3.filter_update_classes_by_count(
             [georgia_challenge, cpsc_challenge, ptbxl_challenge, cpsc2_challenge, nature], min_count=20)
         print("Warning! Redoing splits!")
         ptbxl_challenge.random_train_split_with_class_count()
         cpsc_challenge.random_train_split_with_class_count()
         cpsc2_challenge.random_train_split_with_class_count()
         georgia_challenge.random_train_split_with_class_count()
+        
+    print("Loading splits file:", args.splits_file)
+    ptbxl_train, ptbxl_val, t1 = ptbxl_challenge.generate_datasets_from_split_file(args.splits_file)
+    georgia_train, georgia_val, t2 = georgia_challenge.generate_datasets_from_split_file(args.splits_file)
+    cpsc_train, cpsc_val, t3 = cpsc_challenge.generate_datasets_from_split_file(args.splits_file)
+    cpsc2_train, cpsc2_val, t4 = cpsc2_challenge.generate_datasets_from_split_file(args.splits_file)
 
-    ptbxl_train, ptbxl_val, t1 = ptbxl_challenge.generate_datasets_from_split_file()
-    georgia_train, georgia_val, t2 = georgia_challenge.generate_datasets_from_split_file()
-    cpsc_train, cpsc_val, t3 = cpsc_challenge.generate_datasets_from_split_file()
-    cpsc2_train, cpsc2_val, t4 = cpsc2_challenge.generate_datasets_from_split_file()
-
-    ecg_datasets2.filter_update_classes_by_count(
+    ecg_datasets3.filter_update_classes_by_count(
         [nature, ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train,
          cpsc2_val, t4], 1)
     print('Classes after last update', len(ptbxl_train.classes), ptbxl_train.classes)
     if args.use_class_weights:
-        counts, counted_classes = ecg_datasets2.count_merged_classes(
+        counts, counted_classes = ecg_datasets3.count_merged_classes(
             [nature, ptbxl_train, ptbxl_val, t1, georgia_train, georgia_val, t2, cpsc_train, cpsc_val, t3, cpsc2_train,
              cpsc2_val, t4])
         class_weights = torch.Tensor(max(counts) / counts).to(device=f'cuda:{args.gpu_device}')
@@ -308,27 +311,27 @@ def main(args):
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[3]['model'].cpc_model, downstream_models[2]), 'will_pretrain': False, 'will_downtrain': True},
-        # baseline_FCN.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
-        baseline_alex_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_FCN.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_MLP.BaselineNet(in_features=args.crop_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_alex_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # baseline_resnet.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v0.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v0_1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v0_2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v0_3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v1.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v2.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v3.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v4.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v5.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v6.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v7.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v8.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_TCN_last.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        # baseline_TCN_flatten.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_cnn_v9.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_TCN_last.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+        #baseline_TCN_flatten.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_TCN_down.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
-        baseline_TCN_block.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
+#         baseline_TCN_block.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v14.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         baseline_cnn_v15.BaselineNet(in_channels=args.channels, out_channels=args.latent_size, out_classes=args.forward_classes, verbose=False),
         # {'model':cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain':False, 'will_downtrain':True},
@@ -353,19 +356,19 @@ def main(args):
 
     pretrain_train_loaders = [
         DataLoader(pretrain_train_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn)
+                   collate_fn=ecg_datasets3.collate_fn)
     ]
     pretrain_val_loaders = [
         DataLoader(pretrain_val_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn)
+                   collate_fn=ecg_datasets3.collate_fn)
     ]
     downstream_train_loaders = [
         DataLoader(downstream_train_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn)
+                   collate_fn=ecg_datasets3.collate_fn)
     ]
     downstream_val_loaders = [
         DataLoader(downstream_val_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn)
+                   collate_fn=ecg_datasets3.collate_fn)
     ]
     metric_functions = [
         # Functions that take two tensors as argument and give score or list of score #TODO: maybe use dict with name
@@ -376,8 +379,8 @@ def main(args):
         # accuracy_metrics.micro_avg_recall_score,
         # accuracy_metrics.micro_avg_precision_score,
         # accuracy_metrics.accuracy,
-        training_metrics.zero_fit_score,
-        training_metrics.class_fit_score
+#         training_metrics.zero_fit_score,
+#         training_metrics.class_fit_score
         # accuracy_metrics.class_count_prediction,
         # accuracy_metrics.class_count_truth
     ]
@@ -623,6 +626,9 @@ if __name__ == "__main__":
     parser.add_argument('--use_class_weights', dest='use_class_weights', action='store_true',
                         help="Use class weights determined by datasets class count")
     parser.set_defaults(use_class_weights=False)
+    
+    parser.add_argument('--splits_file', type=str, default='train-test-splits.txt',
+                        help="The Train val test split file to use")
 
     parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
                         help="Redo splits. Warning! File will be overwritten!")
@@ -631,6 +637,8 @@ if __name__ == "__main__":
     parser.add_argument("--gpu_device", type=int, default=0)
 
     parser.add_argument("--comment", type=str, default=None)
+    
+    parser.add_argument("--preload_fraction", type=float, default=1.)
 
     args = parser.parse_args()
     main(args)
