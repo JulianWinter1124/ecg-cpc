@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader, ChainDataset
 from util import store_models
 from util.metrics import training_metrics
 from external import helper_code
-from util.data import ecg_datasets2
+from util.data import ecg_datasets3
 from util.store_models import load_model_checkpoint, load_model_architecture, extract_model_files_from_dir
 
 
@@ -30,35 +30,45 @@ def main(args):
     Path(args.out_path).mkdir(parents=True, exist_ok=True)
     with open(os.path.join(args.out_path, 'params.txt'), 'w') as cfg:
         cfg.write(str(args))
-    # georgia = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
-    # cpsc_train = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
-    # cpsc = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
-    # ptbxl = ecg_datasets2.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
+    # georgia = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
+    # cpsc_train = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
+    # cpsc = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
+    # ptbxl = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
 
-    georgia_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
+    georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                                   window_size=args.crop_size,
                                                                   pad_to_size=args.crop_size,
                                                                   return_labels=True, return_filename=True,
-                                                                  normalize_fn=ecg_datasets2.normalize_mean_scaling)
-    cpsc_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
+                                                                  normalize_fn=ecg_datasets3.normalize_mean_scaling)
+    cpsc_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                return_labels=True, return_filename=True,
-                                                               normalize_fn=ecg_datasets2.normalize_mean_scaling)
-    cpsc2_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
+                                                               normalize_fn=ecg_datasets3.normalize_mean_scaling)
+    cpsc2_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_mean_scaling)
-    ptbxl_challenge = ecg_datasets2.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
+                                                                normalize_fn=ecg_datasets3.normalize_mean_scaling)
+    ptbxl_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets2.normalize_mean_scaling)
+                                                                normalize_fn=ecg_datasets3.normalize_mean_scaling)
 
     a1, b1, ptbxl_test = ptbxl_challenge.generate_datasets_from_split_file()
     a2, b2, georgia_test = georgia_challenge.generate_datasets_from_split_file()
     a3, b3, cpsc_test = cpsc_challenge.generate_datasets_from_split_file()
     a4, b4, cpsc2_test = cpsc2_challenge.generate_datasets_from_split_file()
 
-    classes = ecg_datasets2.filter_update_classes_by_count(
+    ptbxl_test.randomize_order = False
+    georgia_test.randomize_order = False
+    cpsc_test.randomize_order = False
+    cpsc2_test.randomize_order = False
+
+    b1.randomize_order = False
+    b2.randomize_order = False
+    b3.randomize_order = False
+    b4.randomize_order = False
+
+    classes = ecg_datasets3.filter_update_classes_by_count(
         [a1, b1, ptbxl_test, a2, b2, georgia_test, a3, b3, cpsc_test, a4, b4, cpsc2_test],
         1)  # Set classes if specified in split files (filter out classes with no occurence)
     print(classes)
@@ -75,6 +85,17 @@ def main(args):
                       '47665007': 52, '54329005': 53, '55930002': 54, '59118001': 55, '59931005': 56, '63593006': 57,
                       '6374002': 58, '67198005': 59, '67741000119109': 60, '698252002': 61, '713422000': 62,
                       '713426002': 63, '713427006': 64, '74390002': 65, '89792004': 66})
+    
+    if getattr(b1, 'preload'):
+        print("Preloading data...")
+        b1.preload(1./1.)
+        b2.preload(1./1.)
+        b3.preload(1./1.)
+        b4.preload(1./1.)
+        ptbxl_test.preload(1./1.)
+        georgia_test.preload(1./1.)
+        cpsc_test.preload(1./1.)
+        cpsc2_test.preload(1./1.)
 
     train_dataset_challenge = ChainDataset([a1, a2, a3, a4])
     val_dataset_challenge = ChainDataset([b1, b2, b3, b4])
@@ -99,7 +120,12 @@ def main(args):
 # /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-13_51-train|(4x)cpc'''.split('\n')
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc'
         #*['/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-16-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-13-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-11-train|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-15-train|(4x)cpc']
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-16-train|cpc'
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-49-train|bl_cnn_v14+bl_cnn_v8',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-32-train|bl_cnn_v14+bl_cnn_v8',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/few-labels/cpc'
 ]
     # infer class from model-arch file
     model_dicts = []
@@ -120,11 +146,11 @@ def main(args):
         print(f"Could not find any models in {model_folders}.")
     loaders = [
         DataLoader(test_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn),
+                   collate_fn=ecg_datasets3.collate_fn),
         DataLoader(val_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets2.collate_fn),
+                   collate_fn=ecg_datasets3.collate_fn),
         # DataLoader(train_dataset_challenge, batch_size=args.batch_size, drop_last=False, num_workers=1,
-        #            collate_fn=ecg_datasets2.collate_fn), #Train usually not required
+        #            collate_fn=ecg_datasets3.collate_fn), #Train usually not required
 
     ]
     metric_functions = [  # Functions that take two tensors as argument and give score or list of score

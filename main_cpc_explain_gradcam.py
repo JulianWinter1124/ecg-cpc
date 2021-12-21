@@ -70,7 +70,7 @@ def main(args):
     train_dataset_challenge = ChainDataset([a1, a2, a3, a4])
     val_dataset_challenge = ChainDataset([b1, b2, b3, b4])
     test_dataset_challenge = ChainDataset([ptbxl_test, georgia_test, cpsc_test, cpsc2_test])
-
+    print("Use class weights:", args.use_class_weights)
     if args.use_class_weights:
         counts, counted_classes = ecg_datasets2.count_merged_classes(
             [a1, b1, ptbxl_test, a2, b2, georgia_test, a3, b3, cpsc_test, a4, b4, cpsc2_test])
@@ -90,9 +90,9 @@ def main(args):
         #new CPC
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-10-train|(12x)cpc/architectures_cpc.cpc_combined.CPCCombined9|use_weights|strided|frozen|L|m:same|cpc_downstream_cnn'
         #new bl14
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-18-train|bl_cnn_v14/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet0|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
         #new blvtcn
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
     ]
     model_test_folders = [
         #v14
@@ -108,9 +108,9 @@ def main(args):
         #new cpc
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-12-48-test|(12x)cpc/01_12_21-10-train|(12x)cpc/architectures_cpc.cpc_combined.CPCCombined9|use_weights|strided|frozen|L|m:same|cpc_downstream_cnn'
         #new bl14
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-20-25-test|bl_cnn_v14/30_11_21-18-train|bl_cnn_v14/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet0|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
         #new bltcn
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-14-58-test|bl_TCN_down+bl_cnn_v2/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
         ]
     # infer class from model-arch file
     model_dicts = []
@@ -122,6 +122,7 @@ def main(args):
             cp_f = sorted(cp_fs)[-1]
             model = load_model_architecture(fm_f)
             if model is None:
+                print("no Model loaded")
                 continue
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
             if hasattr(model, 'freeze_cpc'):
@@ -130,9 +131,9 @@ def main(args):
             print(thresholds)
             print(
                 f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
-            explain_model = ExplainLabelLayer(model, class_weights=class_weights, layer=('tcn.network.2.net.4'))#'convs.16''msresnet.maxpool7''msresnet.layer7x7_3.0.conv2' #'cpc_model.encoder.convolutionals.8''cpc_model.encoder.cpc_encoder.convolutionals.8'
+            explain_model = ExplainLabelLayer(model, class_weights=class_weights, layer=('tcn.network.2.net.4'))#'msresnet.layer7x7_3.0.conv2''convs.16''msresnet.maxpool7' #'cpc_model.encoder.convolutionals.8''cpc_model.encoder.cpc_encoder.convolutionals.8'
             model_dicts.append({'model': explain_model, 'model_folder': root, 'thresholds': thresholds,
-                                'name': train_folder.split(os.path.sep)[-1].split('|')[0].split('.')[-1]})
+                                'name': '-'.join(train_folder.split(os.path.sep)[-1].split('|')[0].split('.')[-2:])})
     if len(model_dicts) == 0:
         print(f"Could not find any models in {model_train_folders}.")
     loaders = [

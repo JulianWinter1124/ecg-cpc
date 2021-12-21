@@ -124,6 +124,7 @@ if __name__ == '__main__':
     # To quickly run calculations:
     # print(calc_conv1ds_output_length(512, kernel_sizes=[3,3,3,3,3,3], dilations=[1,3,9,27,27*3,27*3*3], paddings=[3,3,3,3,3,3]))
     # print(calc_conv1ds_output_length(465, kernel_sizes=[10, 8, 4, 4, 4], strides = [5, 4, 2, 2, 2]))
+    print(calc_conv1ds_output_length(4500, kernel_sizes=[11, 7, 5, 5, 3], strides=[3, 2, 2, 1, 1]))
     print(calc_conv1ds_output_length(4500, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_output_length(20480, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))
     print(calc_conv1ds_input_length(27, kernel_sizes=[10, 8, 4, 4, 4], strides=[5, 4, 2, 2, 2]))

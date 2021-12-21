@@ -122,6 +122,8 @@ def rename_folders_into_models(base='.', folders=None):
             except OSError as ose:
                 if ose.errno == 36:
                     os.rename(f, new_folder_name[0:254])
+                elif ose.errno == 39:
+                    print("Folder already exists... skipping")
                 else:
                     raise
 
@@ -430,7 +432,7 @@ def clean_rename(folders=None):
 
 def clean_categorize(test=False):
     uses_model_variables = set(filter_folders_model_variables(model_variables_filter=''))
-    correct_age = set(filter_folders_age(newer_than=1619628667)) & uses_model_variables
+    correct_age = set(filter_folders_age(newer_than=1635760539)) & uses_model_variables #1619628667
     if not test:
         train_or_test_folders = set(filter(lambda x: not 'test' in x, correct_age))
     else:
@@ -516,7 +518,9 @@ if __name__ == '__main__':
     #
     clean_remove_dry_run()
     clean_rename()
-    # clean_categorize(test=True)
+    clean_remove_dry_run()
+    clean_rename()
+    #clean_categorize(test=False)
     print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
         file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
     # print(filter_folders_universal( #Find all models that normalize latents and have NOT trained downstream (and not test)
