@@ -201,12 +201,19 @@ def main(args):
             args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
-        cpc_intersect_manylatents.CPC( #With hidden instead of context
+        cpc_intersect_manylatents.CPC(
             cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1),
+            cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        ),
+        cpc_intersect_manylatents.CPC(
+            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+            cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+            args.timesteps_in, args.timesteps_out, args.latent_size,
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='alpha', alpha=0.01
         ),
     ]
     downstream_models = [
@@ -451,8 +458,13 @@ def main(args):
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5, min_lr=3e-10, verbose=True)
         metrics = defaultdict(lambda: defaultdict(list))
         update_count = 0
+        train_mean_loss = torch.Tensor([0.]).cuda()
+        train_mean_acc = torch.Tensor([0.]).cuda()
+        val_mean_loss = torch.Tensor([0.]).cuda()
+        val_mean_acc = torch.Tensor([0.]).cuda()
         for epoch in range(1, args.pretrain_epochs + 1):
             starttime = time.time()  # train
+            moving_average = 0
             for train_loader_i, train_loader in enumerate(pretrain_train_loaders):
                 for dataset_tuple in train_loader:
                     data, _ = dataset_tuple
@@ -463,13 +475,20 @@ def main(args):
                     optimizer.step()
                     update_count += 1
                     # saving metrics
-                    metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                    metrics[epoch]['trainacc'].append(parse_tensor_to_numpy_or_scalar(acc))
+                    if not args.no_metrics:
+                        metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                        metrics[epoch]['trainacc'].append(parse_tensor_to_numpy_or_scalar(acc))
+                    train_mean_loss += loss
+                    train_mean_acc += acc
+                    moving_average += 1
                     if args.dry_run:
                         break
                     del data, loss, hidden
                 print(f"\tFinished training dataset {train_loader_i}. Progress: {train_loader_i + 1}/{len(pretrain_train_loaders)}")
                 # torch.cuda.empty_cache()
+            train_mean_loss = parse_tensor_to_numpy_or_scalar(train_mean_loss)/moving_average
+            train_mean_acc = parse_tensor_to_numpy_or_scalar(train_mean_acc)/moving_average
+            moving_average=0
             with torch.no_grad():
                 for val_loader_i, val_loader in enumerate(pretrain_val_loaders):  # validate
                     for dataset_tuple in val_loader:
@@ -477,23 +496,31 @@ def main(args):
                         data = data.float().cuda()
                         acc, loss, hidden = model.pretrain(data, y=None, hidden=None)
                         # saving metrics
-                        metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                        metrics[epoch]['valacc'].append(parse_tensor_to_numpy_or_scalar(acc))
+                        if not args.no_metrics:
+                            metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
+                            metrics[epoch]['valacc'].append(parse_tensor_to_numpy_or_scalar(acc))
+                        val_mean_loss += loss
+                        val_mean_acc += acc
+                        moving_average += 1
                         if args.dry_run:
                             break
                     print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
                                                                                      len(pretrain_val_loaders)))
                     del data, loss, hidden
-
-            scheduler.step(np.mean(metrics[epoch]['valloss']))
+            val_mean_loss = parse_tensor_to_numpy_or_scalar(val_mean_loss)/moving_average
+            val_mean_acc = parse_tensor_to_numpy_or_scalar(val_mean_acc)/moving_average
+            scheduler.step(val_mean_loss)
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)
             print(
                 "Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f}. Avg train acc: {:.4f}. Avg val acc: {:.4f}. Elapsed time: {}. Total optimizer steps: {}.".format(
-                    epoch, args.pretrain_epochs, np.mean(metrics[epoch]['trainloss']),
-                    np.mean(metrics[epoch]['valloss']),
-                    np.mean(metrics[epoch]['trainacc']), np.mean(metrics[epoch]['valacc']),
-                    elapsed_time, update_count))
+                    epoch, args.pretrain_epochs, train_mean_loss, val_mean_loss,
+                    train_mean_acc, val_mean_acc, elapsed_time, update_count))
+            if args.no_metrics:
+                metrics[epoch]['trainloss'].append(train_mean_loss)
+                metrics[epoch]['trainacc'].append(train_mean_acc)
+                metrics[epoch]['valloss'].append(val_mean_loss)
+                metrics[epoch]['valacc'].append(val_mean_acc)
             if args.dry_run:
                 break
         pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.pretrain_epochs)
@@ -541,10 +568,11 @@ def main(args):
                     update_count += 1
                     # saving metrics
                     metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                    with torch.no_grad():
-                        for i, fn in enumerate(metric_functions):
-                            metrics[epoch]['acc_' + str(i)].append(
-                                parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                    if not args.no_metrics:
+                        with torch.no_grad():
+                            for i, fn in enumerate(metric_functions):
+                                metrics[epoch]['acc_' + str(i)].append(
+                                    parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                     del data, pred, labels, loss
                     if args.dry_run:
                         break
@@ -561,9 +589,10 @@ def main(args):
                         loss = bl.binary_cross_entropy(pred=pred, y=labels, weight=class_weights)
                         # saving metrics
                         metrics[epoch]['valloss'].append(parse_tensor_to_numpy_or_scalar(loss))
-                        for i, fn in enumerate(metric_functions):
-                            metrics[epoch]['val_acc_' + str(i)].append(
-                                parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
+                        if not args.no_metrics:
+                            for i, fn in enumerate(metric_functions):
+                                metrics[epoch]['val_acc_' + str(i)].append(
+                                    parse_tensor_to_numpy_or_scalar(fn(y=labels, pred=pred)))
                         del data, pred, labels, loss
                         if args.dry_run:
                             break
@@ -610,10 +639,10 @@ def main(args):
 
 
 def parse_tensor_to_numpy_or_scalar(input_tensor):
-    arr = input_tensor.detach().cpu().numpy()
-    if arr.size == 1:
-        return arr.item()
-    return arr
+    try:
+        return input_tensor.item()
+    except:
+        return input_tensor.detach().cpu().numpy()
 
 
 if __name__ == "__main__":
@@ -681,6 +710,10 @@ if __name__ == "__main__":
     parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
                         help="Redo splits. Warning! File will be overwritten!")
     parser.set_defaults(redo_splits=False)
+
+    parser.add_argument('--no_metrics', dest='no_metrics', action='store_true',
+                        help="No metrics (loss etc.) will be safed during training")
+    parser.set_defaults(no_metrics=False)
 
     parser.add_argument("--gpu_device", type=int, default=0)
 

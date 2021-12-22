@@ -9,7 +9,7 @@ from util.utility.sparse_print import SparsePrint
 class CPC(nn.Module):
 
     def __init__(self, encoder, autoregressive, predictor, timesteps_in, timesteps_out, latent_size, timesteps_ignore=0,
-                 normalize_latents=False, verbose=False, sampling_mode='same'):
+                 normalize_latents=False, verbose=False, sampling_mode='same', alpha=0.01):
         super().__init__()
         self.encoder = encoder
         self.autoregressive = autoregressive
@@ -22,11 +22,9 @@ class CPC(nn.Module):
         self.normalize_latents = normalize_latents
         self.verbose = verbose
         self.cpc_train_mode = True
-        if sampling_mode in ['all', 'same', 'random', 'future']:
-            self.sampling_mode = sampling_mode
-        else:
-            self.sampling_mode = 'same'
+        self.sampling_mode = sampling_mode
         self.sprint = SparsePrint()
+        self.alpha = alpha
 
     def forward(self, X, y=None, hidden=None):
         if self.verbose: print('input', X.shape)
@@ -84,14 +82,13 @@ class CPC(nn.Module):
 
         if self.sampling_mode == 'all':
             current_context = context[-1, :, :]
-            enc_resh = encoded_x.reshape(encoded_x_steps*batch, -1)
 
             for k in range(self.timesteps_out):
                 pred_latent = self.predictor(current_context, k)
                 if self.verbose: print("pred latent shape", pred_latent.shape)
 
-                sim = enc_resh@pred_latent.T # sim[i, j] = scalar prod between li and pred j
-                soft = F.log_softmax(sim, dim=0) #Where is the highest similarity? (max in each i) == i
+                sim = encoded_x@pred_latent.T # sim[i, j] = scalar prod between li and pred j
+                soft = F.log_softmax(sim.reshape(encoded_x_steps*batch, -1), dim=0) #Where is the highest similarity? (max in each i) == i
                 soft_resh = soft.reshape(encoded_x_steps, batch, -1)
                 # soft2 = F.softmax(sim, dim=0)
                 # self.sprint.print(soft, 10000)
@@ -106,19 +103,17 @@ class CPC(nn.Module):
             raise NotImplementedError
 
         if self.sampling_mode == 'future':
-            t = np.random.randint(self.timesteps_in, encoded_x_steps-self.timesteps_out-self.timesteps_ignore)
-            current_context = context[t-1, :, :]
-            encoded_x = encoded_x[t:, :, :] #only use future latents
+            current_context = context[-1, :, :]
+            encoded_x = encoded_x[-self.timesteps_out:, :, :] #only use future latents
             encoded_x_steps, _, _ = encoded_x.shape
-            enc_resh = encoded_x.reshape(encoded_x_steps*batch, -1)
 
 
             for k in range(self.timesteps_out):
                 pred_latent = self.predictor(current_context, k)
                 if self.verbose: print("pred latent shape", pred_latent.shape)
 
-                sim = enc_resh@pred_latent.T # sim[i, j] = scalar prod between li and pred j
-                soft = F.log_softmax(sim, dim=0) #Where is the highest similarity? (max in each i) == i
+                sim = encoded_x@pred_latent.T # sim[i, j] = scalar prod between li and pred j
+                soft = F.log_softmax(sim.reshape(encoded_x_steps*batch, -1), dim=0) #Where is the highest similarity? (max in each i) == i
                 soft_resh = soft.reshape(encoded_x_steps, batch, -1)
                 # soft2 = F.softmax(sim, dim=0)
                 # self.sprint.print(soft, 10000)
@@ -128,6 +123,32 @@ class CPC(nn.Module):
             loss = -loss/(self.timesteps_out*batch)
             accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
             return accuracy, loss, hidden
+
+        if self.sampling_mode == 'alpha': #same as all but with alpha
+            multiplier = torch.eye(batch, device=encoded_x.device) * (np.log(self.alpha)-np.log((batch-self.alpha)/(batch-1)))
+            current_context = context[-1, :, :]
+
+            for k in range(self.timesteps_out):
+                pred_latent = self.predictor(current_context, k)
+                if self.verbose: print("pred latent shape", pred_latent.shape)
+                sim = encoded_x@pred_latent.T # sim[i, j] = scalar prod between li and pred j
+                sim = sim + np.log((batch-self.alpha)/(batch-1))
+                sim[self.timesteps_in+self.timesteps_ignore+k] = sim[self.timesteps_in+self.timesteps_ignore+k] + multiplier
+
+                soft = (batch/self.alpha) * F.log_softmax(sim.reshape(encoded_x_steps*batch, -1), dim=0) #Where is the highest similarity? (max in each i) == i
+                soft_resh = soft.reshape(encoded_x_steps, batch, -1)
+                # soft2 = F.softmax(sim, dim=0)
+                # self.sprint.print(soft, 10000)
+                loss += torch.diag(soft_resh[self.timesteps_in+self.timesteps_ignore+k]).sum() #higher = better
+                correct += (soft.max(dim=0).indices == torch.arange(batch, device=soft.device)+batch*(self.timesteps_in+k)).sum()
+
+            loss = -loss/(self.timesteps_out*batch)
+            accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
+            return accuracy, loss, hidden
+
+        print("Unknown sampling mode")
+
+
 
     def freeze_layers(self):
         for param in self.parameters():
