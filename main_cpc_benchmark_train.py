@@ -21,7 +21,7 @@ from architectures_baseline_challenge import baseline_cnn_v14, baseline_cnn_v15,
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_encoder_v0, cpc_intersect, \
     cpc_predictor_v0, cpc_encoder_as_strided, cpc_downstream_cnn, cpc_downstream_only, \
     cpc_downstream_latent_maximum, cpc_downstream_twolinear_v2, cpc_downstream_latent_average, \
-    cpc_intersect_manylatents, cpc_encoder_small, cpc_autoregressive_hidden
+    cpc_intersect_manylatents, cpc_encoder_small, cpc_autoregressive_hidden, cpc_encoder_likev8
 
 from util import store_models
 from util.data import ecg_datasets3
@@ -141,80 +141,101 @@ def main(args):
         #     args.timesteps_in // 4, args.timesteps_out // 4, args.latent_size,
         #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         # ),
-        cpc_intersect.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-                                                  args.window_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
-            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-                                                  args.window_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
-            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='future'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-                                                  args.window_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
-            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='future'
-        ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #                                           args.window_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #                                           args.window_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='future'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #                                           args.window_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='future'
+        # ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_small.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        # ),
+        # cpc_intersect.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_small.Encoder(args.channels, args.latent_size),
+        #                                           args.window_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        # ),
         cpc_intersect_manylatents.CPC(
-            cpc_encoder_small.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
-            args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        ),
-        cpc_intersect.CPC(
-            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_small.Encoder(args.channels, args.latent_size),
-                                                  args.window_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
-            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
-        ),
-        cpc_intersect_manylatents.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+            cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
             cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
         cpc_intersect_manylatents.CPC(
+            cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
+            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+            args.timesteps_in, args.timesteps_out, args.latent_size,
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        ),
+        cpc_intersect.CPC(
+            cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
+            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+            args.timesteps_in, args.timesteps_out, args.latent_size,
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        ),
+        cpc_intersect.CPC(
             cpc_encoder_v0.Encoder(args.channels, args.latent_size),
             cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
             args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='alpha', alpha=0.01
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='alpha', alpha=0.01
+        # ),
     ]
     downstream_models = [
         cpc_downstream_only.DownstreamLinearNet(
