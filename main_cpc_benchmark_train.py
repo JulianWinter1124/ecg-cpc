@@ -12,8 +12,6 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, ChainDataset
 
-import cpc_encoder_small
-import cpc_intersect_manylatents
 from architectures_baseline_challenge import baseline_cnn_v14, baseline_cnn_v15, baseline_cnn_v8, baseline_TCN_down, baseline_cnn_v2, \
     baseline_FCN, baseline_MLP, baseline_TCN_block, baseline_TCN_flatten, baseline_TCN_last, baseline_alex_v2, baseline_cnn_v0, baseline_cnn_v0_1, \
     baseline_cnn_v0_2, baseline_cnn_v0_3, baseline_cnn_v1, baseline_cnn_v3, baseline_cnn_v4, baseline_cnn_v5, baseline_cnn_v6, baseline_cnn_v7, \
@@ -22,7 +20,8 @@ from architectures_baseline_challenge import baseline_cnn_v14, baseline_cnn_v15,
 
 from architectures_cpc import cpc_autoregressive_v0, cpc_combined, cpc_encoder_v0, cpc_intersect, \
     cpc_predictor_v0, cpc_encoder_as_strided, cpc_downstream_cnn, cpc_downstream_only, \
-    cpc_downstream_latent_maximum, cpc_downstream_twolinear_v2, cpc_downstream_latent_average
+    cpc_downstream_latent_maximum, cpc_downstream_twolinear_v2, cpc_downstream_latent_average, \
+    cpc_intersect_manylatents, cpc_encoder_small, cpc_autoregressive_hidden
 
 from util import store_models
 from util.data import ecg_datasets3
@@ -202,13 +201,13 @@ def main(args):
             args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
-        # cpc_intersect.CPC(
-        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size), args.window_size),
-        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
-        #     args.timesteps_in, args.timesteps_out, args.latent_size,
-        #     timesteps_ignore=0, verbose=False
-        # ),
+        cpc_intersect_manylatents.CPC( #With hidden instead of context
+            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+            cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1),
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+            args.timesteps_in, args.timesteps_out, args.latent_size,
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+        ),
     ]
     downstream_models = [
         cpc_downstream_only.DownstreamLinearNet(
@@ -315,7 +314,7 @@ def main(args):
         #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
-        {'model': cpc_combined.CPCCombined(pretrain_models[2], downstream_models[0], freeze_cpc=True),
+        {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=True),
          'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
@@ -451,6 +450,7 @@ def main(args):
         optimizer = Adam(model.parameters(), lr=3e-3)#3e-4
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5, min_lr=3e-10, verbose=True)
         metrics = defaultdict(lambda: defaultdict(list))
+        update_count = 0
         for epoch in range(1, args.pretrain_epochs + 1):
             starttime = time.time()  # train
             for train_loader_i, train_loader in enumerate(pretrain_train_loaders):
@@ -461,14 +461,14 @@ def main(args):
                     acc, loss, hidden = model.pretrain(data, y=None, hidden=None)
                     loss.backward()
                     optimizer.step()
+                    update_count += 1
                     # saving metrics
                     metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
                     metrics[epoch]['trainacc'].append(parse_tensor_to_numpy_or_scalar(acc))
                     if args.dry_run:
                         break
                     del data, loss, hidden
-                print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
-                                                                               len(pretrain_train_loaders)))
+                print(f"\tFinished training dataset {train_loader_i}. Applied {update_count} optimizer steps. Progress: {train_loader_i + 1}/{len(pretrain_train_loaders)}")
                 # torch.cuda.empty_cache()
             with torch.no_grad():
                 for val_loader_i, val_loader in enumerate(pretrain_val_loaders):  # validate

@@ -84,7 +84,10 @@ class CPC(nn.Module):
 
         if self.sampling_mode == 'all':
             t = np.random.randint(self.timesteps_in, encoded_x_steps-self.timesteps_out-self.timesteps_ignore)
-            current_context = context[t-1, :, :]
+            if context.shape[0] > 1: #uses rnn context
+                current_context = context[t-1, :, :]
+            else: #uses hidden or something else
+                current_context = context[0, :, :]
             #enc_resh = encoded_x.reshape(encoded_x_steps*batch, -1)
 
             for k in range(self.timesteps_out):

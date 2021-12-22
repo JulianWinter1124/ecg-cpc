@@ -61,7 +61,7 @@ class CPC(nn.Module):
     # loss = self.info_NCE_loss_brian(torch.stack(future_latents), torch.stack(predicted_latents))
     #  #Will become Tensor
     # return torch.Tensor([0.0]).cuda(), loss, hidden
-    def info_NCE_loss_brian(self, target_latents: torch.Tensor, pred_latents: torch.Tensor, emb_scale=0):
+    def info_NCE_loss_brain(self, target_latents: torch.Tensor, pred_latents: torch.Tensor, emb_scale=0):
         """
         Calculates the infoNCE loss for CPC according to 'DATA-EFFICIENT IMAGE RECOGNITION
         WITH CONTRASTIVE PREDICTIVE CODING' A.2
