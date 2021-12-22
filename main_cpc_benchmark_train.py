@@ -468,7 +468,7 @@ def main(args):
                     if args.dry_run:
                         break
                     del data, loss, hidden
-                print(f"\tFinished training dataset {train_loader_i}. Applied {update_count} optimizer steps. Progress: {train_loader_i + 1}/{len(pretrain_train_loaders)}")
+                print(f"\tFinished training dataset {train_loader_i}. Progress: {train_loader_i + 1}/{len(pretrain_train_loaders)}")
                 # torch.cuda.empty_cache()
             with torch.no_grad():
                 for val_loader_i, val_loader in enumerate(pretrain_val_loaders):  # validate
@@ -489,11 +489,11 @@ def main(args):
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)
             print(
-                "Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f}. Avg train acc: {:.4f}. Avg val acc: {:.4f}. Elapsed time: {}".format(
+                "Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f}. Avg train acc: {:.4f}. Avg val acc: {:.4f}. Elapsed time: {}. Total optimizer steps: {}.".format(
                     epoch, args.pretrain_epochs, np.mean(metrics[epoch]['trainloss']),
                     np.mean(metrics[epoch]['valloss']),
                     np.mean(metrics[epoch]['trainacc']), np.mean(metrics[epoch]['valacc']),
-                    elapsed_time))
+                    elapsed_time, update_count))
             if args.dry_run:
                 break
         pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.pretrain_epochs)
@@ -503,7 +503,7 @@ def main(args):
         # Save model + model weights + optimizer state
         save_model_checkpoint(output_path, epoch=args.pretrain_epochs, model=model, optimizer=optimizer,
                               name=model_name)
-        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(pretrain_models)))
+        print("Finished model {}. Progress: {}/{}".format(model_name, model_i + 1, len(models)))
 
         del model  # delete and free
         torch.cuda.empty_cache()
@@ -524,6 +524,7 @@ def main(args):
         optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=6e-4)
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5, min_lr=3e-10, verbose=True)
         metrics = defaultdict(lambda: defaultdict(list))
+        update_count = 0
         for epoch in range(1, args.downstream_epochs + 1):
             starttime = time.time()  # train
             for train_loader_i, train_loader in enumerate(downstream_train_loaders):
@@ -537,6 +538,7 @@ def main(args):
                                                    weight=class_weights)  # bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
                     loss.backward()
                     optimizer.step()
+                    update_count += 1
                     # saving metrics
                     metrics[epoch]['trainloss'].append(parse_tensor_to_numpy_or_scalar(loss))
                     with torch.no_grad():
@@ -546,8 +548,7 @@ def main(args):
                     del data, pred, labels, loss
                     if args.dry_run:
                         break
-                print("\tFinished training dataset {}. Progress: {}/{}".format(train_loader_i, train_loader_i + 1,
-                                                                               len(downstream_train_loaders)))
+                print(f"\tFinished training dataset {train_loader_i}. Progress: {train_loader_i + 1}/{len(downstream_train_loaders)}")
 
                 torch.cuda.empty_cache()
             with torch.no_grad():
@@ -572,9 +573,9 @@ def main(args):
             scheduler.step(np.mean(metrics[epoch]['valloss']))
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)
-            print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}".format(
+            print("Epoch {}/{} done. Avg train loss: {:.4f}. Avg val loss: {:.4f} Elapsed time: {}. Total optimizer steps: {}.".format(
                 epoch, args.downstream_epochs, np.mean(metrics[epoch]['trainloss']), np.mean(metrics[epoch]['valloss']),
-                elapsed_time))
+                elapsed_time, update_count))
             if args.dry_run:
                 break
         pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.downstream_epochs)
