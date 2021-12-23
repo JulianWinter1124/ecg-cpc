@@ -51,8 +51,12 @@ class ECGChallengeDatasetBaseline(IterableDataset):
         self.loaded_data = {}
         self.loaded_labels = {}
         for f in self.files[0:int(len(self.files)*preload_frac)]:
-            self.loaded_data[f] = self.normalize_fn(self._read_recording_file(f))
-            self.loaded_labels[f] = self._read_header_labels(f)
+            d = torch.from_numpy(self.normalize_fn(self._read_recording_file(f)))
+            if len(d) - self.window_size < 0: #pad
+                d = torch.nn.ReflectionPad1d((0, max(0, self.pad_to_size - min(self.window_size, len(d)))))(d.T.unsqueeze(0)).squeeze(0).T #WTF is this pytorch
+            self.loaded_data[f] = d
+            #del d
+            self.loaded_labels[f] = torch.from_numpy(self._read_header_labels(f))
 
 
     def __iter__(self):
@@ -64,23 +68,23 @@ class ECGChallengeDatasetBaseline(IterableDataset):
             if current_file in self.loaded_data:
                 data = self.loaded_data[current_file]
             else:
-                data = self.normalize_fn(self._read_recording_file(current_file))
+                data = torch.Tensor(self.normalize_fn(self._read_recording_file(current_file)))
             if self.channels:
                 data = data[:, self.channels]
             if self.return_labels:
                 if current_file in self.loaded_labels:
                     labels = self.loaded_labels[current_file]
                 else:
-                    labels = self._read_header_labels(current_file)
-            if len(data) - self.window_size > 0:
-                if self.randomize_order:
+                    labels = torch.Tensor(self._read_header_labels(current_file))
+            if len(data) - self.window_size >= 0:
+                if self.randomize_order and (len(data) - self.window_size) > 0:
                     offset = np.random.randint(len(data) - self.window_size)  # Random offset
                 else:
                     offset = 0
                 data = data[offset:self.window_size + offset]
             else:
                 offset = 0
-                data = np.pad(data, ((max(0, self.pad_to_size - min(self.window_size, len(data))), 0), (0, 0)))
+                data = torch.nn.ReflectionPad1d((0, max(0, self.pad_to_size - min(self.window_size, len(data)))))(data.T.unsqueeze(0)).squeeze(0).T
             if not any([self.return_filename, self.return_labels]):
                 yield data
             else:

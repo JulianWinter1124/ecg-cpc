@@ -222,12 +222,20 @@ def main(args):
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         ),
-        cpc_intersect.CPC(
+        cpc_intersect_manylatents.CPC(
             cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
+            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
             args.timesteps_in, args.timesteps_out, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='alpha'
+        ),
+
+        cpc_intersect_manylatents.CPC(
+            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1), #With hidden instead of context
+            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+            args.timesteps_in, args.timesteps_out, args.latent_size,
+            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
         ),
         # cpc_intersect_manylatents.CPC(
         #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
@@ -316,10 +324,22 @@ def main(args):
             'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|strided|frozen|C|L|m:all|cpc_downstream_latent_maximum',
             'model': None  # Model will be loaded by method below
             },
-        # {
-        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_12_21-20-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|use_weights|frozen|C|m:all|cpc_downstream_only',
-        #     'model': None  # Model will be loaded by method below
-        #     },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
+            'model': None  # Model will be loaded by method below
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
+            'model': None  # Model will be loaded by method below
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
+            'model': None  # Model will be loaded by method below
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
+            'model': None  # Model will be loaded by method below
+            },
 
     ]
     for model_i, trained_model_dict in enumerate(trained_model_dicts):  # hack bad
@@ -342,20 +362,30 @@ def main(args):
         #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
-        {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=True),
-         'will_pretrain': True, 'will_downtrain': False},
+        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=True),
+        #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[3], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[6], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[7], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[3], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-2], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[-3], freeze_cpc=False),
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[-3], freeze_cpc=False),
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-3], freeze_cpc=False),
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=False),
+         'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-1], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
@@ -429,11 +459,11 @@ def main(args):
 
     pretrain_train_loaders = [
         DataLoader(pretrain_train_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets3.collate_fn)
+                   collate_fn=ecg_datasets3.collate_fn, pin_memory=True)
     ]
     pretrain_val_loaders = [
         DataLoader(pretrain_val_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
-                   collate_fn=ecg_datasets3.collate_fn)
+                   collate_fn=ecg_datasets3.collate_fn, pin_memory=True)
     ]
     downstream_train_loaders = [
         DataLoader(downstream_train_dataset, batch_size=args.batch_size, drop_last=False, num_workers=1,
@@ -569,7 +599,7 @@ def main(args):
         model.cuda()
         model.train()
         # init optimizer
-        optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=6e-4)
+        optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4)
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5, min_lr=3e-10, verbose=True)
         metrics = defaultdict(lambda: defaultdict(list))
         update_count = 0

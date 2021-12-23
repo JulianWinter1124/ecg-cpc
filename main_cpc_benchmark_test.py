@@ -121,10 +121,12 @@ def main(args):
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc'
         #*['/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-16-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-13-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-11-train|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-15-train|(4x)cpc']
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-49-train|bl_cnn_v14+bl_cnn_v8',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-32-train|bl_cnn_v14+bl_cnn_v8',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-49-train|bl_cnn_v14+bl_cnn_v8',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-32-train|bl_cnn_v14+bl_cnn_v8',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-14-train|(2x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-16-train|(4x)cpc'
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/few-labels/cpc'
 ]
     # infer class from model-arch file

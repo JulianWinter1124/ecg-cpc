@@ -25,6 +25,7 @@ class CPC(nn.Module):
         self.sampling_mode = sampling_mode
         self.sprint = SparsePrint()
         self.alpha = alpha
+        self.crossentropyloss = nn.CrossEntropyLoss(reduction='sum')
 
     def forward(self, X, y=None, hidden=None):
         if self.verbose: print('input', X.shape)
@@ -135,7 +136,7 @@ class CPC(nn.Module):
                 sim = sim + np.log((batch-self.alpha)/(batch-1))
                 sim[self.timesteps_in+self.timesteps_ignore+k] = sim[self.timesteps_in+self.timesteps_ignore+k] + multiplier
 
-                soft = (batch/self.alpha) * F.log_softmax(sim.reshape(encoded_x_steps*batch, -1), dim=0) #Where is the highest similarity? (max in each i) == i
+                soft =  F.log_softmax(sim.reshape(encoded_x_steps*batch, -1), dim=0) #(batch/self.alpha) *Where is the highest similarity? (max in each i) == i
                 soft_resh = soft.reshape(encoded_x_steps, batch, -1)
                 # soft2 = F.softmax(sim, dim=0)
                 # self.sprint.print(soft, 10000)
@@ -143,6 +144,44 @@ class CPC(nn.Module):
                 correct += (soft.max(dim=0).indices == torch.arange(batch, device=soft.device)+batch*(self.timesteps_in+k)).sum()
 
             loss = -loss/(self.timesteps_out*batch)
+            accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
+            return accuracy, loss, hidden
+
+        if self.sampling_mode == 'softmax':
+            current_context = context[-1, :, :]
+
+            for k in range(self.timesteps_out):
+                pred_latent = self.predictor(current_context, k)
+                if self.verbose: print("pred latent shape", pred_latent.shape)
+
+                sim = encoded_x@pred_latent.T # sim[i, j] = scalar prod between li and pred j
+                soft = 1-F.softmax(sim.reshape(encoded_x_steps*batch, -1), dim=0) #Where is the highest similarity? (max in each i) == i
+                soft_resh = soft.reshape(encoded_x_steps, batch, -1)
+                # soft2 = F.softmax(sim, dim=0)
+                # self.sprint.print(soft, 10000)
+                loss += torch.diag(soft_resh[self.timesteps_in+self.timesteps_ignore+k]).sum() #higher = better
+                correct += (soft.min(dim=0).indices == torch.arange(batch, device=soft.device)+batch*(self.timesteps_in+k)).sum()
+
+            loss = loss/(self.timesteps_out*batch)
+            accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
+            return accuracy, loss, hidden
+
+        if self.sampling_mode == 'crossentropy': #same as all, implemented with crossentropyloss instead of logsoftmax
+            current_context = context[-1, :, :]
+
+            for k in range(self.timesteps_out):
+                pred_latent = self.predictor(current_context, k)
+                if self.verbose: print("pred latent shape", pred_latent.shape)
+
+                sim = encoded_x@pred_latent.T # sim[i, j] = scalar prod between li and pred j
+                simr = sim.reshape(encoded_x_steps*batch, batch).T #Where is the highest similarity? (max in each i) == i
+                # soft2 = F.softmax(sim, dim=0)
+                # self.sprint.print(soft, 10000)
+                labels = torch.arange(batch, device=simr.device)+batch*(self.timesteps_in+self.timesteps_ignore+k)
+                loss += self.crossentropyloss(simr, labels) #higher = better
+                correct += (simr.max(dim=-1).indices == labels).sum()
+
+            loss = loss/(self.timesteps_out*batch)
             accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
             return accuracy, loss, hidden
 
