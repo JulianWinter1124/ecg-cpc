@@ -92,7 +92,9 @@ def main(args):
         #new bl14
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
         #new blvtcn
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        #new cpc
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-18-09-train|(8x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_twolinear_v2'
     ]
     model_test_folders = [
         #v14
@@ -110,7 +112,9 @@ def main(args):
         #new bl14
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
         #new bltcn
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        #new cpc
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/24_12_21-11-14-test|(8x)cpc/23_12_21-18-09-train|(8x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_twolinear_v2'
         ]
     # infer class from model-arch file
     model_dicts = []
@@ -131,7 +135,9 @@ def main(args):
             print(thresholds)
             print(
                 f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
-            explain_model = ExplainLabelLayer(model, class_weights=class_weights, layer=('tcn.network.2.net.4'))#'msresnet.layer7x7_3.0.conv2''convs.16''msresnet.maxpool7' #'cpc_model.encoder.convolutionals.8''cpc_model.encoder.cpc_encoder.convolutionals.8'
+            explain_model = ExplainLabelLayer(model, class_weights=class_weights,
+                                              layer=('cpc_model.encoder.convolutionals.12'),
+                                              guided=args.guided)#'tcn.network.2.net.4''msresnet.layer7x7_3.0.conv2''convs.16''msresnet.maxpool7' #'cpc_model.encoder.convolutionals.8''cpc_model.encoder.cpc_encoder.convolutionals.8'
             model_dicts.append({'model': explain_model, 'model_folder': root, 'thresholds': thresholds,
                                 'name': '-'.join(train_folder.split(os.path.sep)[-1].split('|')[0].split('.')[-2:])})
     if len(model_dicts) == 0:
@@ -188,13 +194,18 @@ def main(args):
                         l = torch.zeros_like(labels, device=labels.device)  # pred.clone()
                         l[tuple(class_i)] = 1.
                         _ = model(data, y=l)
-                        gradi = model.get_gradcam(target_size=None, scale=False)
+                        if args.guided:
+                            gradi = model.get_gradcam_and_guided(target_size=None)
+                            print("minsmax", gradi.min(), gradi.max(), gradi.mean())
+                        else:
+                            gradi = model.get_gradcam(target_size=None, scale=False)
+                            print("minsmax", gradi.min(), gradi.max(), gradi.mean())
                         print('data shape', data.shape, 'grad shape', gradi.shape)
                         class_names.append(class_i[1].item())
                         grads.append(gradi)
                     timeseries_to_image_with_gradient_cam(data.detach().cpu(), labels.detach().cpu(), grads,
                                                              pred.detach().cpu(), model_tresholds=thresholds,
-                                                             class_name_list=class_names,
+                                                             cut_off=0.0 if args.guided else 0.4, class_name_list=class_names,
                                                              filenames=filenames, save=True, show=False)
 
                     if args.dry_run:
@@ -280,6 +291,9 @@ if __name__ == "__main__":
                         help="Use class weights determined by datasets class count")
     parser.set_defaults(use_class_weights=False)
 
+    parser.add_argument('--guided', dest='guided', action='store_true',
+                        help="Use class weights determined by datasets class count")
+    parser.set_defaults(guided=False)
     parser.add_argument("--gpu_device", type=int, default=0)
 
     args = parser.parse_args()

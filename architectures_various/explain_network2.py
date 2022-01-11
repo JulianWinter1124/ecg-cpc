@@ -49,7 +49,7 @@ class ExplainLabel(nn.Module):
             return pred, grad
 
 class ExplainLabelLayer(nn.Module):
-    def __init__(self, model, class_weights=None, cuda=True, layer=None):
+    def __init__(self, model, class_weights=None, cuda=True, layer=None, guided=False):
         super().__init__()
         self.model = model
         self.class_weights = class_weights
@@ -58,23 +58,35 @@ class ExplainLabelLayer(nn.Module):
         else:
             self.layer = layer
 
+        self.guided = guided
+
         self.gradients = None
+        self.data_gradient = None
         self.activations = None
         self._register_hooks()
 
     def _register_hooks(self):
         self.layer.register_forward_hook(self.save_activation)
         self.layer.register_full_backward_hook(self.save_gradient)
+        # if not self.input_layer is None:
+        #     self.input_layer.register_full_backward_hook(self.save_data_gradient)
 
     def save_activation(self, module, input, output):
         self.activations = output.cpu().detach()
 
     def save_gradient(self, module, grad_input, grad_output):
         self.gradients = grad_output[0].cpu().detach() #last layer comes first
+    #
+    # def save_data_gradient(self, module, grad_input, grad_output):
+    #     self.data_gradient = grad_output[0].cpu().detach()
 
     def forward(self, X1: torch.tensor, y=None):
         self.gradients = None
         self.activations = None
+        if self.guided:
+            X1.requires_grad = True
+            X1.grad = None
+        self.data_gradient = None
         if y is None:
             return self.model(X1)
         else:
@@ -85,7 +97,8 @@ class ExplainLabelLayer(nn.Module):
             loss = bl.binary_cross_entropy(pred=pred, y=y,
                                            weight=self.class_weights)  # bl.multi_loss_function([bl.binary_cross_entropy, bl.MSE_loss])(pred=pred, y=labels)
             loss.backward()
-
+            if self.guided:
+                self.data_gradient = X1.grad.cpu().detach()
             # grad = torch.abs(grad) #in Heat map distance is important not specific direction
             return pred
 
@@ -100,17 +113,29 @@ class ExplainLabelLayer(nn.Module):
         x[x<0]=0
         if scale:
             x = x - x.min()
-            x = x / (1e-7 + x.max())
+            x = x / (1e-12 + x.max())
         if target_size is None:
             return x
         else:
             return torch.Tensor(scale_cam_image(x, target_size=target_size))
 
+    def get_gradcam_and_guided(self, target_size=[1, 4500]):
+        print('data shape', self.data_gradient.shape)
+        #self.data_gradient[self.data_gradient<0]=0.
+        self.data_gradient = -torch.abs(self.data_gradient)
+        grad_img = torch.Tensor(scale_cam_image(self.data_gradient, target_size))
+        print(grad_img.shape)
+        B, L, C = grad_img.shape
+        target_size = [C, L]
+        cam = self.get_gradcam(target_size)
+        print(cam.shape)
+        return grad_img * cam
+
 def scale_cam_image(cam, target_size=None): #@https://github.com/jacobgil/pytorch-grad-cam/blob/770f29027598a8bf3ef660e04d14c44770b4d03c/pytorch_grad_cam/base_cam.py#L136
     result = []
     for img in cam:
         img = img - torch.min(img)
-        img = img / (1e-7 + torch.max(img))
+        img = img / (1e-12 + torch.max(img))
         if target_size is not None:
             img = cv2.resize(img.numpy(), target_size)
         result.append(img)

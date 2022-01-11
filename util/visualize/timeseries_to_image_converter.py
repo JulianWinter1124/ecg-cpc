@@ -238,7 +238,7 @@ def timeseries_to_image_with_gradient_joined(data: torch.Tensor, labels: torch.T
         plt.close()
 
 def timeseries_to_image_with_gradient_cam(data: torch.Tensor, labels: torch.Tensor, grad_list: List[torch.Tensor],
-                                             pred: torch.Tensor = None, model_tresholds=None, title=None, class_name_list=None, filenames: list = None,
+                                             pred: torch.Tensor = None, model_tresholds=None, cut_off=0.4, title=None, class_name_list=None, filenames: list = None,
                                              show=False, save=True):
     batches, width, height = data.shape
     n_preds = len(grad_list)
@@ -274,7 +274,7 @@ def timeseries_to_image_with_gradient_cam(data: torch.Tensor, labels: torch.Tens
                     ax.imshow(g, extent=[0, width, top-r*(n+1), top-r*n], cmap=cmaps[n], aspect='auto', alpha=0.8, interpolation='bilinear')
                 elif len(grad_list[n][batch].shape) == 2:
                     g = grad_list[n][batch][:, i:i+1].T
-                    g[g<0.4]=0
+                    g[g<cut_off]=0
                     ax.imshow(g, extent=[0, width, top-r*(n+1), top-r*n], cmap=cmaps[n], norm=Normalize(vmin=0, vmax=1), aspect='auto', alpha=1, interpolation='bilinear')
                 else:
                     print("Wrong shape for gradient:", grad_list[n][batch].shape)

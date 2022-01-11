@@ -34,7 +34,11 @@ def move_incomplete_training_folders(base='.'):
                 print(f"Found unsuccessfull run dir {root}")
                 move_filetree(root, move_to)
             elif len(dirs) == 0:
-                try:
+                if not any(['_checkpoint_epoch_' in file for file in files]) and any(['_full_model.pt' in file for file in files]): #Check if its training (full model) but no checkpoint
+                    print("Found incomplete:", f, "Moving to delete")
+                    #print(root, move_to)
+                    move_filetree(root, move_to)
+                elif 'params.txt' in files:
                     param_file = os.path.join(root, 'params.txt')
                     # print(f"Looking for params.txt at {param_file}")
                     with open(param_file, 'r') as file:
@@ -46,7 +50,7 @@ def move_incomplete_training_folders(base='.'):
                             # remove
                             print(f'Found dry_run=True. Removing {root}, {dirs}, {files}')
                             move_filetree(root, move_to)
-                except:
+                else:
                     print(f"Could not find params.txt in {root}")
                     move_filetree(root, move_to_old)
 
@@ -123,7 +127,10 @@ def rename_folders_into_models(base='.', folders=None):
                 if ose.errno == 36:
                     os.rename(f, new_folder_name[0:254])
                 elif ose.errno == 39:
-                    print("Folder already exists... skipping")
+                    print("Folder already exists... removing")
+                    b = os.path.abspath(base)
+                    move_filetree(f, os.path.join(b, 'delete', os.path.relpath(f, b)))
+                    #
                 else:
                     raise
 
@@ -303,7 +310,12 @@ def rename_model_folders(base='.', folders=None, rename_in_test=False):
                     if is_cpc:
                         if 'model_variables.txt' in files:
                             with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
-                                content = file.read()
+                                content = file.readlines()
+                                for i, line in enumerate(content):
+                                    if '{' in line:
+                                        content = '\n'.join(content[i:])
+                                        break
+                            data = json.loads(content)
                             if '"freeze_cpc": false' in content:
                                 name += '|unfrozen'
                             elif is_cpc:
@@ -317,6 +329,16 @@ def rename_model_folders(base='.', folders=None, rename_in_test=False):
                             if "sampling_mode" in content:
                                 m = content.split('"sampling_mode": ')[1].split(',')[0][1:-1]
                                 name += f'|m:{m}'
+                            #if '"architectures_cpc.cpc_combined.CPCCombined":' in content:
+                            # try:
+                            #     cpc_type = list(data["architectures_cpc.cpc_combined.CPCCombined"]["_modules"][""]["cpc_model"].keys())[0]
+                            #     name += "|"+cpc_type.split('.')[-2]
+                            #     auto = list(data["architectures_cpc.cpc_combined.CPCCombined"]["_modules"][""]["cpc_model"][cpc_type]["_modules"][""]["autoregressive"])[0]
+                            #     name += "|"+auto.split('.')[-2]
+                            #     enc = list(data["architectures_cpc.cpc_combined.CPCCombined"]["_modules"][""]["cpc_model"][cpc_type]["_modules"][""]["encoder"])[0]
+                            #     name += "|"+enc.split('.')[-2]
+                            # except KeyError:
+                            #     print("Model does not follow CPC Combined architecture spec.")
                             if '"downstream_model":' in content:
                                 m = \
                                 content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split(
@@ -505,6 +527,7 @@ def clean_remove_dry_run():
     move_incomplete_training_folders()
 
 
+
 if __name__ == '__main__':
     # for i in range(10): #run this multiple time to remove nested folders
     #     print('Deletion routine:', i)
@@ -516,13 +539,16 @@ if __name__ == '__main__':
 
     # move_folders_to_old(folders=incorrect_age)
     #
+    #print(is_test_folder(glob('.')))
     clean_remove_dry_run()
     clean_rename()
+    # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
+    #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
     clean_remove_dry_run()
     clean_rename()
-    #clean_categorize(test=False)
-    print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
-        file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
+    #clean_categorize(test=True)
+    # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
+    #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
     # print(filter_folders_universal( #Find all models that normalize latents and have NOT trained downstream (and not test)
     #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x]}, file_filter_fnlist=[lambda x: not any([y.endswith("_checkpoint_epoch_20.pt") for y in x]), lambda x: not "labels-dataloader-0.csv" in x]))
     # print(torch.version.__version__)

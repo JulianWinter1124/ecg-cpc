@@ -37,15 +37,14 @@ class CPC(nn.Module):
         batch, channels, length = X.shape  # assume baseline dataset shape
         encoded_x = self.encoder(X)  # encode whole data: shape: (batch, latent_size, length->out_length)
         encoded_x = encoded_x.permute(2, 0, 1)  # shape outlength, batch, latent_size
-        # if self.normalize_latents:
-        #     encoded_x = encoded_x / torch.norm(encoded_x, p=2, dim=-1, keepdim=True)
         if self.verbose: print('encoder_x', encoded_x.shape)
         encoded_x_steps, _, _ = encoded_x.shape
+        if self.normalize_latents:
+            enc_len = torch.clamp(torch.norm(encoded_x, p=2, dim=-1, keepdim=True), min=1e-10)
+            encoded_x = encoded_x / enc_len
+
         if hidden is None:
             hidden = self.autoregressive.init_hidden(batch_size=batch)
-
-
-
         if not self.cpc_train_mode:
             context, hidden = self.autoregressive(encoded_x, hidden)
             if self.verbose: print('context', context.shape)
@@ -171,6 +170,24 @@ class CPC(nn.Module):
 
             for k in range(self.timesteps_out):
                 pred_latent = self.predictor(current_context, k)
+                if self.verbose: print("pred latent shape", pred_latent.shape)
+
+                sim = encoded_x@pred_latent.T # sim[i, j] = scalar prod between li and pred j
+                simr = sim.reshape(encoded_x_steps*batch, batch).T #Where is the highest similarity? (max in each i) == i
+                # soft2 = F.softmax(sim, dim=0)
+                # self.sprint.print(soft, 10000)
+                labels = torch.arange(batch, device=simr.device)+batch*(self.timesteps_in+self.timesteps_ignore+k)
+                loss += self.crossentropyloss(simr, labels) #higher = better
+                correct += (simr.max(dim=-1).indices == labels).sum()
+
+            loss = loss/(self.timesteps_out*batch)
+            accuracy = correct.true_divide(batch * self.timesteps_out)  # * pred_latent.shape[0]
+            return accuracy, loss, hidden
+
+        if self.sampling_mode == 'crossentropy-nocontext': #same as all, implemented with crossentropyloss instead of logsoftmax
+            pred_full = self.predictor(encoded_x[:self.timesteps_in], timestep=None)
+            for k in range(self.timesteps_out):
+                pred_latent = pred_full[k]
                 if self.verbose: print("pred latent shape", pred_latent.shape)
 
                 sim = encoded_x@pred_latent.T # sim[i, j] = scalar prod between li and pred j

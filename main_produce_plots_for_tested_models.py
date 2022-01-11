@@ -181,7 +181,7 @@ def create_paper_plots(model_folders, data_loader_index=0):
             print("File not found")
 
 
-def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_only=False, long_tables=False,
+def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_only=False, long_tables=False, also_extract_attrs=False,
                          save_to_all_dirs=True):
     TEST_SET = 0;
     VAL_SET = 1;
@@ -204,8 +204,16 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
             model_name = os.path.split(model_folder)[1]
             model_name = '.'.join(model_name.split('.')[
                                   -2:]) if '.' in model_name else model_name  # fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
+
+            if also_extract_attrs:
+                name_attrs = model_name
+                attrs = extract_model_attributes(model_folder, model_name, False, False)
+                print(attrs)
+                for k, v in attrs.items():
+                    if (type(v) == str) and (not v in name_attrs):
+                        model_name += '|'+v
             model_name = long_to_shortname(model_name)
-            print(model_name)
+            print('Final name:', model_name)
             with open(os.path.join(model_folder, 'thresholds.txt'), 'w+') as f:
                 f.write(','.join(map(str, model_thresholds[mi].values())))
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder,
@@ -401,108 +409,9 @@ def create_model_attribute_table(model_folders, filename, save_to='/home/julian/
                 continue
             if len(dirs) == 0 and len(files) > 0:  # leaf dir (model?)
                 name = long_to_shortname(root.split(os.sep)[-1].split('|')[0])
-                is_cpc = True
-                attrs = {}
-                if 'model_arch.txt' in files:
-                    with open(os.path.join(root, 'model_arch.txt'), 'r') as file:
-                        content = file.read()
-                    if 'BaselineNet' in content:
-                        is_cpc = False
-                    if is_cpc and 'StridedEncoder' in content:
-                        attrs['strided'] = True
-                    elif is_cpc:
-                        attrs['strided'] = False
-                if skip_cpc and is_cpc:
+                attrs = extract_model_attributes(root, name, skip_cpc, skip_baseline)
+                if attrs == None: #got skipped
                     continue
-                elif skip_baseline and not is_cpc:
-                    continue
-
-                if 'params.txt' in files:
-                    with open(os.path.join(root, 'params.txt'), 'r') as file:
-                        content = file.read()
-                    if 'splits_file=' in content:
-                        attrs['splits_file'] = content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
-                    attrs['use_class_weights'] = 'use_class_weights=True' in content
-
-                if is_cpc:
-                    if 'model_variables.txt' in files:
-                        with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
-                            content = file.read()
-                        attrs['freeze CPC'] = not '"freeze_cpc": false' in content
-                        attrs['uses context'] = '"use_context": true' in content
-                        attrs['uses latents'] = '"use_latents": true' in content
-                        attrs['normalizes latents'] = '"normalize_latents": true' in content
-                        if "sampling_mode" in content:
-                            attrs['CPC Sampling Mode'] = content.split('"sampling_mode": ')[1].split(',')[0][1:-1]
-                        else:
-                            attrs['CPC Sampling Mode'] = 'same'
-                        if '"downstream_model":' in content:
-                            attrs['Downstream Model'] = \
-                            content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[
-                                -2]
-
-                    if 'params.txt' in files:
-                        with open(os.path.join(root, 'params.txt'), 'r') as file:
-                            content = file.read()
-                        # if 'use_class_weights=True' in content:
-                        #     name += '|use_weights'
-                        # if 'downstream_epochs' in content:
-                        #     epos = content.split('downstream_epochs=')[1].split(',')[0]
-                        #     name += f'|dte:{epos}'
-                        # if 'pretrain_epochs' in content and is_cpc:
-                        #     epos = content.split('pretrain_epochs=')[1].split(',')[0]
-                        #     name += f'|pte:{epos}'
-
-
-                else:  # not cpc
-                    if 'model_variables.txt' in files:
-                        with open(os.path.join(root, 'model_variables.txt'), 'r') as file:
-                            content = file.readlines()
-                            for i, line in enumerate(content):
-                                if '{' in line:
-                                    content = '\n'.join(content[i:])
-                                    break
-                        data = json.loads(content)
-                        attrs['Convolutional Layer Number'] = count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d')
-                        attrs['uses Max Pool'] = 'torch.nn.modules.pooling.MaxPool1d' in content
-                        attrs['uses Adaptive Average Pooling'] = 'torch.nn.modules.pooling.AdaptiveAvgPool1d' in content
-                        attrs['uses Linear'] = 'torch.nn.modules.linear.Linear' in content
-                        attrs['uses LSTM'] = 'torch.nn.modules.rnn.LSTM' in content
-                        attrs['uses BatchNorm'] = 'torch.nn.modules.batchnorm.BatchNorm1d' in content
-                        attrs['Sum of Strides'] = int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum())
-                        attrs['Sum of Dilation'] = int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum())
-                        attrs['Sum of Paddings'] = int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum())
-                        attrs['Sum of Filters'] = int(
-                            np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum())
-                    final_layers = {'BL_FCN': '3',
-                                    'BL_v0_2': '4',
-                                    'BL_v2': '3',
-                                    'BL_v6': '4',
-                                    'BL_v1': '3',
-                                    'BL_v5': '4',
-                                    'BL_v4': '4',
-                                    'BL_v14': '4',
-                                    'BL_v3': '4',
-                                    'BL_v0_1': '4',
-                                    'BL_v0': '4',
-                                    'BL_v9': '4',
-                                    'BL_v8': '4',
-                                    'BL_v0_3': '4',
-                                    'BL_TCN_down': '4',
-                                    'BL_TCN_flatten': '1',
-                                    'BL_v7': '4',
-                                    'BL_TCN_block': '1',
-                                    'BL_rnn_simplest_lstm': '5',
-                                    'BL_MLP': '2',
-                                    'BL_alex_v2': '1',
-                                    'BL_v15': '4',
-                                    'BL_TCN_last': '2'}
-                    try:
-                        attrs["Final Layer"] = final_layers[name]
-                    except KeyError:
-                        attrs["Final Layer"] = -1
-                        print(name, 'not found in final layers dict')
-
                 attrs['Model Name'] = name
                 attrs = pd.DataFrame(attrs, index=[0])
                 attrs = attrs.set_index('Model Name')
@@ -512,6 +421,123 @@ def create_model_attribute_table(model_folders, filename, save_to='/home/julian/
     if not filename is None:
         attribute_df.dataframe.to_csv('/home/julian/Desktop/' + filename + '.csv')
     return attribute_df.dataframe
+
+def extract_model_attributes(model_folder, model_name, skip_cpc=True, skip_baseline=True, short_key=False):
+    is_cpc = True
+    attrs = {}
+    try:
+        #model_arch.txt
+        with open(os.path.join(model_folder, 'model_arch.txt'), 'r') as file:
+            content = file.read()
+        if 'BaselineNet' in content:
+            is_cpc = False
+        if is_cpc and 'StridedEncoder' in content:
+            attrs['strided'] = True
+        elif is_cpc:
+            attrs['strided'] = False
+        if (skip_cpc and is_cpc) or (skip_baseline and not is_cpc):
+            return None
+
+        #params.txt
+        with open(os.path.join(model_folder, 'params.txt'), 'r') as file:
+            content = file.read()
+        if 'splits_file=' in content:
+            attrs['splits_file'] = content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
+        attrs['use_class_weights'] = 'use_class_weights=True' in content
+
+        if is_cpc:
+            with open(os.path.join(model_folder, 'model_variables.txt'), 'r') as file:
+                content = file.readlines()
+                for i, line in enumerate(content):
+                    if '{' in line:
+                        content = '\n'.join(content[i:])
+                        break
+            data = json.loads(content)
+
+            attrs['Freeze CPC'] = not '"freeze_cpc": false' in content
+            attrs['uses Context'] = '"use_context": true' in content
+            attrs['uses Latents'] = '"use_latents": true' in content
+            attrs['normalizes latents'] = '"normalize_latents": true' in content
+            if "sampling_mode" in content:
+                attrs['CPC Sampling Mode'] = content.split('"sampling_mode": ')[1].split(',')[0][1:-1]
+            else:
+                attrs['CPC Sampling Mode'] = 'same'
+            try:
+                cpc_type = list(data["architectures_cpc.cpc_combined.CPCCombined"]["_modules"][""]["cpc_model"].keys())[0]
+                attrs['CPC Type'] = cpc_type.split('.')[-2]
+                attrs['Autoregressive'] = list(data["architectures_cpc.cpc_combined.CPCCombined"]["_modules"][""]["cpc_model"][cpc_type]["_modules"][""]["autoregressive"])[0].split('.')[-2]
+                attrs['Encoder'] = list(data["architectures_cpc.cpc_combined.CPCCombined"]["_modules"][""]["cpc_model"][cpc_type]["_modules"][""]["encoder"])[0].split('.')[-2]
+                attrs['Autoregressive'] = list(data["architectures_cpc.cpc_combined.CPCCombined"]["_modules"][""]["cpc_model"][cpc_type]["_modules"][""]["predictor"])[0].split('.')[-2]
+            except KeyError:
+                print("Model does not follow CPC Combined architecture spec.")
+            if '"downstream_model":' in content:
+                attrs['Downstream Model'] = \
+                content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[
+                    -2]
+
+            #params.txt
+            # with open(os.path.join(model_folder, 'params.txt'), 'r') as file:
+            #     content = file.read()
+                # if 'use_class_weights=True' in content:
+                #     name += '|use_weights'
+                # if 'downstream_epochs' in content:
+                #     epos = content.split('downstream_epochs=')[1].split(',')[0]
+                #     name += f'|dte:{epos}'
+                # if 'pretrain_epochs' in content and is_cpc:
+                #     epos = content.split('pretrain_epochs=')[1].split(',')[0]
+                #     name += f'|pte:{epos}'
+
+
+        else:  # not cpc
+            with open(os.path.join(model_folder, 'model_variables.txt'), 'r') as file:
+                content = file.readlines()
+                for i, line in enumerate(content):
+                    if '{' in line:
+                        content = '\n'.join(content[i:])
+                        break
+            data = json.loads(content)
+            attrs['Convolutional Layer Number'] = count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d')
+            attrs['uses Max Pool'] = 'torch.nn.modules.pooling.MaxPool1d' in content
+            attrs['uses Adaptive Average Pooling'] = 'torch.nn.modules.pooling.AdaptiveAvgPool1d' in content
+            attrs['uses Linear'] = 'torch.nn.modules.linear.Linear' in content
+            attrs['uses LSTM'] = 'torch.nn.modules.rnn.LSTM' in content
+            attrs['uses BatchNorm'] = 'torch.nn.modules.batchnorm.BatchNorm1d' in content
+            attrs['Sum of Strides'] = int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum())
+            attrs['Sum of Dilation'] = int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum())
+            attrs['Sum of Paddings'] = int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum())
+            attrs['Sum of Filters'] = int(
+                np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum())
+            final_layers = {'BL_FCN': '3',
+                            'BL_v0_2': '4',
+                            'BL_v2': '3',
+                            'BL_v6': '4',
+                            'BL_v1': '3',
+                            'BL_v5': '4',
+                            'BL_v4': '4',
+                            'BL_v14': '4',
+                            'BL_v3': '4',
+                            'BL_v0_1': '4',
+                            'BL_v0': '4',
+                            'BL_v9': '4',
+                            'BL_v8': '4',
+                            'BL_v0_3': '4',
+                            'BL_TCN_down': '4',
+                            'BL_TCN_flatten': '1',
+                            'BL_v7': '4',
+                            'BL_TCN_block': '1',
+                            'BL_rnn_simplest_lstm': '5',
+                            'BL_MLP': '2',
+                            'BL_alex_v2': '1',
+                            'BL_v15': '4',
+                            'BL_TCN_last': '2'}
+            try:
+                attrs["Final Layer"] = final_layers[model_name]
+            except KeyError:
+                attrs["Final Layer"] = -1
+                print(model_name, 'not found in final layers dict')
+    except FileNotFoundError:
+        print(model_folder, 'is not a model folder?')
+    return attrs
 
 
 def sort_naturally(data):
@@ -529,7 +555,7 @@ if __name__ == '__main__':
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_12_21-15-09-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-13-40-test|(32x)cpc',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-16-23-test|(4x)bl_cnn_v14+(4x)bl_cnn_v8'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-16-37-test|(4x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_01_22-17-11-test|(2x)cpc'
         ]
     model_folders = [a for p in paths for a in auto_find_tested_models_recursive(p)]
 
@@ -556,7 +582,7 @@ if __name__ == '__main__':
 
     # model_folders = auto_find_tested_models_recursive('/home/julian/Downloads/Github/contrastive-predictive-coding/models/')
 
-    create_paper_metrics(model_folders, root_path='', data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=True)  # On Testset
+    create_paper_metrics(model_folders, root_path='', data_loader_index=TEST_SET, average_only=True, also_extract_attrs=True, save_to_all_dirs=True)  # On Testset
 
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)

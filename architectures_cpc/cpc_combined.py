@@ -10,6 +10,8 @@ class CPCCombined(nn.Module):
         self.freeze_cpc = freeze_cpc
         self.requires_grad_(True)
         self._unfreeze_cpc()
+        if self.freeze_cpc:
+            self._freeze_cpc()
 
     def forward(self, X, y=None):
         if self.cpc_model.cpc_train_mode:
@@ -32,6 +34,9 @@ class CPCCombined(nn.Module):
 
     def _freeze_cpc(self):
         self.is_frozen = True
+        for m in self.cpc_model.children():
+            for param in m.parameters():
+                param.requires_grad = False
         for param in self.cpc_model.parameters():
             param.requires_grad = False
 

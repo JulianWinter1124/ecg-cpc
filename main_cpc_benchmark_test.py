@@ -34,24 +34,27 @@ def main(args):
     # cpsc_train = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
     # cpsc = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
+    
+    # norm_fn = ecg_datasets3.normalize_std_scaling
+    norm_fn = ecg_datasets3.normalize_minmax_scaling_different
 
     georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                                   window_size=args.crop_size,
                                                                   pad_to_size=args.crop_size,
                                                                   return_labels=True, return_filename=True,
-                                                                  normalize_fn=ecg_datasets3.normalize_mean_scaling)
+                                                                  normalize_fn=norm_fn)
     cpsc_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/cps2018_challenge/',
                                                                window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                return_labels=True, return_filename=True,
-                                                               normalize_fn=ecg_datasets3.normalize_mean_scaling)
+                                                               normalize_fn=norm_fn)
     cpsc2_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/china_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets3.normalize_mean_scaling)
+                                                                normalize_fn=norm_fn)
     ptbxl_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/ptbxl_challenge',
                                                                 window_size=args.crop_size, pad_to_size=args.crop_size,
                                                                 return_labels=True, return_filename=True,
-                                                                normalize_fn=ecg_datasets3.normalize_mean_scaling)
+                                                                normalize_fn=norm_fn)
 
     a1, b1, ptbxl_test = ptbxl_challenge.generate_datasets_from_split_file()
     a2, b2, georgia_test = georgia_challenge.generate_datasets_from_split_file()
@@ -126,7 +129,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-14-train|(2x)cpc'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-16-train|(4x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_01_22-16-43-train|(2x)cpc'
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/few-labels/cpc'
 ]
     # infer class from model-arch file

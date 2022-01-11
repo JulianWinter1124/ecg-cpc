@@ -349,7 +349,14 @@ def normalize_minmax_scaling(data, low: int = 0, high: int = 1, axis=0):
     data = data + low
     return data
 
-def normalize_mean_scaling(data, axis=0):
+def normalize_minmax_scaling_different(data, low: int = 0, high: int = 1, axis=1):
+    data = data - data.min(axis=axis, keepdims=True)
+    data = data / np.maximum(data.max(axis=axis, keepdims=True), 1e-12)
+    data = data * (high-low)
+    data = data + low
+    return data
+
+def normalize_std_scaling(data, axis=0):
     data = data - data.mean(axis=axis, keepdims=True)
     data = data / np.maximum(data.std(axis=axis, keepdims=True), 1e-12)
     return data
