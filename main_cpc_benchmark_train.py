@@ -622,6 +622,9 @@ def main(args):
                 metrics[epoch]['valacc'].append(val_mean_acc)
             if args.dry_run:
                 break
+            if epoch in args.save_model_at_pre:
+                save_model_checkpoint(output_path, epoch=epoch, model=model, optimizer=optimizer,
+                              name=model_name)
         pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.pretrain_epochs)
         # Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
@@ -697,6 +700,9 @@ def main(args):
                             break
                     print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
                                                                                      len(downstream_val_loaders)))
+            if epoch in args.save_model_at_down:
+                save_model_checkpoint(output_path, epoch=epoch, model=model, optimizer=optimizer,
+                              name=model_name)
 
             scheduler.step(np.mean(metrics[epoch]['valloss']))
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
@@ -808,6 +814,10 @@ if __name__ == "__main__":
 
     parser.add_argument('--norm_fn', type=str, default='normalize_std_scaling',
                         help="The Normalization function to use (from ecg_datasets3")
+
+    parser.add_argument('--save_at_epoch_down', nargs='*', help='Selects additional downstream epochs to save the model weights at.')
+
+    parser.add_argument('--save_at_epoch_pre', nargs='*', help='Selects additional pretraining epochs to save the model weights at.')
 
     parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
                         help="Redo splits. Warning! File will be overwritten!")
