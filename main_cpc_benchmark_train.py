@@ -33,6 +33,7 @@ from util.store_models import save_model_architecture, save_model_checkpoint, sa
 
 
 def main(args):
+    print(args.save_at_epoch_pre)
     np.random.seed(args.seed)
     torch.cuda.set_device(args.gpu_device)
     print(f'Device set to : {torch.cuda.current_device()}. Selected was {args.gpu_device}')
@@ -50,23 +51,23 @@ def main(args):
     # georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/georgia/WFDB',
     #                                                               window_size=args.crop_size,
     #                                                               pad_to_size=args.crop_size, return_labels=True,
-    #                                                               normalize_fn=ecg_datasets3.norm_fn)
+    #                                                               normalize_fn=norm_fn)
     # cpsc_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train/',
     #                                                            window_size=args.crop_size, pad_to_size=args.crop_size,
     #                                                            return_labels=True,
-    #                                                            normalize_fn=ecg_datasets3.norm_fn)
+    #                                                            normalize_fn=norm_fn)
     # cpsc2_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc',
     #                                                             window_size=args.crop_size,
     #                                                             pad_to_size=args.crop_size, return_labels=True,
-    #                                                             normalize_fn=ecg_datasets3.norm_fn)
+    #                                                             normalize_fn=norm_fn)
     # ptbxl_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB',
     #                                                             window_size=args.crop_size,
     #                                                             pad_to_size=args.crop_size, return_labels=True,
-    #                                                             normalize_fn=ecg_datasets3.norm_fn)
+    #                                                             normalize_fn=norm_fn)
     # nature = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/nature',
     #                                                    window_size=args.crop_size,
     #                                                    pad_to_size=args.crop_size, return_labels=True,
-    #                                                    normalize_fn=ecg_datasets3.norm_fn)
+    #                                                    normalize_fn=norm_fn)
     
     georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                                   window_size=args.crop_size,
@@ -244,7 +245,7 @@ def main(args):
         #     args.timesteps_in, args.timesteps_out, args.latent_size,
         #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
         # ),
-        cpc_intersect.CPC(
+        cpc_intersect_manylatents.CPC(
             cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
                                                   args.window_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
@@ -252,7 +253,7 @@ def main(args):
             args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
         ),
-        cpc_intersect.CPC(
+        cpc_intersect_manylatents.CPC(
             cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
                                                   args.window_size),
             cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1),
@@ -260,7 +261,7 @@ def main(args):
             args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
         ),
-        cpc_intersect.CPC(
+        cpc_intersect_manylatents.CPC(
             cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
                                                   args.window_size),
             cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
@@ -393,12 +394,12 @@ def main(args):
             trained_model_dict['model'] = model  # load model into dict
             break  # only take first you find
     models = [
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-3], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
+        {'model': cpc_combined.CPCCombined(pretrain_models[-3], downstream_models[0], freeze_cpc=False),
+         'will_pretrain': True, 'will_downtrain': False},
+        {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=False),
+         'will_pretrain': True, 'will_downtrain': False},
+        {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
+         'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[-3], downstream_models[-2], freeze_cpc=True),
         #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[0], freeze_cpc=True),
@@ -419,18 +420,18 @@ def main(args):
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
-         'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=False),
-         'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-6], freeze_cpc=True),
-         'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-6], freeze_cpc=False),
-         'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-2], freeze_cpc=False),
-         'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-2], freeze_cpc=True),
-         'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=False),
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-6], freeze_cpc=True),
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-6], freeze_cpc=False),
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-2], freeze_cpc=False),
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-2], freeze_cpc=True),
+        #  'will_pretrain': False, 'will_downtrain': True},
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-2], freeze_cpc=False),
         #  'will_pretrain': False, 'will_downtrain': True},
@@ -622,7 +623,7 @@ def main(args):
                 metrics[epoch]['valacc'].append(val_mean_acc)
             if args.dry_run:
                 break
-            if epoch in args.save_model_at_pre:
+            if epoch in args.save_at_epoch_pre:
                 save_model_checkpoint(output_path, epoch=epoch, model=model, optimizer=optimizer,
                               name=model_name)
         pickle_name = "pretrain-model-{}-epochs-{}.pickle".format(model_name, args.pretrain_epochs)
@@ -700,7 +701,7 @@ def main(args):
                             break
                     print("\tFinished vaildation dataset {}. Progress: {}/{}".format(val_loader_i, val_loader_i + 1,
                                                                                      len(downstream_val_loaders)))
-            if epoch in args.save_model_at_down:
+            if epoch in args.save_at_epoch_down:
                 save_model_checkpoint(output_path, epoch=epoch, model=model, optimizer=optimizer,
                               name=model_name)
 
@@ -815,9 +816,9 @@ if __name__ == "__main__":
     parser.add_argument('--norm_fn', type=str, default='normalize_std_scaling',
                         help="The Normalization function to use (from ecg_datasets3")
 
-    parser.add_argument('--save_at_epoch_down', nargs='*', help='Selects additional downstream epochs to save the model weights at.')
+    parser.add_argument('--save_at_epoch_down', nargs='*', help='Selects additional downstream epochs to save the model weights at.', default=[])
 
-    parser.add_argument('--save_at_epoch_pre', nargs='*', help='Selects additional pretraining epochs to save the model weights at.')
+    parser.add_argument('--save_at_epoch_pre', nargs='*', help='Selects additional pretraining epochs to save the model weights at.', default=[])
 
     parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
                         help="Redo splits. Warning! File will be overwritten!")

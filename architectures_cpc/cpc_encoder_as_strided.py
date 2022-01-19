@@ -10,7 +10,8 @@ class StridedEncoder(nn.Module):
         self.requires_grad_(True)
 
     def forward(self, X):
-        X2 = nn.Parameter(self.window_layer(X), requires_grad=True)
+        #X2 = nn.Parameter(self.window_layer(X), requires_grad=True)
+        X2 = self.window_layer(X)
         n_windows, n_batches, channels, window_size = X2.shape
         latents = self.cpc_encoder(
             X2.reshape(-1, *X2.shape[2:]))  # reshape windows into batch dimension for only one forward
