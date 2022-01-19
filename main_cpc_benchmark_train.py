@@ -33,7 +33,6 @@ from util.store_models import save_model_architecture, save_model_checkpoint, sa
 
 
 def main(args):
-    print(args.save_at_epoch_pre)
     np.random.seed(args.seed)
     torch.cuda.set_device(args.gpu_device)
     print(f'Device set to : {torch.cuda.current_device()}. Selected was {args.gpu_device}')
@@ -816,9 +815,9 @@ if __name__ == "__main__":
     parser.add_argument('--norm_fn', type=str, default='normalize_std_scaling',
                         help="The Normalization function to use (from ecg_datasets3")
 
-    parser.add_argument('--save_at_epoch_down', nargs='*', help='Selects additional downstream epochs to save the model weights at.', default=[])
+    parser.add_argument('--save_at_epoch_down', nargs='*', help='Selects additional downstream epochs to save the model weights at.', default=[], type=int)
 
-    parser.add_argument('--save_at_epoch_pre', nargs='*', help='Selects additional pretraining epochs to save the model weights at.', default=[])
+    parser.add_argument('--save_at_epoch_pre', nargs='*', help='Selects additional pretraining epochs to save the model weights at.', default=[], type=int)
 
     parser.add_argument('--redo_splits', dest='redo_splits', action='store_true',
                         help="Redo splits. Warning! File will be overwritten!")
