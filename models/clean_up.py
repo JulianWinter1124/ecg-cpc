@@ -176,8 +176,9 @@ def filter_folders_model_variables(base='.', model_variables_filter='normalize_l
             filtered += [f]
     return filtered
 
-def filter_folders_universal(base='.', file_content_filter_fnlist_dict={}, file_filter_fnlist=[], check_all=True):
-    folders = glob(os.path.join(base, "*_*_*", ""))
+def filter_folders_universal(base='.', folders=None, file_content_filter_fnlist_dict={}, file_filter_fnlist=[], check_all=True):
+    if folders is None:
+        folders = glob(os.path.join(base, "*_*_*", ""))
     filtered = []
     for f in folders:
         content_checks = {}
@@ -279,6 +280,8 @@ def create_symbolics(folders, symbolic_dir, symbolic_base_dir='../models_symboli
 def rename_model_folders(base='.', folders=None, rename_in_test=False):
     folders = folders or glob(os.path.join(base, "*_*_*", ""))
     for f in folders:
+        if "explain" in f:
+            continue
         if rename_in_test or not ('test' in f):
             print(f"Checking {f}...")
             for root, dirs, files in os.walk(f):
@@ -546,6 +549,16 @@ if __name__ == '__main__':
     #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
     clean_remove_dry_run()
     clean_rename()
+    print(filter_folders_universal(
+        folders=filter_folders_age(newer_than=1635779308), #CPC and tested
+        file_content_filter_fnlist_dict={
+            'model_variables.txt':[
+                lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x
+            ]
+        },
+        file_filter_fnlist=[
+            lambda f: 'labels-dataloader-0.csv' in f
+        ]))
     #clean_categorize(test=True)
     # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
     #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))

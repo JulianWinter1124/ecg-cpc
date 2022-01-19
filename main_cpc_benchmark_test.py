@@ -35,8 +35,8 @@ def main(args):
     # cpsc = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
     
-    # norm_fn = ecg_datasets3.normalize_std_scaling
-    norm_fn = ecg_datasets3.normalize_minmax_scaling_different
+    norm_fn = ecg_datasets3.normalize_std_scaling
+    #norm_fn = ecg_datasets3.normalize_minmax_scaling_different
 
     georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
                                                                   window_size=args.crop_size,
@@ -129,8 +129,8 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-14-train|(2x)cpc'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_01_22-16-43-train|(2x)cpc'
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/few-labels/cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_22-15-39-train|(14x)cpc',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_22-13-26-train|(14x)cpc'
 ]
     # infer class from model-arch file
     model_dicts = []

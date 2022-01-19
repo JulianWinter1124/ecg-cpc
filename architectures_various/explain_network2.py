@@ -52,11 +52,15 @@ class ExplainLabelLayer(nn.Module):
     def __init__(self, model, class_weights=None, cuda=True, layer=None, guided=False):
         super().__init__()
         self.model = model
+        if guided:
+            convert_relu_to_custom_relu(self.model)
         self.class_weights = class_weights
         if type(layer) == str:
-            self.layer = functools.reduce(lambda o, n: getattr(o, n), [model] + layer.split('.'))
+            self.layer = functools.reduce(lambda o, n: getattr(o, n), [self.model] + layer.split('.'))
         else:
             self.layer = layer
+
+
 
         self.guided = guided
 
@@ -64,6 +68,7 @@ class ExplainLabelLayer(nn.Module):
         self.data_gradient = None
         self.activations = None
         self._register_hooks()
+
 
     def _register_hooks(self):
         self.layer.register_forward_hook(self.save_activation)
@@ -122,7 +127,7 @@ class ExplainLabelLayer(nn.Module):
     def get_gradcam_and_guided(self, target_size=[1, 4500]):
         print('data shape', self.data_gradient.shape)
         #self.data_gradient[self.data_gradient<0]=0.
-        self.data_gradient = -torch.abs(self.data_gradient)
+        self.data_gradient = torch.abs(self.data_gradient)
         grad_img = torch.Tensor(scale_cam_image(self.data_gradient, target_size))
         print(grad_img.shape)
         B, L, C = grad_img.shape
@@ -130,6 +135,27 @@ class ExplainLabelLayer(nn.Module):
         cam = self.get_gradcam(target_size)
         print(cam.shape)
         return grad_img * cam
+
+
+class F_GuidedRelu(torch.autograd.Function):
+        @staticmethod
+        def forward(ctx, input):
+            ctx.save_for_backward(input)
+            return input.clamp(min=0)
+
+        @staticmethod
+        def backward(ctx, grad_output):
+            input, = ctx.saved_tensors
+            grad_input = (grad_output>0).float() * (input>0).float() * grad_output
+            return grad_input
+
+
+class GuidedRelu(nn.Module):
+    def __init__(self):
+        super(GuidedRelu, self).__init__()
+        self.relu = F_GuidedRelu.apply
+    def forward(self, x):
+        return self.relu(x)
 
 def scale_cam_image(cam, target_size=None): #@https://github.com/jacobgil/pytorch-grad-cam/blob/770f29027598a8bf3ef660e04d14c44770b4d03c/pytorch_grad_cam/base_cam.py#L136
     result = []
@@ -143,3 +169,11 @@ def scale_cam_image(cam, target_size=None): #@https://github.com/jacobgil/pytorc
     result = np.stack(result)
     print('RES; ', result.shape)
     return result
+
+
+def convert_relu_to_custom_relu(model):
+    for child_name, child in model.named_children():
+        if isinstance(child, nn.ReLU):
+            setattr(model, child_name, GuidedRelu())
+        else:
+            convert_relu_to_custom_relu(child)

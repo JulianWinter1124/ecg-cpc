@@ -35,6 +35,12 @@ class DataFrameFactory():
         alphanum_key = lambda key: [[convert(c) for c in re.split('([0-9]+)', k)] for k in key]
         self.dataframe.sort_index(key=alphanum_key, inplace=True)
 
+    def natsort_by_column(self, column, key=None):
+        convert = lambda text: int(text) if text.isdigit() else text.lower()
+        alphanum_key = lambda key: [[convert(c) for c in re.split('([0-9]+)', k)] for k in key]
+        self.dataframe.sort_values(by=column, key=alphanum_key, inplace=True, ignore_index=True)
+        self.dataframe.reset_index(drop=True, inplace=True)
+
     def natsort_multi_index(self, key=None):
         raise NotImplementedError
         # self.dataframe.sort_index(inplace=True)
@@ -45,8 +51,15 @@ class DataFrameFactory():
                  only_tabular_environment=False):
         p = os.path.join(output_folder, filename)
         with pd.option_context("max_colwidth", 1000):
-            latex_string = self.dataframe.to_latex(label=label, caption=caption, na_rep='-', float_format="%.3f",
-                                                   bold_rows=True, longtable=long_tables)
+            # latex_string = self.dataframe.to_latex(label=label, caption=caption, na_rep='-', float_format="%.3f",
+            #                                        bold_rows=True, longtable=long_tables)
+            s = self.dataframe.style
+            s = s.highlight_max(axis=0, props='bfseries: ; underline: --rwrap;')
+            s = s.format(precision=3, na_rep='-')
+            s = s.set_caption(caption)
+            s = s.hide_index()
+            latex_string = s.to_latex()
+        print(latex_string)
         typ = 'longtable' if long_tables else 'tabular'
         latex_string = latex_string.replace(f"\\begin{{{typ}}}",
                                             f"\\begin{{adjustbox}}{{width=\\textwidth}}\n\\begin{{{typ}}}")
