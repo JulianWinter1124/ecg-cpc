@@ -36,6 +36,7 @@ class DataFrameFactory():
         self.dataframe.sort_index(key=alphanum_key, inplace=True)
 
     def natsort_by_column(self, column, key=None):
+        print('Called')
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [[convert(c) for c in re.split('([0-9]+)', k)] for k in key]
         self.dataframe.sort_values(by=column, key=alphanum_key, inplace=True, ignore_index=True)
@@ -50,12 +51,14 @@ class DataFrameFactory():
     def to_latex(self, output_folder, filename, caption="", label="", description="", long_tables=False,
                  only_tabular_environment=False):
         p = os.path.join(output_folder, filename)
+        print(len(self.dataframe.columns.unique()), len(self.dataframe.columns))
+        print(len(self.dataframe.index.unique()), len(self.dataframe.index))
         with pd.option_context("max_colwidth", 1000):
             # latex_string = self.dataframe.to_latex(label=label, caption=caption, na_rep='-', float_format="%.3f",
             #                                        bold_rows=True, longtable=long_tables)
             s = self.dataframe.style
-            s = s.highlight_max(axis=0, props='bfseries: ; underline: --rwrap;')
-            s = s.format(precision=3, na_rep='-')
+            s = s.highlight_max(subset=['micro', 'macro'], axis=0, props='bfseries: ; underline: --rwrap;')
+            s = s.format(formatter=lambda x: '{:.3f}'.format(x) if isinstance(x, float) else x, na_rep='-', escape='latex')
             s = s.set_caption(caption)
             s = s.hide_index()
             latex_string = s.to_latex()
@@ -79,3 +82,6 @@ class DataFrameFactory():
         latex_string = '\n'.join(latex_lines)
         with open(p, 'w') as f:
             f.write(latex_string)
+
+    def put_columns_last(self, columns=[]):
+        self.dataframe = self.dataframe[[c for c in self.dataframe.columns if c not in columns] + columns]

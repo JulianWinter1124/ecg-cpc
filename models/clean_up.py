@@ -529,6 +529,55 @@ def clean_categorize(test=False):
 def clean_remove_dry_run():
     move_incomplete_training_folders()
 
+def move_paramstxt_to_test(base='.', folders=None):
+    def cut_off_attrs_from_path(tf):
+        splits = os.path.split(tf)
+        newp = os.path.sep.join(list(splits[0:-1]) + [splits[-1].split('|')[0]])
+        return newp.strip('.'+os.path.sep)
+
+    folders = folders or glob(os.path.join(base, "*_*_*", ""))
+    train_folders = []
+    for f in folders:
+        if 'train' in f:
+            for root, dirs, files in os.walk(f):
+                if len(dirs) == 0 and len(files) == 0:
+                    continue
+                if len(dirs) > 0:  # Traverse more
+                    continue
+                if len(dirs) == 0 and len(files) > 0:  # leaf dir (model?)
+                    if is_train_folder(files):
+                        if 'params.txt' in files:
+                            train_folders += [root]
+    print(train_folders)
+    train_folders_cutoff = [cut_off_attrs_from_path(tf) for tf in train_folders]
+    print(train_folders_cutoff)
+    for f in folders:
+        if 'test' in f:
+            for root, dirs, files in os.walk(f):
+                if len(dirs) == 0 and len(files) == 0:
+                    continue
+                if len(dirs) > 0:  # Traverse more
+                    continue
+                if len(dirs) == 0 and len(files) > 0:  # leaf dir (model?)
+                    if is_test_folder(files):
+                        print("testing:")
+                        print(root)
+                        print(any([cut_off_attrs_from_path(root).endswith(tf) for tf in train_folders_cutoff]))
+                        matching_train_folders = list(filter(lambda i_p: cut_off_attrs_from_path(root).endswith(i_p[1]), enumerate(train_folders_cutoff)))
+                        print(matching_train_folders)
+                        if len(matching_train_folders) == 1:
+
+                            i, p = matching_train_folders[0]
+                            try:
+                                train_params = os.path.join(train_folders[i], 'params.txt')
+                                test_params = os.path.join(root, 'train_params.txt')
+                                print(f"copying {train_params}, to {test_params}")
+                                shutil.copyfile(train_params, test_params)
+                            except FileNotFoundError as e:
+                                print(e)
+                        elif len(matching_train_folders) > 1:
+                            print("Found multiple matching folders!",root, matching_train_folders)
+
 
 
 if __name__ == '__main__':
@@ -539,26 +588,27 @@ if __name__ == '__main__':
     # write_models_to_dirs()
     # rename_folders_into_models()
     # rename_folders_into_splits()
-
+    #move_paramstxt_to_test()
     # move_folders_to_old(folders=incorrect_age)
     #
     #print(is_test_folder(glob('.')))
     clean_remove_dry_run()
     clean_rename()
-    # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
-    #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
+    # # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
+    # #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
     clean_remove_dry_run()
     clean_rename()
-    print(filter_folders_universal(
-        folders=filter_folders_age(newer_than=1635779308), #CPC and tested
-        file_content_filter_fnlist_dict={
-            'model_variables.txt':[
-                lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x
-            ]
-        },
-        file_filter_fnlist=[
-            lambda f: 'labels-dataloader-0.csv' in f
-        ]))
+
+    # print(filter_folders_universal(
+    #     folders=filter_folders_age(newer_than=1635779308), #CPC and tested
+    #     file_content_filter_fnlist_dict={
+    #         'model_variables.txt':[
+    #             lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x
+    #         ]
+    #     },
+    #     file_filter_fnlist=[
+    #         lambda f: 'labels-dataloader-0.csv' in f
+    #     ]))
     #clean_categorize(test=True)
     # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
     #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))

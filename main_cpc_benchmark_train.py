@@ -2,6 +2,7 @@ import argparse
 import datetime
 import os
 import pickle
+import re
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -120,14 +121,14 @@ def main(args):
 
     if args.preload_fraction > 0. and getattr(ptbxl_train, 'preload'):
         print("Preloading data...")
-        ptbxl_train.preload(args.preload_fraction/1.)
-        ptbxl_val.preload(args.preload_fraction/1.)
-        georgia_train.preload(args.preload_fraction/1.)
-        georgia_val.preload(args.preload_fraction/1.)
-        cpsc_train.preload(args.preload_fraction/1.)
-        cpsc_val.preload(args.preload_fraction/1.)
-        cpsc2_train.preload(args.preload_fraction/1.)
-        cpsc2_val.preload(args.preload_fraction/1.)
+        ptbxl_train.preload(args.preload_fraction)
+        ptbxl_val.preload(args.preload_fraction)
+        georgia_train.preload(args.preload_fraction)
+        georgia_val.preload(args.preload_fraction)
+        cpsc_train.preload(args.preload_fraction)
+        cpsc_val.preload(args.preload_fraction)
+        cpsc2_train.preload(args.preload_fraction)
+        cpsc2_val.preload(args.preload_fraction)
 
     pretrain_train_dataset = ChainDataset([nature, ptbxl_train, georgia_train, cpsc_train, cpsc2_train])  # CPC TRAIN
     pretrain_val_dataset = ChainDataset([ptbxl_val, georgia_val, cpsc_val, cpsc2_val])  # CPC VAL
@@ -386,7 +387,7 @@ def main(args):
         for mfile in model_files:
             fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
-            cp_f = sorted(cp_fs)[-1]
+            cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[-1]
             model = store_models.load_model_architecture(fm_f)
             model, _, epoch = store_models.load_model_checkpoint(cp_f, model, optimizer=None,
                                                                  device_id=f'cuda:{args.gpu_device}')

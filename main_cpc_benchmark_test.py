@@ -2,6 +2,8 @@ import argparse
 import datetime
 import os
 import pickle
+import re
+import shutil
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -34,8 +36,11 @@ def main(args):
     # cpsc_train = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc_train', window_size=4500, pad_to_size=4500, use_labels=True)
     # cpsc = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/cpsc', window_size=4500, pad_to_size=4500, use_labels=True)
     # ptbxl = ecg_datasets3.ECGChallengeDatasetBaseline('/home/juwin106/data/ptbxl/WFDB', window_size=4500, pad_to_size=4500, use_labels=True)
-    
-    norm_fn = ecg_datasets3.normalize_std_scaling
+
+    if hasattr(ecg_datasets3, args.norm_fn):
+        norm_fn = getattr(ecg_datasets3, args.norm_fn)
+    else:
+        norm_fn = ecg_datasets3.normalize_std_scaling
     #norm_fn = ecg_datasets3.normalize_minmax_scaling_different
 
     georgia_challenge = ecg_datasets3.ECGChallengeDatasetBaseline('/media/julian/data/data/ECG/georgia_challenge/',
@@ -89,16 +94,16 @@ def main(args):
                       '6374002': 58, '67198005': 59, '67741000119109': 60, '698252002': 61, '713422000': 62,
                       '713426002': 63, '713427006': 64, '74390002': 65, '89792004': 66})
     
-    if getattr(b1, 'preload'):
+    if args.preload_fraction > 0. and getattr(b1, 'preload'):
         print("Preloading data...")
-        b1.preload(1./1.)
-        b2.preload(1./1.)
-        b3.preload(1./1.)
-        b4.preload(1./1.)
-        ptbxl_test.preload(1./1.)
-        georgia_test.preload(1./1.)
-        cpsc_test.preload(1./1.)
-        cpsc2_test.preload(1./1.)
+        b1.preload(args.preload_fraction)
+        b2.preload(args.preload_fraction)
+        b3.preload(args.preload_fraction)
+        b4.preload(args.preload_fraction)
+        ptbxl_test.preload(args.preload_fraction)
+        georgia_test.preload(args.preload_fraction)
+        cpsc_test.preload(args.preload_fraction)
+        cpsc2_test.preload(args.preload_fraction)
 
     train_dataset_challenge = ChainDataset([a1, a2, a3, a4])
     val_dataset_challenge = ChainDataset([b1, b2, b3, b4])
@@ -129,8 +134,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-14-train|(2x)cpc'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_22-15-39-train|(14x)cpc',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_01_22-13-26-train|(14x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_22-16-57-train|(12x)cpc'
 ]
     # infer class from model-arch file
     model_dicts = []
@@ -139,7 +143,18 @@ def main(args):
         for mfile in model_files:
             fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
-            cp_f = sorted(cp_fs)[-1]
+            if not args.checkpoint_file_ending is None:
+                temp = list(filter(lambda x: x.endswith(args.checkpoint_file_ending), cp_fs))
+                if len(temp) == 1:
+                    cp_f = temp[0]
+                elif len(temp) > 1:
+                    cp_f = temp[0]
+                    print(f"WARNING! multiple checkpoint files fitting '{args.checkpoint_file_ending}': {temp}. Taking first")
+                else:
+                    print(f"WARNING! No files found matching {args.checkpoint_file_ending}. Selecting latest.")
+                    cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[-1]
+            else:
+                cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[-1]
             model = load_model_architecture(fm_f)
             if model is None:
                 continue
@@ -163,6 +178,7 @@ def main(args):
         training_metrics.micro_avg_recall_score,
     ]
     for model_i, model_dict in enumerate(model_dicts):
+
         model = model_dict['model']
         model_name = os.path.split(model_dict['model_folder'])[1]
         train_folder = os.path.split(os.path.split(model_dict['model_folder'])[0])[1]
@@ -170,6 +186,12 @@ def main(args):
         print("Evaluating {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
+        try:
+            print('Copying params.txt to train_params.txt')
+            train_params = os.path.join(model_dict['model_folder'], 'params.txt')
+            shutil.copyfile(train_params, os.path.join(output_path, 'train_params.txt'))
+        except FileNotFoundError as e:
+            print(e)
         store_models.save_model_variables_text_only(output_path, model)
         try:
             store_models.save_model_architecture_text_only(output_path, model)
@@ -275,50 +297,35 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Contrastive Predictive Coding')
     # datapath
     # Other params
-    parser.add_argument('--saved_model', type=str,
-                        help='Model path to load weights from. Has to be given for downstream mode.')
 
     parser.add_argument('--seed', type=int, help='The seed used', default=0)
-
-    parser.add_argument('--forward_mode', help="The forward mode to be used.", default='context',
-                        type=str)  # , choices=['context, latents, all']
 
     parser.add_argument('--out_path', help="The output directory for losses and models",
                         default='models/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H-%M")) + '-test', type=str)
 
-    parser.add_argument('--forward_classes', type=int, default=52,
+    parser.add_argument('--forward_classes', type=int, default=67,
                         help="The number of possible output classes (only relevant for downstream)")
 
-    parser.add_argument('--warmup_steps', type=int, default=0, help="The number of warmup steps")
+    parser.add_argument('--checkpoint_file_ending', type=str, default=None)
 
     parser.add_argument('--batch_size', type=int, default=24, help="The batch size")
 
     parser.add_argument('--latent_size', type=int, default=128,
                         help="The size of the latent encoding for one window")
 
-    parser.add_argument('--timesteps_in', type=int, default=6,
-                        help="The number of windows being used to form a context for prediction")
-
-    parser.add_argument('--timesteps_out', type=int, default=6,
-                        help="The number of windows being predicted from the context (cpc task exclusive)")
-
     parser.add_argument('--crop_size', type=int, default=4500,
                         help="The size of the data that it is cropped to. If data is smaller than this number, data gets padded with zeros")
 
-    parser.add_argument('--channels', type=int, default=12,
-                        help="The number of channels the data will have")  # TODO: auto detect
+    parser.add_argument('--norm_fn', type=str, default='normalize_std_scaling',
+                        help="The Normalization function to use (from ecg_datasets3")
 
-    parser.add_argument('--window_size', type=int, default=512,
-                        help="The number of datapoints per channel per window")
-
-    parser.add_argument('--hidden_size', type=int, default=512,
-                        help="The size of the cell state/context used for predicting future latents or solving downstream tasks")
+    parser.add_argument("--gpu_device", type=int, default=0)
 
     parser.add_argument('--dry_run', dest='dry_run', action='store_true',
                         help="Only run minimal samples to test all models functionality")
     parser.set_defaults(dry_run=False)
 
-    parser.add_argument("--gpu_device", type=int, default=0)
+    parser.add_argument("--preload_fraction", type=float, default=1.)
 
     args = parser.parse_args()
     main(args)

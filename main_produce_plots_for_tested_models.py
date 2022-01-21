@@ -1,7 +1,9 @@
 import glob
 import json
 import os
+import pathlib
 import re
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
@@ -41,11 +43,11 @@ def auto_find_tested_models(path='models/'):
 
 def long_to_shortname(model_name):
     print('modelname in ', model_name)
-    model_name = re.sub('cpc_combined.CPCCombined\d*', 'CPC', model_name)
+    model_name = re.sub('cpc_combined.CPCCombined', 'CPC:', model_name)
     model_name = re.sub('architectures_baseline_challenge.', '', model_name)
     model_name = re.sub('baseline_cnn', 'BL', model_name)
     model_name = re.sub('baseline', 'BL', model_name)
-    model_name = re.sub('.BaselineNet\d*', '', model_name)
+    model_name = re.sub('.BaselineNet', ':', model_name)
     model_name = re.sub('cpc_downstream_only', 'linear', model_name)
     model_name = re.sub('cpc_downstream_', '', model_name)
     # model_name = re.sub('|use_weights', '', model_name)
@@ -89,17 +91,20 @@ def long_to_shortname(model_name):
 #     #plotm.plot_precision_recall_multiclass(precision, recall, avg_precision, classes, savepath=model_folder, plot_name=model_folder_name)
 
 def create_metric_score_dataframe(binary_labels, binary_preds, classes, metric_function, model_name=None,
-                                  average_only=False):
-    scdf = pd.DataFrame(data={
-        'micro': np.atleast_1d(metric_function(binary_labels, binary_preds, average='micro')),
-        'macro': np.atleast_1d(metric_function(binary_labels, binary_preds, average='macro'))
-    })
+                                  average_only=False, model_attrs=None):
+    scdf = pd.DataFrame({'model':[model_name]})
+    if not model_attrs is None:
+        scdf = pd.concat([scdf, pd.DataFrame({k:v if type(v)==list else [v] for k,v in model_attrs.items()})], axis=1)
     if not average_only:
         scores = metric_function(binary_labels, binary_preds, average=None)
         scdf = pd.concat([scdf, pd.DataFrame(scores[np.newaxis, :], columns=classes)], axis=1, )
+    avgs = pd.DataFrame(data={
+        'micro': np.atleast_1d(metric_function(binary_labels, binary_preds, average='micro')),
+        'macro': np.atleast_1d(metric_function(binary_labels, binary_preds, average='macro'))
+    })
+    scdf = pd.concat([scdf, avgs], axis=1)
     # scdf.insert(0, 'micro', metric_function(binary_labels, binary_preds, average='micro'), allow_duplicates=True)
     # scdf.insert(0, 'macro', metric_function(binary_labels, binary_preds, average='macro'), allow_duplicates=True)
-    scdf.insert(0, 'model', model_name)
     #scdf = scdf.set_index('model')
     return scdf
 
@@ -181,7 +186,7 @@ def create_paper_plots(model_folders, data_loader_index=0):
             print("File not found")
 
 
-def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_only=False, long_tables=False, also_extract_attrs=False,
+def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_only=False, long_tables=False, cut_name_attrs=False, use_attrs_in_name=False, include_attrs_in_table=False,
                          save_to_all_dirs=True):
     TEST_SET = 0;
     VAL_SET = 1;
@@ -204,16 +209,20 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
             model_name = os.path.split(model_folder)[1]
             model_name = '.'.join(model_name.split('.')[
                                   -2:]) if '.' in model_name else model_name  # fullname(store_models.load_model_architecture(extract_model_files_from_dir(model_folder)[0][0]))
-
-            if also_extract_attrs:
-                name_attrs = model_name
-                attrs = extract_model_attributes(model_folder, model_name, False, False)
-                print(attrs)
-                for k, v in attrs.items():
-                    if (type(v) == str) and (not v in name_attrs):
-                        model_name += '|'+v
+            if cut_name_attrs:
+                model_name = model_name.split('|')[0]
             model_name = long_to_shortname(model_name)
             print('Final name:', model_name)
+            attrs = None
+            if use_attrs_in_name or include_attrs_in_table:
+                attrs = extract_model_attributes(model_folder, model_name, False, False)
+                name_attrs = model_name
+                if use_attrs_in_name:
+                    for k, v in attrs.items():
+                        if (type(v) == str) and (not v in name_attrs):
+                            model_name += '|'+v
+                if not include_attrs_in_table:
+                    attrs = None
             with open(os.path.join(model_folder, 'thresholds.txt'), 'w+') as f:
                 f.write(','.join(map(str, model_thresholds[mi].values())))
             binary_labels, classes = m.read_binary_label_csv_from_model_folder(model_folder,
@@ -225,32 +234,34 @@ def create_paper_metrics(model_folders, root_path, data_loader_index=0, average_
             # scores with binary
             f1_dff.append(
                 create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.f1_scores, model_name,
-                                              average_only))
+                                              average_only, model_attrs=attrs))
 
             prec_dff.append(
                 create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.precision_scores,
-                                              model_name, average_only))
+                                              model_name, average_only, model_attrs=attrs))
             rec_dff.append(
                 create_metric_score_dataframe(binary_labels, binary_predictions, classes, m.recall_scores, model_name,
-                                              average_only))
+                                              average_only, model_attrs=attrs))
             # scores with probability
             classfit_dff.append(
                 create_metric_score_dataframe(binary_labels, predictions, classes, m.class_fit_score, model_name,
-                                              average_only))
+                                              average_only, model_attrs=attrs))
             zerofit_dff.append(
                 create_metric_score_dataframe(binary_labels, predictions, classes, m.zero_fit_score, model_name,
-                                              average_only))
+                                              average_only, model_attrs=attrs))
             auc_dff.append(create_metric_score_dataframe(binary_labels, predictions, classes, m.auc_scores, model_name,
-                                                         average_only))
+                                                         average_only, model_attrs=attrs))
 
         except FileNotFoundError as e:  # folder with not the correct csv?
             print(e)
-    auc_dff.natsort_by_column(column='model') #.natsort_single_index()
-    prec_dff.natsort_by_column(column='model') #.natsort_single_index()
-    rec_dff.natsort_by_column(column='model') #.natsort_single_index()
-    zerofit_dff.natsort_by_column(column='model') #.natsort_single_index()
-    f1_dff.natsort_by_column(column='model') #.natsort_single_index()
-    classfit_dff.natsort_by_column(column='model') #.natsort_single_index()
+    all_factories = [auc_dff, prec_dff, rec_dff, zerofit_dff, f1_dff, classfit_dff]
+    list(map(lambda obj: obj.natsort_by_column(column='model'), all_factories)) #SINCE WHEN ARE THESE LAZY?!
+    list(map(lambda obj: obj.put_columns_last(columns=['micro', 'macro']), all_factories))
+    auc_dff.to_csv(root_path, 'All_attributes_with_scores.csv')
+    try:
+        list(map(lambda obj: obj.dataframe.drop(columns=['Model Path', 'train timestamp'], inplace=True), all_factories))
+    except:
+        print(['Model Path', 'train timestamp'], 'not found in df')
     if len(model_folders) > 0:
         if save_to_all_dirs:
             ps = list(set([os.path.split(mf)[0] for mf in model_folders]))  # GEt all basepaths
@@ -431,29 +442,51 @@ def extract_model_attributes(model_folder, model_name, skip_cpc=True, skip_basel
             content = file.read()
         if 'BaselineNet' in content:
             is_cpc = False
-        if is_cpc and 'StridedEncoder' in content:
-            attrs['strided'] = True
-        elif is_cpc:
-            attrs['strided'] = False
+        attrs["Model Path"] = model_folder
         if (skip_cpc and is_cpc) or (skip_baseline and not is_cpc):
             return None
+        with open(os.path.join(model_folder, 'train_params.txt'), 'r') as file:
+                content = file.read()
+                attrs['Uses Classweights'] = not 'use_class_weights=False' in content
+                if 'norm_fn=' in content:
+                    attrs["Train Normalization Function"] = content.split('norm_fn=')[1].split(',')[0]
+                else:
+                    attrs["Train Normalization Function"] = 'normalize_std_scaling'
+                if 'splits_file=' in content:
+                    attrs['Train splitsfile'] = content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
+                else:
+                    attrs['Train splitsfile'] = 'train-test-splits'
+                if 'crop_size=' in content:
+                    attrs["Crop Size"] = content.split('crop_size=')[1].split(',')[0]
 
         #params.txt
+        fname = pathlib.Path(os.path.join(model_folder, 'params.txt'))
+        timestamp = fname.stat().st_mtime
+        attrs['train timestamp'] = datetime.fromtimestamp(timestamp)
         with open(os.path.join(model_folder, 'params.txt'), 'r') as file:
             content = file.read()
-        if 'splits_file=' in content:
-            attrs['splits_file'] = content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
-        attrs['use_class_weights'] = 'use_class_weights=True' in content
+            if 'norm_fn=' in content:
+                attrs["Test Normalization Function"] = content.split('norm_fn=')[1].split(',')[0]
+            else:
+                if int(timestamp) > 1637682016: #oh god
+                    attrs["Test Normalization Function"] = 'normalize_std_scaling'
+                else:
+                    attrs["Test Normalization Function"] = 'normalize_minmax_scaling_different'
+
+            # if 'splits_file=' in content:
+            #     attrs['Test splitsfile'] = content.split("splits_file='")[1].split("'")[0].replace('.txt', '')
+            # else:
+            #     attrs['Test splitsfile'] = 'train-test-splits'
 
         if is_cpc:
             with open(os.path.join(model_folder, 'model_variables.txt'), 'r') as file:
                 content = file.readlines()
-                for i, line in enumerate(content):
-                    if '{' in line:
-                        content = '\n'.join(content[i:])
-                        break
+            for i, line in enumerate(content):
+                if '{' in line:
+                    content = '\n'.join(content[i:])
+                    break
             data = json.loads(content)
-
+            attrs['strided'] = 'cpc_encoder_as_strided.StridedEncoder"' in content
             attrs['Freeze CPC'] = not '"freeze_cpc": false' in content
             attrs['uses Context'] = '"use_context": true' in content
             attrs['uses Latents'] = '"use_latents": true' in content
@@ -475,20 +508,28 @@ def extract_model_attributes(model_folder, model_name, skip_cpc=True, skip_basel
                 content.split('"downstream_model": {')[1].split('": {')[0].strip().lstrip('"').split('.')[
                     -2]
 
-            #params.txt
-            # with open(os.path.join(model_folder, 'params.txt'), 'r') as file:
-            #     content = file.read()
-                # if 'use_class_weights=True' in content:
-                #     name += '|use_weights'
-                # if 'downstream_epochs' in content:
-                #     epos = content.split('downstream_epochs=')[1].split(',')[0]
-                #     name += f'|dte:{epos}'
-                # if 'pretrain_epochs' in content and is_cpc:
-                #     epos = content.split('pretrain_epochs=')[1].split(',')[0]
-                #     name += f'|pte:{epos}'
+            # params.txt
+            with open(os.path.join(model_folder, 'train_params.txt'), 'r') as file:
+                content = file.read()
+            if 'pretrain_epochs' in content and is_cpc:
+                epos = content.split('pretrain_epochs=')[1].split(',')[0]
+                attrs['Pretrain Epochs'] = epos
+            if 'downstream_epochs' in content:
+                epos = content.split('downstream_epochs=')[1].split(',')[0]
+                attrs['Downstream Epochs'] = epos
+            attrs['Latent Size'] = content.split('latent_size=')[1].split(',')[0]
+            attrs['Context Size'] = content.split('hidden_size=')[1].split(',')[0]
+            attrs['timesteps in'] = content.split('timesteps_in=')[1].split(',')[0]
+            attrs['timesteps out'] = content.split('timesteps_out=')[1].split(',')[0]
 
 
         else:  # not cpc
+            with open(os.path.join(model_folder, 'train_params.txt'), 'r') as file:
+                content = file.read()
+                if 'downstream_epochs' in content:
+                    epos = content.split('downstream_epochs=')[1].split(',')[0]
+                    attrs['Downstream Epochs'] = epos
+
             with open(os.path.join(model_folder, 'model_variables.txt'), 'r') as file:
                 content = file.readlines()
                 for i, line in enumerate(content):
@@ -496,45 +537,71 @@ def extract_model_attributes(model_folder, model_name, skip_cpc=True, skip_basel
                         content = '\n'.join(content[i:])
                         break
             data = json.loads(content)
-            attrs['Convolutional Layer Number'] = count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d')
+            attrs['Convolutional Layer Number'] = str(count_key_in_dict(data, 'torch.nn.modules.conv.Conv1d'))
             attrs['uses Max Pool'] = 'torch.nn.modules.pooling.MaxPool1d' in content
             attrs['uses Adaptive Average Pooling'] = 'torch.nn.modules.pooling.AdaptiveAvgPool1d' in content
             attrs['uses Linear'] = 'torch.nn.modules.linear.Linear' in content
             attrs['uses LSTM'] = 'torch.nn.modules.rnn.LSTM' in content
             attrs['uses BatchNorm'] = 'torch.nn.modules.batchnorm.BatchNorm1d' in content
-            attrs['Sum of Strides'] = int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum())
-            attrs['Sum of Dilation'] = int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum())
-            attrs['Sum of Paddings'] = int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum())
-            attrs['Sum of Filters'] = int(
-                np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum())
-            final_layers = {'BL_FCN': '3',
-                            'BL_v0_2': '4',
-                            'BL_v2': '3',
-                            'BL_v6': '4',
-                            'BL_v1': '3',
-                            'BL_v5': '4',
-                            'BL_v4': '4',
-                            'BL_v14': '4',
-                            'BL_v3': '4',
-                            'BL_v0_1': '4',
-                            'BL_v0': '4',
-                            'BL_v9': '4',
-                            'BL_v8': '4',
-                            'BL_v0_3': '4',
-                            'BL_TCN_down': '4',
-                            'BL_TCN_flatten': '1',
-                            'BL_v7': '4',
-                            'BL_TCN_block': '1',
-                            'BL_rnn_simplest_lstm': '5',
-                            'BL_MLP': '2',
-                            'BL_alex_v2': '1',
-                            'BL_v15': '4',
-                            'BL_TCN_last': '2'}
+            attrs['Sum of Strides'] = str(int(np.array(extract_values_for_key_in_dict(data, 'stride')).sum()))
+            attrs['Sum of Dilation'] = str(int(np.array(extract_values_for_key_in_dict(data, 'dilation')).sum()))
+            attrs['Sum of Paddings'] = str(int(np.array(extract_values_for_key_in_dict(data, 'padding')).sum()))
+            attrs['Sum of Filters'] = str(int(np.array(extract_values_for_key_in_dict(data, 'kernel_size')).sum()))
+            final_layers = {'baseline_FCN': '3',
+                            'baseline_cnn_v0_2': '4',
+                            'baseline_cnn_v2': '3',
+                            'baseline_cnn_v6': '4',
+                            'baseline_cnn_v1': '3',
+                            'baseline_cnn_v5': '4',
+                            'baseline_cnn_v4': '4',
+                            'baseline_cnn_v14': '4',
+                            'baseline_cnn_v3': '4',
+                            'baseline_cnn_v0_1': '4',
+                            'baseline_cnn_v0': '4',
+                            'baseline_cnn_v9': '4',
+                            'baseline_cnn_v8': '4',
+                            'baseline_cnn_v0_3': '4',
+                            'baseline_TCN_down': '4',
+                            'baseline_TCN_flatten': '1',
+                            'baseline_cnn_v7': '4',
+                            'baseline_TCN_block': '1',
+                            'baseline_rnn_simplest_lstm': '5',
+                            'baseline_rnn_simplest_gru': '5',
+                            'baseline_MLP': '2',
+                            'baseline_alex_v2': '1',
+                            'baseline_cnn_v15': '4',
+                            'baseline_TCN_last': '2'}
             try:
-                attrs["Final Layer"] = final_layers[model_name]
+                attrs['Final Layer'] = final_layers[list(data.keys())[0].split('.')[-2]]
             except KeyError:
-                attrs["Final Layer"] = -1
-                print(model_name, 'not found in final layers dict')
+                final_layers_short = {'BL_FCN': '3',
+                                'BL_v0_2': '4',
+                                'BL_v2': '3',
+                                'BL_v6': '4',
+                                'BL_v1': '3',
+                                'BL_v5': '4',
+                                'BL_v4': '4',
+                                'BL_v14': '4',
+                                'BL_v3': '4',
+                                'BL_v0_1': '4',
+                                'BL_v0': '4',
+                                'BL_v9': '4',
+                                'BL_v8': '4',
+                                'BL_v0_3': '4',
+                                'BL_TCN_down': '4',
+                                'BL_TCN_flatten': '1',
+                                'BL_v7': '4',
+                                'BL_TCN_block': '1',
+                                'BL_rnn_simplest_lstm': '5',
+                                'BL_MLP': '2',
+                                'BL_alex_v2': '1',
+                                'BL_v15': '4',
+                                'BL_TCN_last': '2'}
+                try:
+                    attrs["Final Layer"] = final_layers_short[model_name]
+                except KeyError:
+                    attrs["Final Layer"] = None
+                    print(model_name, 'not found in final layers dict')
     except FileNotFoundError:
         print(model_folder, 'is not a model folder?')
     return attrs
@@ -554,41 +621,45 @@ if __name__ == '__main__':
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/17_12_21-13-13-test|(160x)cpc',
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_12_21-15-09-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-13-40-test|(32x)cpc',
-        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-16-23-test|(4x)bl_cnn_v14+(4x)bl_cnn_v8'
+        # ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-16-23-test|(4x)bl_cnn_v14+(4x)bl_cnn_v8',
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_01_22-13-43-test|(12x)cpc']
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_22-16-33-test|(6x)cpc'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_22-15-28-test|(28x)cpc/14_01_22-13-26-train|(14x)cpc',
-        "/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_22-15-28-test|(28x)cpc/14_01_22-15-39-train|(14x)cpc"
+        # ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_22-15-28-test|(28x)cpc/14_01_22-13-26-train|(14x)cpc',
+        # "/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_22-15-28-test|(28x)cpc/14_01_22-15-39-train|(14x)cpc"],
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/',
     ]
+    root_path = '/home/julian/Desktop/'
     # paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-16-37-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_12_21-14-01-test|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-20-09-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/05_01_22-17-30-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_22-16-33-test|(6x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-16-28-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-13-25-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_12_21-19-40-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-14-17-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-15-12-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_01_22-15-01-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-15-44-test|(6x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/24_12_21-11-14-test|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-18-14-test|(12x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_01_22-17-11-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-18-25-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-13-42-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-19-56-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_01_22-18-21-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-13-23-test|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_11_21-21-41-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-17-24-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_12_21-13-17-test|(12x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_01_22-18-55-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_01_22-18-04-test|(3x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-12-48-test|(12x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-16-02-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-11-09-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-16-48-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-13-13-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_11_21-21-38-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-13-40-test|(32x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_11_21-19-25-test|(16x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-15-00-test|(3x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-17-56-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-12-26-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-14-27-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-16-04-test|(3x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/17_12_21-13-13-test|(160x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_01_22-17-01-test|(4x)cpc']
     for pl in paths:
         if type(pl) == list:
             model_folders = [a for p in pl for a in auto_find_tested_models_recursive(p)]
         else:
             model_folders = auto_find_tested_models_recursive(pl)
-        # low_label_noclassweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-50-test|(48x)cpc',
-        #                                '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-16-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
-        # model_folders = [a for p in low_label_noclassweights_paths for a in auto_find_tested_models_recursive(p)]
-        # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_noclassweights')
-        # low_label_classweights_paths_more_epochs = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
-        #                                 #'models/13_08_21-10-47-test|(80x)cpc',
-        #                                 '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc']
-        # model_folders = [a for p in low_label_classweights_paths_more_epochs for a in auto_find_tested_models_recursive(p)]
-        # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights-more-epochs', title_add=' (50 CPC epochs, )')
+        # # low_label_noclassweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-50-test|(48x)cpc',
+        # #                                '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-16-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
+        # # model_folders = [a for p in low_label_noclassweights_paths for a in auto_find_tested_models_recursive(p)]
+        # # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_noclassweights')
+        # # low_label_classweights_paths_more_epochs = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
+        # #                                 #'models/13_08_21-10-47-test|(80x)cpc',
+        # #                                 '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc']
+        # # model_folders = [a for p in low_label_classweights_paths_more_epochs for a in auto_find_tested_models_recursive(p)]
+        # # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights-more-epochs', title_add=' (50 CPC epochs, )')
+        # #
+        # # low_label_classweights_paths = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
+        # #                                 'models/13_08_21-10-47-test|(80x)cpc']
+        # # model_folders = [a for p in low_label_classweights_paths for a in auto_find_tested_models_recursive(p)]
+        # #create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights', title_add=' (20 CPC epochs)', save_to=paths[0])
         #
-        # low_label_classweights_paths = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
-        #                                 'models/13_08_21-10-47-test|(80x)cpc']
-        # model_folders = [a for p in low_label_classweights_paths for a in auto_find_tested_models_recursive(p)]
-        #create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights', title_add=' (20 CPC epochs)', save_to=paths[0])
-
-        # low_label_classweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-18-41-test|(48x)cpc',
-        #                                 '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
-        # model_folders = [a for p in low_label_classweights_paths for a in auto_find_tested_models_recursive(p)]
-        # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights')
-
-        # model_folders = auto_find_tested_models_recursive('/home/julian/Downloads/Github/contrastive-predictive-coding/models/')
-
-        create_paper_metrics(model_folders, root_path='', data_loader_index=TEST_SET, average_only=True, also_extract_attrs=True, save_to_all_dirs=True)  # On Testset
-        create_paper_plots(model_folders, data_loader_index=TEST_SET)
+        # # low_label_classweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-18-41-test|(48x)cpc',
+        # #                                 '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
+        # # model_folders = [a for p in low_label_classweights_paths for a in auto_find_tested_models_recursive(p)]
+        # # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights')
+        #
+        # # model_folders = auto_find_tested_models_recursive('/home/julian/Downloads/Github/contrastive-predictive-coding/models/')
+        #
+        create_paper_metrics(model_folders, root_path=root_path, data_loader_index=TEST_SET, average_only=True, cut_name_attrs=True, use_attrs_in_name=False, include_attrs_in_table=True, save_to_all_dirs=False) #Old
+        #create_paper_metrics(model_folders, root_path='', data_loader_index=TEST_SET, average_only=True, use_attrs_in_name=True, save_to_all_dirs=True, include_attrs_in_table=True)  # On Testset
+        #create_paper_plots(model_folders, data_loader_index=TEST_SET)
 
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, save_to_all_dirs=False) #On Testset
     # create_paper_metrics(model_folders, root_path=path, data_loader_index=TEST_SET, average_only=True, long_tables=True, save_to_all_dirs=False)
