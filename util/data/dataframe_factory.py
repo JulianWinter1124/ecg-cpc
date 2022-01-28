@@ -7,7 +7,7 @@ import os
 class DataFrameFactory():
     def __init__(self, data=None, colum_labels=None, dataframe: pd.DataFrame = None, index_name=None):
         self.columns = colum_labels
-        self.dataframe = None
+        self.dataframe = dataframe
         if data is None:
             self.dataframe = pd.DataFrame()
         else:

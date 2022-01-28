@@ -133,8 +133,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-32-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-14-train|(2x)cpc'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/19_01_22-16-57-train|(12x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-16-20-train|(8x)cpc'
 ]
     # infer class from model-arch file
     model_dicts = []
@@ -148,7 +147,7 @@ def main(args):
                 if len(temp) == 1:
                     cp_f = temp[0]
                 elif len(temp) > 1:
-                    cp_f = temp[0]
+                    cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[0]
                     print(f"WARNING! multiple checkpoint files fitting '{args.checkpoint_file_ending}': {temp}. Taking first")
                 else:
                     print(f"WARNING! No files found matching {args.checkpoint_file_ending}. Selecting latest.")

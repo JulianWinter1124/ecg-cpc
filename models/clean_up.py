@@ -529,11 +529,12 @@ def clean_categorize(test=False):
 def clean_remove_dry_run():
     move_incomplete_training_folders()
 
+def cut_off_attrs_from_path(tf):
+    splits = os.path.normpath(tf).split(os.path.sep)
+    newp = os.path.sep.join([s.split('|')[0] for s in splits])
+    return newp.strip('.'+os.path.sep)
+
 def move_paramstxt_to_test(base='.', folders=None):
-    def cut_off_attrs_from_path(tf):
-        splits = os.path.split(tf)
-        newp = os.path.sep.join(list(splits[0:-1]) + [splits[-1].split('|')[0]])
-        return newp.strip('.'+os.path.sep)
 
     folders = folders or glob(os.path.join(base, "*_*_*", ""))
     train_folders = []
@@ -548,7 +549,6 @@ def move_paramstxt_to_test(base='.', folders=None):
                     if is_train_folder(files):
                         if 'params.txt' in files:
                             train_folders += [root]
-    print(train_folders)
     train_folders_cutoff = [cut_off_attrs_from_path(tf) for tf in train_folders]
     print(train_folders_cutoff)
     for f in folders:
@@ -560,23 +560,27 @@ def move_paramstxt_to_test(base='.', folders=None):
                     continue
                 if len(dirs) == 0 and len(files) > 0:  # leaf dir (model?)
                     if is_test_folder(files):
-                        print("testing:")
-                        print(root)
-                        print(any([cut_off_attrs_from_path(root).endswith(tf) for tf in train_folders_cutoff]))
+                        # print("testing:")
+                        # print(root)
+                        # print(any([cut_off_attrs_from_path(root).endswith(tf) for tf in train_folders_cutoff]))
                         matching_train_folders = list(filter(lambda i_p: cut_off_attrs_from_path(root).endswith(i_p[1]), enumerate(train_folders_cutoff)))
-                        print(matching_train_folders)
+                        # print(matching_train_folders)
                         if len(matching_train_folders) == 1:
 
                             i, p = matching_train_folders[0]
                             try:
                                 train_params = os.path.join(train_folders[i], 'params.txt')
                                 test_params = os.path.join(root, 'train_params.txt')
-                                print(f"copying {train_params}, to {test_params}")
+                                #print(f"copying {train_params}, to {test_params}")
                                 shutil.copyfile(train_params, test_params)
                             except FileNotFoundError as e:
                                 print(e)
                         elif len(matching_train_folders) > 1:
                             print("Found multiple matching folders!",root, matching_train_folders)
+                        elif len(matching_train_folders) == 0:
+                            # print("Didnt find folders for", root)
+                            # print(cut_off_attrs_from_path(root))
+                            pass
 
 
 
@@ -588,7 +592,7 @@ if __name__ == '__main__':
     # write_models_to_dirs()
     # rename_folders_into_models()
     # rename_folders_into_splits()
-    #move_paramstxt_to_test()
+    # move_paramstxt_to_test()
     # move_folders_to_old(folders=incorrect_age)
     #
     #print(is_test_folder(glob('.')))
