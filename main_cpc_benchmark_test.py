@@ -133,7 +133,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-32-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-16-20-train|(8x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-15-20-train|(6x)cpc'
 ]
     # infer class from model-arch file
     model_dicts = []

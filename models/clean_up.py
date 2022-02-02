@@ -250,7 +250,7 @@ def filter_folders_age(base='.', newer_than=1619628667):
                     ctime = int(fname.stat().st_mtime)
                     checks.append(ctime > newer_than)
         if len(checks) > 0 and all(checks):  # Found a test dir
-            print(f"{f} Train session is newer than {newer_than}.")
+            #print(f"{f} Train session is newer than {newer_than}.")
             filtered += [f]
     return filtered
 
@@ -596,23 +596,52 @@ if __name__ == '__main__':
     # move_folders_to_old(folders=incorrect_age)
     #
     #print(is_test_folder(glob('.')))
-    clean_remove_dry_run()
-    clean_rename()
-    # # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
-    # #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
-    clean_remove_dry_run()
-    clean_rename()
+    # clean_remove_dry_run()
+    # clean_rename()
+    # # # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
+    # # #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))
+    # clean_remove_dry_run()
+    # clean_rename()
 
-    # print(filter_folders_universal(
-    #     folders=filter_folders_age(newer_than=1635779308), #CPC and tested
-    #     file_content_filter_fnlist_dict={
-    #         'model_variables.txt':[
-    #             lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x
-    #         ]
-    #     },
-    #     file_filter_fnlist=[
-    #         lambda f: 'labels-dataloader-0.csv' in f
-    #     ]))
+    print(filter_folders_universal(
+        folders=filter_folders_age(newer_than=1638140400), #CPC and tested
+        file_content_filter_fnlist_dict={
+            'model_variables.txt':[
+                lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x,
+                lambda x: "cpc_autoregressive_v0" in x,
+                lambda x: "cpc_encoder_v0" in x,
+                lambda x: "cpc_predictor_v0" in x,
+                lambda x: '"normalize_latents": false' in x
+            ],
+            'params.txt':[
+                lambda x: 'train-test-splits.txt' in x
+            ]
+        },
+        file_filter_fnlist=[
+            lambda f: not ('labels-dataloader-0.csv' in f),
+            lambda fs: any(['checkpoint_epoch_100.pt' in f for f in fs])
+        ]))
+
+    print(filter_folders_universal(
+        folders=filter_folders_age(newer_than=1638140400), #CPC and tested
+        file_content_filter_fnlist_dict={
+            'model_variables.txt':[
+                lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x,
+                lambda x: "cpc_autoregressive_v0" in x,
+                lambda x: "cpc_encoder_v0" in x,
+                lambda x: "cpc_predictor_v0" in x,
+                lambda x: '"normalize_latents": false' in x,
+                lambda x: 'cpc_intersect_manylatents' in x
+            ],
+            'params.txt':[
+                lambda x: 'train-test-splits.txt' in x
+            ]
+        },
+        file_filter_fnlist=[
+            lambda f: not ('labels-dataloader-0.csv' in f),
+            lambda fs: any(['checkpoint_epoch_100.pt' in f for f in fs])
+        ]))
+
     #clean_categorize(test=True)
     # print(filter_folders_universal( #Find all models that normalize latents and have trained downstream
     #     file_content_filter_fnlist_dict={'model_variables.txt': [lambda x: '"normalize_latents": true' in x], 'params.txt':[lambda x: 'use_class_weights=False' in x]}, file_filter_fnlist=[lambda x: any([y.endswith("_checkpoint_epoch_20.pt") for y in x])]))

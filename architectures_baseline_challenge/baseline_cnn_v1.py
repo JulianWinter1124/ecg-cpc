@@ -27,7 +27,7 @@ class BaselineNet(nn.Module):
             nn.BatchNorm1d(in_channels),
             nn.ReLU(),
         )
-        self.pooling = nn.AdaptiveAvgPool1d(1)  # TODO: FIX and try max
+        self.pooling = nn.AdaptiveAvgPool1d(1)
 
         self.fc = nn.Linear(in_channels, out_classes)
         # self.activation = nn.LogSoftmax(dim=1)
