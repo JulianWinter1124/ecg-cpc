@@ -81,8 +81,9 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/20_05_21-18-train|(2x)bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/25_05_21-13-train|bl_FCN' #used class weights
         # 'models_symbolic_links/train/correct-age/class_weights/'
-        *'''/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits-fewer-labels60|use_weights|strided|frozen|C|m:all|cpc_downstream_cnn'''.split(
-            '\n')
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/28_01_22-16-23-train|(12x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_latent_maximum'
+        # *'''/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits-fewer-labels60|use_weights|strided|frozen|C|m:all|cpc_downstream_cnn'''.split(
+        #     '\n')
 
     ]
     # infer class from model-arch file
@@ -196,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument('--out_path', help="The output directory for losses and models",
                         default='data_output/' + str(datetime.datetime.now().strftime("%d_%m_%y-%H")), type=str)
 
-    parser.add_argument('--forward_classes', type=int, default=52,
+    parser.add_argument('--forward_classes', type=int, default=67,
                         help="The number of possible output classes (only relevant for downstream)")
 
     parser.add_argument('--warmup_steps', type=int, default=0, help="The number of warmup steps")

@@ -13,6 +13,8 @@ from matplotlib.colors import Normalize
 
 
 # from torch.nn.functional import relu
+from util.data import ecg_datasets3
+
 
 class VideoWriter():
     def __init__(self, filename: str, fps: float, video_codec: str = "libx264",
@@ -63,62 +65,42 @@ def tensor_to_video(filename: str,
     return write_video(filename, video_array, fps, video_codec, options)
 
 
-def timeseries_to_image(data: torch.Tensor, grad: torch.Tensor = None, pred_classes: list = None,
-                        ground_truth: list = None, downsample_factor=2, color=(0.1, 0.2, 0.5), convert_to_rgb=False,
-                        filename: str = None, verbose=True, show=False, save=True):
-    batch, n, channels = data.shape
-    rgba_colors = np.zeros((n, 4))
-    for i in range(len(color)):
-        rgba_colors[:, i] = color[i]
-    rgba_colors[:, 3] = 1.0
-    images = []
-    for p, b in enumerate(data):
-        fig, axs = plt.subplots(channels, 1, sharex='all', gridspec_kw={'hspace': 0},
-                                figsize=(n / 100 / downsample_factor, channels * 300 / 100 / downsample_factor),
-                                dpi=100)  # dpi=100)
-        fig.tight_layout(pad=0, rect=[0.03, 0.03, 1, 0.90])
-        x = np.arange(0, n)
-        for i, ax in enumerate(axs):
-            y = b[:, i]
-            if not grad is None:
-                alpha = grad[p, :, i]
-                alpha = (alpha - grad[p, :, :].min()) / (
-                        grad[p, :, :].max() - grad[p, :, :].min())  # TODO: consider normalizing this channelwise
-                rgba_colors[:, 3] = alpha  # alpha channel is gradient
-                ax.scatter(x, y, label='channel_' + str(i), color=rgba_colors, s=1.0)
-            else:
-                ax.plot(x, y, label='channel_' + str(i), )
-        plt.xlabel('Time (500 steps = 1 second)', fontsize=30)
-        # ax.label_outer()
-        if not pred_classes is None:
-            plt.figtext(0.5, 0.01, ",".join([str(st) for st in pred_classes[p]]), wrap=True,
-                        horizontalalignment='center', fontsize=12)
+def timeseries_to_image(data: torch.Tensor, title='ECG-data visualization',
+                        ground_truth: list = None, filename: str = None, show=False, save=True):
+    if len(data.shape) == 2:
+        data = data[np.newaxis]
+    batches, width, height = data.shape
+    if not filename:
+        filename = title.replace(' ', '')+'.png'
+    for batch in range(batches):
+        fig, axs = plt.subplots(data.shape[-1], 1, figsize=(30,20))
+        plt.xlim((0, width))
+        plt.ylim((0, 1))
+
         if not ground_truth is None:
-            fig.suptitle("\n".join([str(st) for st in ground_truth[p]]), fontsize=40)
-        plt.legend()
-        io_buf = io.BytesIO()
-        fig.savefig(io_buf, format='raw', dpi=100)
-        if not filename is None and save:
-            fig.savefig(filename + '_' + str(p) + '.png', dpi=100)
-        io_buf.seek(0)
-        img_arr = np.reshape(np.frombuffer(io_buf.getvalue(), dtype=np.uint8),
-                             newshape=(int(fig.bbox.bounds[3]), int(fig.bbox.bounds[2]), -1))
-        io_buf.close()
-        if convert_to_rgb:
-            pil_img = Image.fromarray(img_arr, 'RGBA')
-            temp = Image.new("RGB", pil_img.size, (255, 255, 255))
-            temp.paste(pil_img, mask=pil_img.split()[3])
-            img_arr = np.array(temp)  # 3 is the alpha channel
+            title += "| Correct classes: " + ", ".join(map(str, np.nonzero(ground_truth[batch].numpy())[0])) + ". "
+        fig.suptitle(title, fontsize=24)
+        fig.tight_layout()
+        for i, ax in enumerate(axs):
+            ax.set_xlim((0, width))
+            ax.axis('off')
+            d = data[batch, :, i]
+            ax.set_ylim((d.min()-0.1, d.max()+0.1))
+            ax.plot(range(width), d, color='red')
+        ax.axis('on')
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['right'].set_visible(False)
 
-        images.append(img_arr)
-        plt.close()
-        if verbose:
-            print("image {} of {} images complete".format(p + 1, batch), flush=True)
+        axs[-1].get_yaxis().set_visible(False)
+        plt.xlabel('Time (500 steps = 1 second)', fontsize=18)
+
+        if save:
+            plt.savefig(f"{filename.split('.')[-2]}{batch}.{filename.split('.')[-1]}", dpi=fig.dpi)
         if show:
-            plt.imshow(img_arr)
             plt.show()
-
-    return np.stack(images)
+        plt.close()
+        print('Finished')
 
 
 def timeseries_to_image_with_gradient(data: torch.Tensor, labels: torch.Tensor, grad: torch.Tensor,
@@ -305,11 +287,18 @@ def kernel_to_image(layer_name, layer_weights: torch.Tensor):
 
 
 if __name__ == '__main__':  # Usage example
-    model_f = '../models/18_01_21-14/baseline_modelstate_epoch200.pt'
-    model_state_dict = torch.load(model_f)['model_state_dict']
-    print(model_state_dict.keys())
-    for k in model_state_dict.keys():
-        if 'weight' in k:
-            conv = model_state_dict[k].cpu()
-            print('layer weight shape:', conv.shape)
-            kernel_to_image(k, conv)
+    # model_f = '../models/18_01_21-14/baseline_modelstate_epoch200.pt'
+    # model_state_dict = torch.load(model_f)['model_state_dict']
+    # print(model_state_dict.keys())
+    # for k in model_state_dict.keys():
+    #     if 'weight' in k:
+    #         conv = model_state_dict[k].cpu()
+    #         print('layer weight shape:', conv.shape)
+    #         kernel_to_image(k, conv)
+
+    path_without_ext = '/media/julian/data/data/ECG/ptbxl_challenge/HR14099'
+    d = ecg_datasets3.ECGChallengeDatasetBaseline(None, None)
+    data = d._read_recording_file(path_without_ext)
+    labels = d._read_header_file(path_without_ext)
+    print(labels)
+    timeseries_to_image(data, 'ECG-data of patient HR14099 in the PTBXL dataset', filename='/home/julian/Documents/projekt-master/bilder/ecg-example.png', show=True, save=True)

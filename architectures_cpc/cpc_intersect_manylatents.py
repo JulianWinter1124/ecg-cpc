@@ -59,18 +59,26 @@ class CPC(nn.Module):
         loss = torch.tensor([0.0]).cuda()
         correct = torch.tensor([0.0]).cuda()
         if self.sampling_mode == 'same':
+            current_context = context[-1, :, :]
             for k in range(self.timesteps_out):
-                pred_latent = self.predictor(
-                    context[self.timesteps_in:-(self.timesteps_out + self.timesteps_ignore + 1), :, :], k)
-                encoded_latent = encoded_x[self.timesteps_in + k + 1:-(self.timesteps_out + self.timesteps_ignore) + k,
-                                 :, :]  # shape is batch, latent_size
+                pred_latent = self.predictor(current_context, k)
+                encoded_latent = encoded_x[self.timesteps_in + self.timesteps_ignore + k, :, :]  # shape is batch, latent_size
                 if self.verbose: print(pred_latent.shape, encoded_latent.shape)
-                if self.normalize_latents:
-                    pred_len = torch.clamp(torch.norm(pred_latent, p=2, dim=-1, keepdim=True), min=1e-10)
-                    enc_len = torch.clamp(torch.norm(encoded_latent, p=2, dim=-1, keepdim=True), min=1e-10)
-                    pred_latent = pred_latent / pred_len
-                    encoded_latent = encoded_latent / enc_len
-                for step in range(pred_latent.shape[0]):  # TODO: can this be broadcasted?
+                softmax = self.lsoftmax(torch.mm(encoded_latent, pred_latent.T))  # output: (Batches, Batches)
+                if self.verbose: print('softmax shape', softmax.shape)
+                correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(batch).cuda())  # Since
+                loss += torch.sum(torch.diag(softmax))
+
+            loss /= (batch * self.timesteps_out) * -1.0
+            accuracy = correct.true_divide(batch * self.timesteps_out)
+            return accuracy, loss, hidden
+
+        if self.sampling_mode == 'multisame':
+            for k in range(self.timesteps_out):
+                pred_latent = self.predictor(context, k) #use whole context instead of current context
+                encoded_latent = encoded_x[k+1:self.timesteps_in + self.timesteps_ignore + k + 1, :, :]  # shape is batch, latent_size
+                for step in range(pred_latent.shape[0]):
+                    if self.verbose: print(pred_latent.shape, encoded_latent.shape)
                     softmax = self.lsoftmax(torch.mm(encoded_latent[step], pred_latent[step].T))  # output: (Batches, Batches)
                     if self.verbose: print('softmax shape', softmax.shape)
                     correct += torch.sum(torch.argmax(softmax, dim=0) == torch.arange(batch).cuda())  # Since

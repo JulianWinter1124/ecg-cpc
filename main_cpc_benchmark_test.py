@@ -116,16 +116,16 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/20_05_21-18-train|(2x)bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v2+bl_cnn_v3+bl_cnn_v4+bl_cnn_v5+bl_cnn_v6+bl_cnn_v8+bl_cnn_v9',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models_symbolic_links/train/class_weights/25_05_21-13-train|bl_FCN' #used class weights
         # 'models_symbolic_links/train/correct-age/class_weights/'
-#         *'''/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-14_22-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-13_13-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-12_13-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-11_22-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-10_44-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-15_02-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-14_42-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-14_12-train|(4x)cpc
-# /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-13_51-train|(4x)cpc'''.split('\n')
+        #         *'''/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-15_36-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-14_22-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-13_13-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-12_13-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-11_22-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/14_08_21-10_44-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-15_02-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-14_42-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-14_12-train|(4x)cpc
+        # /home/julian/Downloads/Github/contrastive-predictive-coding/models/13_08_21-13_51-train|(4x)cpc'''.split('\n')
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc'
         #*['/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-16-train|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-16-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-13-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-11-train|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-15-train|(4x)cpc']
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9'
@@ -133,7 +133,7 @@ def main(args):
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-32-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-17-train|bl_cnn_v14+bl_cnn_v8',
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-15-03-train|bl_cnn_v14+bl_cnn_v8',
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-15-20-train|(6x)cpc'
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/09_02_22-15-55-train|(4x)cpc'
 ]
     # infer class from model-arch file
     model_dicts = []
@@ -159,8 +159,8 @@ def main(args):
                 continue
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
             print(
-                f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
-            model_dicts.append({'model': model, 'model_folder': root})
+                f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)}, epochs:{epoch}, in folder {root}. Apppending model for testing.')
+            model_dicts.append({'model': model, 'model_folder': root, 'trained_epochs': epoch})
     if len(model_dicts) == 0:
         print(f"Could not find any models in {model_folders}.")
     loaders = [
@@ -188,7 +188,12 @@ def main(args):
         try:
             print('Copying params.txt to train_params.txt')
             train_params = os.path.join(model_dict['model_folder'], 'params.txt')
-            shutil.copyfile(train_params, os.path.join(output_path, 'train_params.txt'))
+            with open(train_params, 'r') as tp:
+                txt = tp.read()
+                txt = re.sub("downstream_epochs=\d+,", f"downstream_epochs={model_dict['trained_epochs']},", txt)
+                with open(os.path.join(output_path, 'train_params.txt'), 'w') as tpc:
+                    tpc.write(txt)
+            #shutil.copyfile(train_params, os.path.join(output_path, 'train_params.txt'))
         except FileNotFoundError as e:
             print(e)
         store_models.save_model_variables_text_only(output_path, model)

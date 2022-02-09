@@ -629,7 +629,7 @@ def create_latex_table_from_csv(csv_file, out_path=None, out_name=None, auto_str
                ]
         dff.dataframe = dff.dataframe[[c for c in dff.dataframe.columns if c in include]]
     print(dff.dataframe.columns)
-    dff.natsort_by_column(column='model')
+    #dff.natsort_by_column(column='model')
     dff.put_columns_last(columns=['micro', 'macro'])
     try:
         dff.dataframe.drop(columns=['Model Path', 'train timestamp'], inplace=True)
@@ -660,7 +660,7 @@ if __name__ == '__main__':
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_22-16-33-test|(6x)cpc'
         # ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_22-15-28-test|(28x)cpc/14_01_22-13-26-train|(14x)cpc',
         # "/home/julian/Downloads/Github/contrastive-predictive-coding/models/18_01_22-15-28-test|(28x)cpc/14_01_22-15-39-train|(14x)cpc"],
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/',
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/',
         # ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_01_22-16-39-test|(4x)cpc',
         #  '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-16-23-test|(4x)bl_cnn_v14+(4x)bl_cnn_v8']
         #,
@@ -669,7 +669,9 @@ if __name__ == '__main__':
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_01_22-16-39-test|(4x)cpc'],
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/28_01_22-15-57-test|(12x)cpc'
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/28_01_22-17-06-test|(12x)cpc'
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-15-37-test|(6x)cpc'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/03_02_22-14-40-test|(2x)cpc'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/09_02_22-16-15-test|(4x)cpc'
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-15-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-18-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_12_21-17-train|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-20-train|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-17-train|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_12_21-17-train|(2x)cpc'
     ]
     root_path = '/home/julian/Desktop/'
     # paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-16-37-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_12_21-14-01-test|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-20-09-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/05_01_22-17-30-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_01_22-16-33-test|(6x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-16-28-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_11_21-13-25-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_12_21-19-40-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-14-17-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-15-12-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_01_22-15-01-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-15-44-test|(6x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/24_12_21-11-14-test|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-18-14-test|(12x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/10_01_22-17-11-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-18-25-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-13-42-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-19-56-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_01_22-18-21-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-13-23-test|(8x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_11_21-21-41-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_11_21-17-24-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_12_21-13-17-test|(12x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_01_22-18-55-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/06_01_22-18-04-test|(3x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-12-48-test|(12x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/12_11_21-16-02-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-11-09-test|(2x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-16-48-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-13-13-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_11_21-21-38-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_12_21-13-40-test|(32x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_11_21-19-25-test|(16x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-15-00-test|(3x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-17-56-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-12-26-test|(4x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-14-27-test|cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/13_12_21-16-04-test|(3x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/17_12_21-13-13-test|(160x)cpc', '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_01_22-17-01-test|(4x)cpc']
@@ -678,15 +680,15 @@ if __name__ == '__main__':
             model_folders = [a for p in pl for a in auto_find_tested_models_recursive(p)]
         else:
             model_folders = auto_find_tested_models_recursive(pl)
-        # # low_label_noclassweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-50-test|(48x)cpc',
-        # #                                '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-16-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
-        # # model_folders = [a for p in low_label_noclassweights_paths for a in auto_find_tested_models_recursive(p)]
-        # # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_noclassweights')
+        # low_label_noclassweights_paths = ['/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-17-50-test|(48x)cpc',
+        #                                '/home/julian/Downloads/Github/contrastive-predictive-coding/models/20_07_21-16-test|(5x)bl_TCN_down+(5x)bl_cnn_v1+(5x)bl_cnn_v14+(5x)bl_cnn_v15+(5x)bl_cnn_v8']
+        # model_folders = [a for p in low_label_noclassweights_paths for a in auto_find_tested_models_recursive(p)]
+        # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_noclassweights')
         # # low_label_classweights_paths_more_epochs = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
         # #                                 #'models/13_08_21-10-47-test|(80x)cpc',
         # #                                 '/home/julian/Downloads/Github/contrastive-predictive-coding/models/16_08_21-10-16-test|(40x)cpc']
         # # model_folders = [a for p in low_label_classweights_paths_more_epochs for a in auto_find_tested_models_recursive(p)]
-        # # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights-more-epochs', title_add=' (50 CPC epochs, )')
+        # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights-more-epochs', title_add=' (50 CPC epochs, )')
         # #
         # # low_label_classweights_paths = ['models/11_08_21-15-58-test|(10x)bl_TCN_down+(10x)bl_cnn_v1+(10x)bl_cnn_v14+(10x)bl_cnn_v15+(10x)bl_cnn_v8',
         # #                                 'models/13_08_21-10-47-test|(80x)cpc']
@@ -699,9 +701,10 @@ if __name__ == '__main__':
         # # create_lowlabel_plots(model_folders, data_loader_index=TEST_SET, filename='low_label_availability_classweights')
         #
         # # model_folders = auto_find_tested_models_recursive('/home/julian/Downloads/Github/contrastive-predictive-coding/models/')
-        #
-        # create_paper_metrics(model_folders, root_path=root_path, data_loader_index=TEST_SET, average_only=True, cut_name_attrs=True, use_attrs_in_name=False, include_attrs_in_table=True, save_csv=True, save_to_all_dirs=False)
-        create_paper_metrics(model_folders, root_path=None, data_loader_index=TEST_SET, average_only=True, cut_name_attrs=True, use_attrs_in_name=False, include_attrs_in_table=True, save_csv=False, save_to_all_dirs=True) #Old
+        #save csv:
+        create_paper_metrics(model_folders, root_path=root_path, data_loader_index=TEST_SET, average_only=True, cut_name_attrs=True, use_attrs_in_name=False, include_attrs_in_table=True, save_csv=True, save_to_all_dirs=False)
+        #save table in dir:
+        # create_paper_metrics(model_folders, root_path=None, data_loader_index=TEST_SET, average_only=True, cut_name_attrs=True, use_attrs_in_name=False, include_attrs_in_table=True, save_csv=False, save_to_all_dirs=True) #Old
         #create_paper_metrics(model_folders, root_path='', data_loader_index=TEST_SET, average_only=True, use_attrs_in_name=True, save_to_all_dirs=True, include_attrs_in_table=True)  # On Testset
         # create_paper_plots(model_folders, data_loader_index=TEST_SET)
 

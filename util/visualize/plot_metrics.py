@@ -4,6 +4,7 @@ from itertools import cycle
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn
 import torch
@@ -161,15 +162,15 @@ def plot_parallel_coordinates(df: pd.DataFrame, color_column, save_to, drop_colu
             d['tickvals'] = [True, False]
             d['ticktext'] = ['True', 'False']
             d['values'] = data
+        elif t == int:
+            d['range'] = [data.min(), data.max()]
+            d['tickformat'] = 'd'
+            d['values'] = data
         elif t == str or t == object:
             da = data.astype('category').cat
             d['tickvals'] = da.codes
             d['ticktext'] = da.categories
             d['values'] = da.codes
-        elif t == int:
-            d['range'] = [data.min(), data.max()]
-            d['tickformat'] = 'd'
-            d['values'] = data
         else:
             d['range'] = [data.min(), data.max()]
             d['values'] = data
@@ -185,7 +186,7 @@ def plot_parallel_coordinates(df: pd.DataFrame, color_column, save_to, drop_colu
     fig = go.Figure(data=
     go.Parcoords(
         line=dict(color=df[color_column],
-                  colorscale='Electric',
+                  colorscale=px.colors.diverging.Tealrose,
                   # autocolorscale=True,
                   showscale=True,
                   cmin=df[color_column].min(),
@@ -306,3 +307,14 @@ def plot_prediction_scatterplots(labels, pred, model_thresholds, filename=None, 
     if show:
         plt.show()
     plt.close(fig)
+
+if __name__ == '__main__':
+    all_df = pd.read_csv('/home/julian/Desktop/All_attributes_with_scores.csv', index_col=0, parse_dates=['train timestamp'])
+    all_df = all_df.dropna(subset=['train timestamp', 'Uses Classweights'])
+    all_df = all_df[['train timestamp', 'Model Path'] + [c for c in all_df.columns if not c in ['train timestamp', 'Model Path', 'micro', 'macro']] + ['macro', 'micro']]
+    all_df[["Train Normalization Function", "Test Normalization Function"]] = all_df[["Train Normalization Function", "Test Normalization Function"]].apply(lambda s:s.str.replace("'", ""))
+    all_df[['model']]=all_df[['model']].apply(lambda s:s.str.replace(":\d*", "", regex=True))
+    all_df = all_df.drop(columns=['train timestamp'])
+    cpc_df = all_df[all_df['normalizes latents'].isin([False, True])].dropna(axis=1, how='all')
+    #print(cpc_df)
+    plot_parallel_coordinates(cpc_df, 'macro', save_to='/home/julian/Downloads/Multi-Download/lowlabel/parcoords-cpc.png', drop_columns=['Model Path', 'timesteps in', 'timesteps out', "Train Normalization Function", "Test Normalization Function", 'Train splitsfile', 'Pretrain Epochs'], )

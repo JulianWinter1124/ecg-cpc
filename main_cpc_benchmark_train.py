@@ -180,12 +180,26 @@ def main(args):
         #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
         #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='all'
         # ),
-        # cpc_intersect.CPC(
-        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
         #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
         #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
         #     args.timesteps_in, args.timesteps_out, args.latent_size,
-        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='future'
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='multisame'
+        # ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='multisame'
+        # ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='same'
         # ),
         # cpc_intersect.CPC(
         #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
@@ -254,21 +268,43 @@ def main(args):
         #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
         #     timesteps_ignore=0, normalize_latents=True, verbose=False, sampling_mode='crossentropy'
         # ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
+        # ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
+        #                                           args.window_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
+        # ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
+        #     args.timesteps_in, args.timesteps_out, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
+        # ),
         cpc_intersect_manylatents.CPC(
-            cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+            cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
+            cpc_autoregressive_hidden.AutoRegressor(args.latent_size, args.hidden_size, 1),
             cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_in),
             args.timesteps_in, args.timesteps_out, args.latent_size,
             timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
         ),
-        cpc_intersect_manylatents.CPC(
-            cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
-                                                  args.window_size),
-            cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
-            cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out//4),
-            args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
-            timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
-        ),
+        # cpc_intersect_manylatents.CPC(
+        #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_likev8.Encoder(args.channels, args.latent_size),
+        #                                           window_size=545),
+        #     cpc_autoregressive_v0.AutoRegressor(args.latent_size, args.hidden_size, 1),
+        #     cpc_predictor_v0.Predictor(args.hidden_size, args.latent_size, args.timesteps_out),
+        #     args.timesteps_in//4, args.timesteps_out//4, args.latent_size,
+        #     timesteps_ignore=0, normalize_latents=False, verbose=False, sampling_mode='crossentropy'
+        # ),
         # cpc_intersect_manylatents.CPC(
         #     cpc_encoder_as_strided.StridedEncoder(cpc_encoder_v0.Encoder(args.channels, args.latent_size),
         #                                           args.window_size),
@@ -417,7 +453,63 @@ def main(args):
             'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|strided|frozen|C|L|m:all|cpc_downstream_latent_maximum',
             'model': None  # norm all strided
             },
-
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+            'model': None  # many latents v0s
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|strided|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+            'model': None  # many latents v0 strided
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_02_22-17-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:multisame|cpc_downstream_latent_maximum',
+            'model': None  # normal multisame
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_02_22-17-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|L|m:same|cpc_downstream_latent_maximum',
+            'model': None  # normal same
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_01_22-14-14-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+            'model': None  # letent max cpc, down only 120
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-17-29-train|(6x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|frozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+            'model': None  # latent max cpc, pretrained 100
+            },
+        #### new archs test
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+            'model': None  # v0
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-19-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:crossentropy|cpc_downstream_only',
+            'model': None  # v8
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-12-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
+            'model': None  # v0 hidden
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_02_22-12-07-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+            'model': None  # v8 hidden
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/05_01_22-18-16-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|m:crossentropy-nocontext|cpc_downstream_only',
+            'model': None  # v0 nocontext
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_01_22-16-51-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:crossentropy-nocontext|cpc_downstream_only',
+            'model': None  # v8 nocontext
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|strided|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only',
+            'model': None  # strided normalized
+            },
+        {
+            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only',
+            'model': None  #  normalized
+            },
     ]
     for model_i, trained_model_dict in enumerate(trained_model_dicts):  # hack bad
         model_path = trained_model_dict['folder']
@@ -427,7 +519,18 @@ def main(args):
         for mfile in model_files:
             fm_fs, cp_fs, root = mfile
             fm_f = fm_fs[0]
-            cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[-1]
+            if not args.checkpoint_file_ending is None:
+                temp = list(filter(lambda x: x.endswith(args.checkpoint_file_ending), cp_fs))
+                if len(temp) == 1:
+                    cp_f = temp[0]
+                elif len(temp) > 1:
+                    cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[0]
+                    print(f"WARNING! multiple checkpoint files fitting '{args.checkpoint_file_ending}': {temp}. Taking first")
+                else:
+                    print(f"WARNING! No files found matching {args.checkpoint_file_ending}. Selecting latest.")
+                    cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[-1]
+            else:
+                cp_f = sorted(cp_fs, key=lambda text: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', text)])[-1]
             model = store_models.load_model_architecture(fm_f)
             model, _, epoch = store_models.load_model_checkpoint(cp_f, model, optimizer=None,
                                                                  device_id=f'cuda:{args.gpu_device}')
@@ -435,10 +538,10 @@ def main(args):
             trained_model_dict['pretrained_epochs'] = epoch
             break  # only take first you find
     models = [
-        {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=False),
-         'will_pretrain': True, 'will_downtrain': False},
-        {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
-         'will_pretrain': True, 'will_downtrain': False},
+        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=False),
+        #  'will_pretrain': True, 'will_downtrain': False},
+        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
+        #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
         #  'will_pretrain': True, 'will_downtrain': False},
         # {'model': cpc_combined.CPCCombined(pretrain_models[-3], downstream_models[-2], freeze_cpc=True),
@@ -451,9 +554,9 @@ def main(args):
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[1], freeze_cpc=True),
+        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[-1], freeze_cpc=False),
         #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[2], freeze_cpc=True),
+        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[-1], freeze_cpc=False),
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
@@ -461,9 +564,131 @@ def main(args):
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[2], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, trained_model_dicts[-1]['model'].downstream_model, freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, trained_model_dicts[-2]['model'].downstream_model, freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+         'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+         'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+         'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+         'will_pretrain': False, 'will_downtrain': True},
+        # ###
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+         'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+         'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+         'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+         'will_pretrain': False, 'will_downtrain': True},
+        # ###
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # ###
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
         #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
         #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        ###
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True},
+        
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
         #  'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
@@ -715,14 +940,7 @@ def main(args):
         print("Begin training of {}. Output will  be saved to dir: {}".format(model_name, output_path))
         # Create dirs and model info
         Path(output_path).mkdir(parents=True, exist_ok=True)
-        with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
-            if not pretrained_epochs is None:
-                temp = args.pretrain_epochs #copy
-                args.pretrain_epochs = pretrained_epochs #change for save
-                cfg.write(str(args))
-                args.pretrain_epochs = temp #Change back
-            else:
-                cfg.write(str(args))
+
         save_model_architecture(output_path, model, model_name)
         save_model_variables_text_only(output_path, model)
         model.cuda()
@@ -736,6 +954,8 @@ def main(args):
         train_mean_loss = torch.Tensor([0.]).cuda()
         val_mean_loss = torch.Tensor([0.]).cuda()
         moving_average = 0
+        if args.downstream_updates_limit > 0:
+            args.downstream_epochs = 99999999
         for epoch in range(1, args.downstream_epochs + 1):
             starttime = time.time()  # train
             for train_loader_i, train_loader in enumerate(downstream_train_loaders):
@@ -762,9 +982,12 @@ def main(args):
                     del data, pred, labels, loss
                     if args.dry_run:
                         break
+                    if args.downstream_updates_limit > 0 and args.downstream_updates_limit <= update_count:
+                        break
                 print(f"\tFinished training dataset {train_loader_i}. Progress: {train_loader_i + 1}/{len(downstream_train_loaders)}")
-
                 torch.cuda.empty_cache()
+                if args.downstream_updates_limit > 0 and args.downstream_updates_limit <= update_count:
+                    break
             train_mean_loss = parse_tensor_to_numpy_or_scalar(train_mean_loss)/moving_average
             moving_average=0
             with torch.no_grad():
@@ -806,10 +1029,20 @@ def main(args):
                 elapsed_time, update_count))
             if args.dry_run:
                 break
-        pickle_name = "model-{}-epochs-{}.pickle".format(model_name, args.downstream_epochs)
+            if args.downstream_updates_limit > 0 and args.downstream_updates_limit <= update_count:
+                break
+        pickle_name = "model-{}-epochs-{}.pickle".format(model_name, epoch)
         # Saving metrics in pickle
         with open(os.path.join(output_path, pickle_name), 'wb') as pick_file:
             pickle.dump(dict(metrics), pick_file)
+        with open(os.path.join(output_path, 'params.txt'), 'w') as cfg:
+            if not pretrained_epochs is None:
+                temp = args.pretrain_epochs #copy
+                args.pretrain_epochs = pretrained_epochs #change for save
+                cfg.write(str(args))
+                args.pretrain_epochs = temp #Change back
+            else:
+                cfg.write(str(args))
         # Save model + model weights + optimizer state
         save_model_checkpoint(output_path, epoch=args.downstream_epochs, model=model, optimizer=optimizer,
                               name=model_name)
@@ -926,9 +1159,13 @@ if __name__ == "__main__":
                         help="No metrics (loss etc.) will be safed during training")
     parser.set_defaults(no_metrics=False)
 
+    parser.add_argument('--checkpoint_file_ending', type=str, default=None)
+
     parser.add_argument("--gpu_device", type=int, default=0)
 
     parser.add_argument("--comment", type=str, default=None)
+
+    parser.add_argument('--downstream_updates_limit', type=int, default=0)
     
     parser.add_argument("--preload_fraction", type=float, default=1.)
 
