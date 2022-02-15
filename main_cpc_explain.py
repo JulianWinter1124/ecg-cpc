@@ -88,8 +88,10 @@ def main(args):
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/30_11_21-18-train|bl_cnn_v14/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet0|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
         #newtcn
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
-        #newtcn
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
+        #new cpc
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
+        #blv8
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v8.BaselineNet11|use_weights|ConvLyrs:5|MaxPool|Linear|BatchNorm|stride_sum:14|dilation_sum:19|padding_sum:0|krnls_sum:22'
     ]
     model_test_folders = [
         #v14
@@ -106,7 +108,9 @@ def main(args):
         #new tcn
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-14-58-test|bl_TCN_down+bl_cnn_v2/02_12_21-12-train|bl_TCN_down+bl_cnn_v2/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
         #new cpc
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-17-56-test|(4x)cpc/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-17-56-test|(4x)cpc/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
+        #blv8
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v8.BaselineNet11|use_weights|ConvLyrs:5|MaxPool|Linear|BatchNorm|stride_sum:14|dilation_sum:19|padding_sum:0|krnls_sum:22'
     ]
     # infer class from model-arch file
     model_dicts = []

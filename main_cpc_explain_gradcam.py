@@ -91,10 +91,18 @@ def main(args):
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-10-train|(12x)cpc/architectures_cpc.cpc_combined.CPCCombined9|use_weights|strided|frozen|L|m:same|cpc_downstream_cnn'
         #new bl14
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
+        #new bl v8
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v8.BaselineNet11|use_weights|ConvLyrs:5|MaxPool|Linear|BatchNorm|stride_sum:14|dilation_sum:19|padding_sum:0|krnls_sum:22'
         #new blvtcn
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
-        #new cpc
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-18-09-train|(8x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_twolinear_v2'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/14_12_21-10-train|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        #new cpc v8
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-18-09-train|(8x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_twolinear_v2'
+        #new cpc v0
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
+        #cpc v8 nocontext
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_02_22-13-29-train|(30x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy-nocontext|cpc_downstream_twolinear_v2'
+        #cpc v8
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_02_22-13-29-train|(30x)cpc/architectures_cpc.cpc_combined.CPCCombined17|train-test-splits|use_weights|frozen|C|L|m:crossentropy|cpc_downstream_twolinear_v2'
     ]
     model_test_folders = [
         #v14
@@ -111,10 +119,18 @@ def main(args):
         #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/01_12_21-12-48-test|(12x)cpc/01_12_21-10-train|(12x)cpc/architectures_cpc.cpc_combined.CPCCombined9|use_weights|strided|frozen|L|m:same|cpc_downstream_cnn'
         #new bl14
         # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v14.BaselineNet3|use_weights|ConvLyrs:29|MaxPool|Linear|BatchNorm|stride_sum:71|dilation_sum:30|padding_sum:22|krnls_sum:143'
+        #new bl v8
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_cnn_v8.BaselineNet11|use_weights|ConvLyrs:5|MaxPool|Linear|BatchNorm|stride_sum:14|dilation_sum:19|padding_sum:0|krnls_sum:22'
         #new bltcn
-        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-15-57-test|bl_FCN+bl_MLP+bl_TCN_block+bl_TCN_down+bl_TCN_last+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v14+bl_cnn_v15+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/14_12_21-10-train|bl_MLP+bl_alex_v2+bl_cnn_v0+bl_cnn_v0_1+bl_cnn_v0_2+bl_cnn_v0_3+bl_cnn_v1+bl_cnn_v2+bl_cnn_v4+bl_cnn_v5+bl_cnn_v7+bl_cnn_v8+bl_cnn_v9/architectures_baseline_challenge.baseline_TCN_down.BaselineNet1|use_weights|ConvLyrs:15|Linear|stride_sum:15|dilation_sum:31|padding_sum:56|krnls_sum:39'
         #new cpc
-        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/24_12_21-11-14-test|(8x)cpc/23_12_21-18-09-train|(8x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_twolinear_v2'
+        #'/home/julian/Downloads/Github/contrastive-predictive-coding/models/24_12_21-11-14-test|(8x)cpc/23_12_21-18-09-train|(8x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_twolinear_v2'
+        #new cpc v0
+        '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_12_21-17-56-test|(4x)cpc/02_12_21-16-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|use_weights|frozen|C|m:same|cpc_downstream_only'
+        #likev8 cpc nocontext
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_02_22-15-03-test|(36x)cpc/07_02_22-13-29-train|(30x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy-nocontext|cpc_downstream_twolinear_v2'
+        #likev8 cpc
+        # '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_02_22-15-03-test|(36x)cpc/07_02_22-13-29-train|(30x)cpc/architectures_cpc.cpc_combined.CPCCombined17|train-test-splits|use_weights|frozen|C|L|m:crossentropy|cpc_downstream_twolinear_v2'
         ]
     # infer class from model-arch file
     model_dicts = []
@@ -131,13 +147,16 @@ def main(args):
             model, _, epoch = load_model_checkpoint(cp_f, model, optimizer=None, device_id=f'cuda:{args.gpu_device}')
             if hasattr(model, 'freeze_cpc'):
                 model.freeze_cpc = False
+                model._unfreeze_cpc()
             thresholds = calculate_best_thresholds([test_folder])[0]
             print(thresholds)
             print(
                 f'Found architecturefile {os.path.basename(fm_f)}, checkpointfile {os.path.basename(cp_f)} in folder {root}. Apppending model for testing.')
             explain_model = ExplainLabelLayer(model, class_weights=class_weights,
-                                              layer=('cpc_model.encoder.convolutionals.12'),
-                                              guided=args.guided)#'tcn.network.2.net.4''msresnet.layer7x7_3.0.conv2''convs.16''msresnet.maxpool7' #'cpc_model.encoder.convolutionals.8''cpc_model.encoder.cpc_encoder.convolutionals.8'
+                                              layer=('cpc_model.encoder.convolutionals.8'),#'convs.12' ,'cpc_model.encoder.convolutionals.12''tcn.network.2.net.4'
+                                              guided=args.guided)#'msresnet.layer7x7_3.0.conv2''convs.16''msresnet.maxpool7' #'cpc_model.encoder.cpc_encoder.convolutionals.8'
+
+
             model_dicts.append({'model': explain_model, 'model_folder': root, 'thresholds': thresholds,
                                 'name': '-'.join(train_folder.split(os.path.sep)[-1].split('|')[0].split('.')[-2:])})
     if len(model_dicts) == 0:
@@ -260,7 +279,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--warmup_steps', type=int, default=0, help="The number of warmup steps")
 
-    parser.add_argument('--batch_size', type=int, default=24, help="The batch size")
+    parser.add_argument('--batch_size', type=int, default=1, help="The batch size")
 
     parser.add_argument('--latent_size', type=int, default=128,
                         help="The size of the latent encoding for one window")

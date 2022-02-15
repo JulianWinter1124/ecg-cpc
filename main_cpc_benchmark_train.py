@@ -1,4 +1,5 @@
 import argparse
+import copy
 import datetime
 import os
 import pickle
@@ -30,7 +31,8 @@ from util import store_models
 from util.data import ecg_datasets3
 from util.utility.full_class_name import fullname
 from util.metrics import training_metrics, baseline_losses as bl
-from util.store_models import save_model_architecture, save_model_checkpoint, save_model_variables_text_only
+from util.store_models import save_model_architecture, save_model_checkpoint, save_model_variables_text_only, \
+    save_model_state_dict_checkpoint
 
 
 def main(args):
@@ -370,146 +372,78 @@ def main(args):
     ]
     trained_model_dicts = [  # continue training for these in some way
         # {
-        #     'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined0|frozen|C|m:all|cpc_downstream_only|dte:1|pte:100',
-        #     'model': None  # Model will be loaded by method below
+        #     'folder': "/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:same|cpc_downstream_latent_maximum",
+        #     'model': None  # standard same
         #     },
         # {
-        #     'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined1|strided|frozen|C|m:all|cpc_downstream_only|dte:1|pte:100',
-        #     'model': None  # Model will be loaded by method below
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|strided|frozen|C|L|m:same|cpc_downstream_latent_maximum',
+        #     'model': None  # standard same strided
         #     },
         # {
-        #     'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined2|frozen|C|m:same|cpc_downstream_only|dte:1|pte:100',
-        #     'model': None  # Model will be loaded by method below
+        #     'folder': "/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_latent_maximum",
+        #     'model': None  # standard all
         #     },
         # {
-        #     'folder': 'models/11_05_21-16|(4x)cpc+bl_rnn_simplest_gru/architectures_cpc.cpc_combined.CPCCombined3|strided|frozen|C|m:same|cpc_downstream_only|dte:1|pte:100',
-        #     'model': None  # Model will be loaded by method below
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|strided|frozen|C|L|m:all|cpc_downstream_latent_maximum',
+        #     'model': None  # standard all strided
         #     },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:same|cpc_downstream_latent_maximum',
-            'model': None  # Model will be loaded by method below
-            },
-        { #normalized latents
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|strided|frozen|C|L|m:same|cpc_downstream_latent_maximum',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_latent_maximum',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|strided|frozen|C|L|m:all|cpc_downstream_latent_maximum',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-18-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_01_22-15-07-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:crossentropy|cpc_downstream_only',
-            'model': None  # Model will be loaded by method below
-            },
-        {
-            'folder': "/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_01_22-17-26-train|(3x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|LNorm|m:crossentropy-nocontext|cpc_downstream_only",
-            'model': None  # Normed no context
-            },
-        {
-            'folder': "/home/julian/Downloads/Github/contrastive-predictive-coding/models/11_01_22-17-26-train|(3x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|unfrozen|C|m:crossentropy|cpc_downstream_only",
-            'model': None  # old fashioned
-            },
-        {
-            'folder': "/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|strided|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only",
-            'model': None  # norm old strided
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only',
-            'model': None  # norm same old
-            },
-        {
-            'folder': "/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|L|m:same|cpc_downstream_latent_maximum",
-            'model': None  # norm same
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|strided|frozen|C|L|m:same|cpc_downstream_latent_maximum',
-            'model': None  # cpc strided
-            },
-        {
-            'folder': "/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined2|train-test-splits|use_weights|frozen|C|L|m:all|cpc_downstream_latent_maximum",
-            'model': None  # norm all
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/15_12_21-21-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|strided|frozen|C|L|m:all|cpc_downstream_latent_maximum',
-            'model': None  # norm all strided
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
-            'model': None  # many latents v0s
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|strided|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
-            'model': None  # many latents v0 strided
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_02_22-17-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:multisame|cpc_downstream_latent_maximum',
-            'model': None  # normal multisame
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_02_22-17-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|L|m:same|cpc_downstream_latent_maximum',
-            'model': None  # normal same
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_01_22-14-14-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
-            'model': None  # letent max cpc, down only 120
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-17-29-train|(6x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|frozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
-            'model': None  # latent max cpc, pretrained 100
-            },
-        #### new archs test
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
-            'model': None  # v0
-            },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+        #     'model': None  # many latents v0s
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|strided|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+        #     'model': None  # many latents v0 strided
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_02_22-17-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:multisame|cpc_downstream_latent_maximum',
+        #     'model': None  # normal multisame
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_02_22-17-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|L|m:same|cpc_downstream_latent_maximum',
+        #     'model': None  # normal same
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/26_01_22-14-14-train|(4x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+        #     'model': None  # letent max cpc, down only 120
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-17-29-train|(6x)cpc/architectures_cpc.cpc_combined.CPCCombined3|train-test-splits|use_weights|frozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+        #     'model': None  # latent max cpc, pretrained 100
+        #     },
+        # #### new archs test
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/02_02_22-16-12-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+        #     'model': None  # v0
+        #     },
         {
             'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/23_12_21-19-52-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:crossentropy|cpc_downstream_only',
             'model': None  # v8
             },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-12-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
-            'model': None  # v0 hidden
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_02_22-12-07-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
-            'model': None  # v8 hidden
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/05_01_22-18-16-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|m:crossentropy-nocontext|cpc_downstream_only',
-            'model': None  # v0 nocontext
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_01_22-16-51-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:crossentropy-nocontext|cpc_downstream_only',
-            'model': None  # v8 nocontext
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|strided|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only',
-            'model': None  # strided normalized
-            },
-        {
-            'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only',
-            'model': None  #  normalized
-            },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/22_12_21-12-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:all|cpc_downstream_only',
+        #     'model': None  # v0 hidden
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/07_02_22-12-07-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|L|m:crossentropy|cpc_downstream_latent_maximum',
+        #     'model': None  # v8 hidden
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/05_01_22-18-16-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|unfrozen|C|m:crossentropy-nocontext|cpc_downstream_only',
+        #     'model': None  # v0 nocontext
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/04_01_22-16-51-train|cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|frozen|C|m:crossentropy-nocontext|cpc_downstream_only',
+        #     'model': None  # v8 nocontext
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined0|train-test-splits|use_weights|strided|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only',
+        #     'model': None  # strided normalized
+        #     },
+        # {
+        #     'folder': '/home/julian/Downloads/Github/contrastive-predictive-coding/models/27_01_22-14-49-train|(2x)cpc/architectures_cpc.cpc_combined.CPCCombined1|train-test-splits|use_weights|unfrozen|C|LNorm|m:crossentropy|cpc_downstream_only',
+        #     'model': None  #  normalized
+        #     },
     ]
     for model_i, trained_model_dict in enumerate(trained_model_dicts):  # hack bad
         model_path = trained_model_dict['folder']
@@ -538,198 +472,49 @@ def main(args):
             trained_model_dict['pretrained_epochs'] = epoch
             break  # only take first you find
     models = [
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-3], downstream_models[-2], freeze_cpc=True),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=False),
-        #  'will_pretrain': True, 'will_downtrain': False},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[1], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[0], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-2], downstream_models[-1], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[-1], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[0], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[1], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(pretrain_models[-1], downstream_models[2], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, trained_model_dicts[-1]['model'].downstream_model, freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, trained_model_dicts[-2]['model'].downstream_model, freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
-         'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+         'pretrained_epochs':trained_model_dicts[0]['pretrained_epochs'],
          'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-         'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+         'pretrained_epochs':trained_model_dicts[0]['pretrained_epochs'],
+         'will_pretrain': False, 'will_downtrain': True},
+
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+         'pretrained_epochs':trained_model_dicts[0]['pretrained_epochs'],
+         'will_pretrain': False, 'will_downtrain': True},
+        {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+         'pretrained_epochs':trained_model_dicts[0]['pretrained_epochs'],
          'will_pretrain': False, 'will_downtrain': True},
         # ###
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
+        # # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        # #  'pretrained_epochs':trained_model_dicts[1]['pretrained_epochs'],
+        # #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[1]['pretrained_epochs'],
         #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
-         'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-         'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-         'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-         'will_pretrain': False, 'will_downtrain': True},
-        # ###
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-3]['pretrained_epochs'],
+        #
+        # # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        # #  'pretrained_epochs':trained_model_dicts[1]['pretrained_epochs'],
+        # #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[1]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[1]['pretrained_epochs'],
         #  'will_pretrain': False, 'will_downtrain': True},
         # ###
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
+        # # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
+        # #  'pretrained_epochs':trained_model_dicts[2]['pretrained_epochs'],
+        # #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
+        #  'pretrained_epochs':trained_model_dicts[2]['pretrained_epochs'],
         #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-4]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        ###
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[0], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-5]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-5]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=False),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-1]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'pretrained_epochs':trained_model_dicts[-2]['pretrained_epochs'],
-        #  'will_pretrain': False, 'will_downtrain': True},
-        
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[0], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-4]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-3]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-3], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-6], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-6], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-2], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-2]['model'].cpc_model, downstream_models[-2], freeze_cpc=True),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-2], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
-        # {'model': cpc_combined.CPCCombined(trained_model_dicts[-1]['model'].cpc_model, downstream_models[-5], freeze_cpc=False),
-        #  'will_pretrain': False, 'will_downtrain': True},
+        #
+        # # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[1], freeze_cpc=True),
+        # #  'pretrained_epochs':trained_model_dicts[2]['pretrained_epochs'],
+        # #  'will_pretrain': False, 'will_downtrain': True},
+        # {'model': cpc_combined.CPCCombined(trained_model_dicts[2]['model'].cpc_model, downstream_models[2], freeze_cpc=True),
+        #  'pretrained_epochs':trained_model_dicts[2]['pretrained_epochs'],
+        #  'will_pretrain': False, 'will_downtrain': True}
+
         # {'model': cpc_combined.CPCCombined(pretrain_models[0], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(pretrain_models[1], downstream_models[1], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
         # {'model': cpc_combined.CPCCombined(trained_model_dicts[0]['model'].cpc_model, downstream_models[0], freeze_cpc=False), 'will_pretrain': False, 'will_downtrain': True},
@@ -948,6 +733,9 @@ def main(args):
         # init optimizer
         optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=3e-4)
         scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5, min_lr=3e-10, verbose=True)
+        best_val_model = None
+        best_val_loss = None
+        best_val_epoch = None
         metrics = defaultdict(lambda: defaultdict(list))
         update_count = 0
 
@@ -1020,7 +808,10 @@ def main(args):
             if epoch in args.save_at_epoch_down:
                 save_model_checkpoint(output_path, epoch=epoch, model=model, optimizer=optimizer,
                               name=model_name)
-
+            if best_val_loss is None or np.mean(metrics[epoch]['valloss']) < best_val_loss:
+                best_val_loss = np.mean(metrics[epoch]['valloss'])
+                best_val_model = copy.deepcopy(model.state_dict())
+                best_val_epoch = epoch
             scheduler.step(np.mean(metrics[epoch]['valloss']))
             elapsed_time = str(datetime.timedelta(seconds=time.time() - starttime))
             metrics[epoch]['elapsed_time'].append(elapsed_time)
@@ -1046,6 +837,8 @@ def main(args):
         # Save model + model weights + optimizer state
         save_model_checkpoint(output_path, epoch=args.downstream_epochs, model=model, optimizer=optimizer,
                               name=model_name)
+        save_model_state_dict_checkpoint(output_path, epoch=best_val_epoch, model_statedict=best_val_model, optimizer=None,
+                              name=model_name, additional_name='_best_val_model')
         print("Finished model {}. Output saved to dir: {} Progress: {}/{}".format(model_name, output_path, model_i + 1,
                                                                                   len(models)))
 
@@ -1055,7 +848,7 @@ def main(args):
     print("Going to train", len(models), 'models')
     for model_i, model_dict in enumerate(models):  # TODO: easily select what training is necessary!
         if type(model_dict) == dict:
-            model = model_dict['model']
+            model = copy.deepcopy(model_dict['model'])
             trained_epochs = None
             if 'desc' in model_dict:
                 model.description = model_dict['desc']
@@ -1166,6 +959,8 @@ if __name__ == "__main__":
     parser.add_argument("--comment", type=str, default=None)
 
     parser.add_argument('--downstream_updates_limit', type=int, default=0)
+
+    parser.add_argument('--downstream_updates_minimum', type=int, default=0)
     
     parser.add_argument("--preload_fraction", type=float, default=1.)
 

@@ -709,52 +709,52 @@ if __name__ == '__main__':
     #         lambda f: not ('labels-dataloader-0.csv' in f),
     #         lambda fs: any(['checkpoint_epoch_100.pt' in f for f in fs])
     #     ]))
-    # print('v8', filter_folders_universal(
-    #     folders=filter_folders_age(newer_than=1638140400), #CPC and tested
-    #     file_content_filter_fnlist_dict={
-    #         'model_variables.txt':[
-    #             lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x,
-    #             lambda x: "cpc_autoregressive_v0" in x,
-    #             lambda x: "cpc_encoder_likev8" in x,
-    #             lambda x: "cpc_predictor_v0" in x,
-    #             lambda x: '"normalize_latents": false' in x,
-    #             lambda x: 'cpc_intersect_manylatents' in x,
-    #             lambda x: '"latent_size": 128,' in x,
-    #             lambda x: '"timesteps_in": 12,' in x,
-    #             lambda x: '"timesteps_out": 12,' in x,
-    #         ],
-    #         'params.txt':[
-    #             lambda x: 'train-test-splits.txt' in x,
-    #             lambda x: "pretrain_epochs=100" in x
-    #         ]
-    #     },
-    #     file_filter_fnlist=[
-    #         lambda f: not ('labels-dataloader-0.csv' in f),
-    #         lambda fs: any(['checkpoint_epoch_100.pt' in f for f in fs])
-    #     ]))
-    # print('v0-hidden', filter_folders_universal(
-    #     folders=filter_folders_age(newer_than=1638140400), #CPC and tested
-    #     file_content_filter_fnlist_dict={
-    #         'model_variables.txt':[
-    #             lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x,
-    #             lambda x: "cpc_autoregressive_hidden" in x,
-    #             lambda x: "cpc_encoder_v0" in x,
-    #             lambda x: "cpc_predictor_v0" in x,
-    #             lambda x: '"normalize_latents": false' in x,
-    #             lambda x: 'cpc_intersect_manylatents' in x,
-    #             lambda x: '"latent_size": 128,' in x,
-    #             lambda x: '"timesteps_in": 12,' in x,
-    #             lambda x: '"timesteps_out": 12,' in x,
-    #         ],
-    #         'params.txt':[
-    #             lambda x: 'train-test-splits.txt' in x,
-    #             lambda x: "pretrain_epochs=100" in x
-    #         ]
-    #     },
-    #     file_filter_fnlist=[
-    #         lambda f: not ('labels-dataloader-0.csv' in f),
-    #         lambda fs: any(['checkpoint_epoch_100.pt' in f for f in fs])
-    #     ]))
+    print('v8', filter_folders_universal(
+        folders=filter_folders_age(newer_than=1638140400), #CPC and tested
+        file_content_filter_fnlist_dict={
+            'model_variables.txt':[
+                lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x,
+                lambda x: "cpc_autoregressive_v0" in x,
+                # lambda x: "cpc_encoder_likev8" in x,
+                lambda x: "cpc_predictor_v0" in x,
+                lambda x: '"normalize_latents": false' in x,
+                lambda x: 'as_strided' in x,
+                lambda x: 'cpc_intersect_manylatents' in x,
+                lambda x: '"latent_size": 128,' in x,
+            ],
+            'params.txt':[
+                lambda x: 'train-test-splits.txt' in x,
+                lambda x: "pretrain_epochs=100" in x
+            ]
+        },
+        file_filter_fnlist=[
+            lambda f: not ('labels-dataloader-0.csv' in f),
+            lambda fs: any(['checkpoint_epoch_20.pt' in f for f in fs])
+        ]))
+    print('v0-hidden', filter_folders_universal(
+        folders=filter_folders_age(newer_than=1638140400), #CPC and tested
+        file_content_filter_fnlist_dict={
+            'model_variables.txt':[
+                lambda x: "architectures_cpc.cpc_combined.CPCCombined" in x,
+                lambda x: "cpc_autoregressive_hidden" in x,
+                lambda x: "cpc_encoder_v0" in x,
+                lambda x: "cpc_predictor_v0" in x,
+                lambda x: 'as_strided' in x,
+                lambda x: '"normalize_latents": false' in x,
+                lambda x: 'cpc_intersect_manylatents' in x,
+                lambda x: '"latent_size": 128,' in x,
+                lambda x: '"timesteps_in": 12,' in x,
+                lambda x: '"timesteps_out": 12,' in x,
+            ],
+            'params.txt':[
+                lambda x: 'train-test-splits.txt' in x,
+                lambda x: "pretrain_epochs=100" in x
+            ]
+        },
+        file_filter_fnlist=[
+            lambda f: not ('labels-dataloader-0.csv' in f),
+            lambda fs: any(['checkpoint_epoch_100.pt' in f for f in fs])
+        ]))
     # print('v8-hidden', filter_folders_universal(
     #     folders=filter_folders_age(newer_than=1638140400), #CPC and tested
     #     file_content_filter_fnlist_dict={
