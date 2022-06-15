@@ -1,6 +1,6 @@
-# Classifciation of Electrocardiograms using Contrastive Predictive Coding
+# Classification of Electrocardiograms using Contrastive Predictive Coding
 
-This is the code for my master thesis "**Classifciation of Electrocardiograms using Contrastive Predictive Coding**"
+This is the code for my master thesis "**Classification of Electrocardiograms using Contrastive Predictive Coding**"
 Contrastive Predictive Coding is an unsupervised learning approach from the paper [Representation Learning with Contrastive Predictive Coding
 ](https://doi.org/10.48550/arXiv.1807.03748) which learns data representation in latent space by using autoregressive models and is suitable for many data modalities.
 
